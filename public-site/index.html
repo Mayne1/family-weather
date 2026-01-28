@@ -1,1 +1,223 @@
-PASTE_THE_INDEX_HTML_I_GAVE_YOU_HERE
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Family Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --bg1: #020617;
+      --bg2: #020617;
+      --bg3: #0f172a;
+      --card: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.7);
+      --accent: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(to bottom, var(--bg1), var(--bg2), var(--bg3));
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 16px 48px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 32px;
+    }
+
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    h1 {
+      margin: 6px 0 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      max-width: 640px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #020617;
+      border: none;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .temp {
+      font-size: 48px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .forecast-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .fab5 {
+      display: grid;
+      gap: 8px;
+    }
+
+    @media (min-width: 700px) {
+      .fab5 {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    footer {
+      margin-top: 48px;
+      font-size: 12px;
+      opacity: 0.45;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header>
+      <div>
+        <div class="kicker">Family Weather</div>
+        <h1>Weather that helps you plan real life.</h1>
+        <p class="subtitle">
+          Glance, plan, invite. Forecasts plus historical context, built for families and groups.
+        </p>
+      </div>
+
+      <div class="actions">
+        <a class="btn primary" href="dashboard.html">Plan an event</a>
+        <a class="btn" href="events.html">Events</a>
+      </div>
+    </header>
+
+    <section class="grid cols-3">
+      <div class="card">
+        <h2>Right now</h2>
+        <div class="muted">Northern California</div>
+        <div class="temp">72°</div>
+        <div class="muted">Sunny · Feels like 74°</div>
+        <div class="muted">Wind 6 mph · Humidity 48%</div>
+      </div>
+
+      <div class="card">
+        <h2>10-day forecast</h2>
+        <div class="forecast-row"><span>Wed</span><span>58° / 76°</span></div>
+        <div class="forecast-row"><span>Thu</span><span>60° / 78°</span></div>
+        <div class="forecast-row"><span>Fri</span><span>59° / 74°</span></div>
+        <div class="forecast-row"><span>Sat</span><span>57° / 71°</span></div>
+        <div class="forecast-row"><span>Sun</span><span>56° / 70°</span></div>
+        <div class="muted">(MVP preview)</div>
+      </div>
+
+      <div class="card">
+        <h2>Alerts</h2>
+        <div class="muted">No alerts right now.</div>
+      </div>
+    </section>
+
+    <section style="margin-top:16px" class="card">
+      <h2>Fab 5 cities</h2>
+      <div class="fab5">
+        <div class="forecast-row">Sacramento, CA</div>
+        <div class="forecast-row">San Francisco, CA</div>
+        <div class="forecast-row">Oakland, CA</div>
+        <div class="forecast-row">Reno, NV</div>
+        <div class="forecast-row">Los Angeles, CA</div>
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> Family Weather · Built for planning, not doomscrolling.
+    </footer>
+  </main>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
