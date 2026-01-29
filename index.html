@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Family Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg1:#020617;--bg2:#020617;--bg3:#0f172a;
+      --card:rgba(255,255,255,.05);
+      --border:rgba(255,255,255,.12);
+      --muted:rgba(255,255,255,.7);
+      --good:rgba(34,197,94,.18);
+      --mod:rgba(245,158,11,.18);
+      --bad:rgba(239,68,68,.18);
+      --ring:rgba(255,255,255,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: var(--page-bg, linear-gradient(to bottom,var(--bg1),var(--bg2),var(--bg3)));
+      color:#fff; min-height:100vh;
+    }
+    a{text-decoration:none;color:inherit}
+    .wrap{max-width:1100px;margin:auto;padding:32px 16px 48px}
+    header{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+    .kicker{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+    h1{margin:6px 0 0;font-size:28px;font-weight:600}
+    .subtitle{margin-top:6px;font-size:14px;color:var(--muted);max-width:760px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:10px 16px;border-radius:14px;font-size:14px;font-weight:800;border:1px solid var(--border);background:transparent}
+    .btn.primary{background:#fff;color:#020617;border:none}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){.grid.cols-3{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px; position:relative; overflow:hidden}
+    .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+    .temp{font-size:48px;font-weight:650;line-height:1}
+    .muted{color:var(--muted);font-size:13px}
+    .row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:12px;margin-bottom:6px;font-size:13px}
+    button.city{all:unset;cursor:pointer}
+    button.city:focus{outline:2px solid rgba(255,255,255,.35);outline-offset:2px;border-radius:12px}
+    .fabGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+    footer{margin-top:48px;font-size:12px;opacity:.45}
+    .metaRow{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.04);font-size:12px;color:rgba(255,255,255,.88)}
+    .aqiChip{padding:6px 10px;border-radius:999px;border:1px solid var(--ring);font-weight:900;font-size:12px}
+    .aqi-good{background:var(--good)}
+    .aqi-mod{background:var(--mod)}
+    .aqi-bad{background:var(--bad)}
+
+    /* ===== Animated Weather Art (fills Right Now dead space) ===== */
+    .wxArt{
+      margin-top:14px;
+      height:118px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(120px 80px at 20% 30%, rgba(255,255,255,.10), rgba(255,255,255,0)),
+                  linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      position:relative;
+      overflow:hidden;
+    }
+    .wxArt::after{
+      content:"";
+      position:absolute; inset:-2px;
+      border-radius:18px;
+      pointer-events:none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    /* shared bits */
+    .wxMoon, .wxSun, .wxCloud, .wxFog, .wxBolt { position:absolute; }
+    .wxStars { position:absolute; inset:0; opacity:.9; }
+    .wxStars span{
+      position:absolute; width:2px; height:2px; border-radius:50%;
+      background:rgba(255,255,255,.85);
+      animation: twinkle 2.8s ease-in-out infinite;
+    }
+    .wxStars span:nth-child(2n){ animation-duration:3.6s; opacity:.6 }
+    .wxStars span:nth-child(3n){ animation-duration:4.4s; opacity:.5 }
+
+    @keyframes twinkle { 0%,100%{ transform:scale(1); opacity:.55 } 50%{ transform:scale(1.8); opacity:1 } }
+
+    .wxMoon{
+      width:56px; height:56px; border-radius:50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(255,255,255,.70));
+      top:18px; left:18px;
+      box-shadow: 0 0 18px rgba(255,255,255,.15);
+    }
+    .wxMoon::after{
+      content:"";
+      position:absolute; width:50px; height:50px; border-radius:50%;
+      top:10px; left:18px;
+      background: rgba(2,6,23,.85);
+    }
+    .wxSun{
+      width:58px; height:58px; border-radius:50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(255,255,255,.70));
+      top:16px; left:18px;
+      box-shadow: 0 0 22px rgba(255,255,255,.12);
+      animation: floaty 3.6s ease-in-out infinite;
+    }
+    .wxSun::before{
+      content:"";
+      position:absolute; inset:-10px;
+      border-radius:50%;
+      border: 1px dashed rgba(255,255,255,.18);
+      animation: spin 10s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+    @keyframes floaty{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-4px) } }
+
+    .wxCloud{
+      width:140px; height:46px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      top:46px; left:84px;
+      filter: blur(.0px);
+      animation: drift 6.5s ease-in-out infinite;
+    }
+    .wxCloud::before{
+      content:"";
+      position:absolute; width:58px; height:58px; border-radius:50%;
+      left:18px; top:-30px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .wxCloud::after{
+      content:"";
+      position:absolute; width:72px; height:72px; border-radius:50%;
+      left:56px; top:-40px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    @keyframes drift{ 0%,100%{ transform:translateX(0) } 50%{ transform:translateX(10px) } }
+
+    .wxRain{
+      position:absolute; left:0; right:0; bottom:0; top:0;
+      pointer-events:none;
+    }
+    .wxRain i{
+      position:absolute; width:2px; height:18px; border-radius:2px;
+      background: rgba(255,255,255,.28);
+      top:72px;
+      animation: rain 0.9s linear infinite;
+    }
+    .wxRain i:nth-child(2n){ animation-duration:1.05s; opacity:.22 }
+    .wxRain i:nth-child(3n){ animation-duration:0.8s; opacity:.26 }
+    @keyframes rain{
+      from{ transform:translateY(-18px) }
+      to{ transform:translateY(58px) }
+    }
+
+    .wxSnow{
+      position:absolute; inset:0; pointer-events:none;
+    }
+    .wxSnow i{
+      position:absolute; width:6px; height:6px; border-radius:50%;
+      background: rgba(255,255,255,.42);
+      top:66px;
+      animation: snow 2.6s linear infinite;
+    }
+    .wxSnow i:nth-child(2n){ animation-duration:3.2s; opacity:.35 }
+    .wxSnow i:nth-child(3n){ animation-duration:2.2s; opacity:.30 }
+    @keyframes snow{
+      from{ transform:translateY(-10px) translateX(0) }
+      to{ transform:translateY(62px) translateX(10px) }
+    }
+
+    .wxFog{
+      left:-20px; right:-20px; top:60px; height:46px;
+      background:: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.10), rgba(255,255,255,0));
+      opacity:.8;
+      filter: blur(1px);
+      animation: fog 3.2s ease-in-out infinite;
+    }
+    @keyframes fog{ 0%,100%{ transform:translateX(-10px) } 50%{ transform:translateX(10px) } }
+
+    .wxBolt{
+      width:0;height:0;
+      border-left:10px solid transparent;
+      border-right:10px solid transparent;
+      border-top:24px solid rgba(255,255,255,.45);
+      top:62px; left:155px;
+      transform:skewX(-10deg);
+      animation: flash 3.2s ease-in-out infinite;
+      opacity:.2;
+    }
+    .wxBolt::after{
+      content:"";
+      position:absolute;
+      left:-8px; top:-2px;
+      width:0;height:0;
+      border-left:8px solid transparent;
+      border-right:8px solid transparent;
+      border-top:18px solid rgba(255,255,255,.45);
+      transform:translateX(8px) translateY(14px);
+    }
+    @keyframes flash{
+      0%,78%,100%{ opacity:.10 }
+      80%{ opacity:.85 }
+      82%{ opacity:.15 }
+      84%{ opacity:.65 }
+      86%{ opacity:.12 }
+    }
+
+    /* hide/show scenes */
+    .scene{ display:none; }
+    .scene.on{ display:block; }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=1769667575">
+  <!-- FW_CSS_OVERRIDE_LINK: keep styles.css last so themes override inline CSS -->
+  
+</head>
+
+<body>
+<main class="wrap">
+
+<header>
+  <div>
+    <div class="kicker">Family Weather</div>
+    <h1>Weather that helps you plan real life.</h1>
+    <p class="subtitle">Glance, plan, invite. Forecasts + context built for families and groups.</p>
+
+    <div class="metaRow" aria-label="Status">
+      <span class="pill">Location: <strong id="locName">—</strong></span>
+      <span class="pill">Updated: <strong id="updated">—</strong></span>
+      <span class="pill" id="loadState" style="display:none">Loading…</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn primary" href="dashboard.html">Plan an event</a>
+    <a class="btn" href="events.html">Events</a>
+    <a class="btn" href="about.html">About</a>
+    <a class="btn" href="contact.html">Contact</a>
+      <a class="btn" href="settings.html">⚙️ Settings</a>
+  </div>
+</header>
+
+<section class="grid cols-3">
+  <!-- Right now -->
+  <div class="card">
+    <h2>Right now</h2>
+    <div class="muted" id="place">—</div>
+
+    <div style="display:flex; align-items:flex-end; gap:12px; margin-top:6px">
+      <div class="temp"><span id="temp">—</span>°</div>
+
+    <div class="wxIconWrap"><img id="wxIcon" src="/icons/weather/clear-day.svg" alt="Weather icon"></div>
+      <div class="muted" style="padding-bottom:8px"><span id="cond">—</span></div>
+    </div>
+
+    <div class="muted" style="margin-top:6px">
+      Feels like <strong id="feels">—</strong>° · Wind <strong id="wind">—</strong> mph · Humidity <strong id="hum">—</strong>%
+    </div><div class="muted" style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+      <span>Air quality:</span>
+      <span id="aqiChip" class="aqiChip">AQI —</span>
+      <span>PM2.5 <strong id="pm25">—</strong> µg/m³</span>
+    </div>
+
+    <!-- Animated scene fills the empty space -->
+    <div class="wxArt" aria-hidden="true">
+      <div id="scene-clear-day" class="scene">
+        <div class="wxSun"></div>
+      </div>
+
+      <div id="scene-clear-night" class="scene">
+        <div class="wxStars">
+          <span style="top:18px;left:130px"></span><span style="top:32px;left:190px"></span><span style="top:54px;left:160px"></span>
+          <span style="top:22px;left:240px"></span><span style="top:44px;left:220px"></span><span style="top:62px;left:260px"></span>
+        </div>
+        <div class="wxMoon"></div>
+      </div>
+
+      <div id="scene-cloudy" class="scene">
+        <div class="wxCloud"></div>
+      </div>
+
+      <div id="scene-rain" class="scene">
+        <div class="wxCloud"></div>
+        <div class="wxRain" aria-hidden="true" id="rainDrops"></div>
+      </div>
+
+      <div id="scene-snow" class="scene">
+        <div class="wxCloud"></div>
+        <div class="wxSnow" aria-hidden="true" id="snowFlakes"></div>
+      </div>
+
+      <div id="scene-thunder" class="scene">
+        <div class="wxCloud"></div>
+        <div class="wxBolt"></div>
+        <div class="wxRain" aria-hidden="true" id="stormDrops"></div>
+      </div>
+
+      <div id="scene-fog" class="scene">
+        <div class="wxFog"></div>
+      </div>
+    </div>
+
+    <div class="muted" style="margin-top:8px; opacity:.85">(MVP) Animated icon based on current conditions.</div>
+  </div>
+
+  <!-- 10-day forecast -->
+  <div class="card">
+    <h2>10-day forecast</h2>
+    <div id="forecast"></div>
+    <div class="muted" style="margin-top:8px;opacity:.85">(Live via Open-Meteo. Paid API swap later.)</div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="card">
+    <h2>Alerts</h2>
+    <div class="muted">No alerts right now.</div>
+    <div class="muted" style="margin-top:8px;opacity:.85">(MVP) Real alerts after paid provider hookup.</div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2>Fab 5 cities</h2>
+  <div id="cities" class="fabGrid"></div>
+  <div class="muted" style="margin-top:10px;opacity:.85">Click a city to update “Right now” + full 10-day.</div>
+</section>
+
+
+    <!-- ===== FW_HOME_EVENT_TILES_CARD ===== -->
+    <section class="card" id="homeUpcomingCard" style="margin-top:16px">
+      <h2>Upcoming events</h2>
+      <div class="muted">Your next 4 plans. (Green → RSVP open, Yellow → RSVP closed, Red → coming up soon.)</div>
+      <div id="upcomingEvents" class="eventTiles" aria-label="Upcoming events"></div>
+      <div id="upcomingEmpty" class="muted" style="margin-top:10px; opacity:.75; display:none">
+        No upcoming events yet. Create one on the Dashboard.
+      </div>
+    </section>
+
+<footer>© <span id="year"></span> Family Weather</footer>
+</main>
+
+
+
+
+  <script src="app.js?v=1769667575" defer></script>
+  <script src="home.js?v=1769667575" defer></script>
+</body>
+</html>

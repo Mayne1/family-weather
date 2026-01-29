@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <title>Settings • Family Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+  <style>
+    .settingsWrap{max-width:900px;margin:auto;padding:32px 16px 48px}
+    .settingsCard{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px}
+    .settingsCard h1{margin:0 0 6px;font-size:22px}
+    .settingsRow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)}
+    .settingsRow:first-of-type{border-top:0}
+    label{font-weight:800}
+    select,input[type="range"]{width:min(320px,100%)}
+    .hint{color:var(--muted);font-size:13px;margin-top:4px}
+    .btn{cursor:pointer}
+  </style>
+</head>
+
+<body>
+  <div class="settingsWrap">
+    <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:16px">
+      <div>
+        <div class="kicker">Family Weather</div>
+        <h1>Settings</h1>
+        <div class="subtitle">Theme + layout tweaks (saved to this browser).</div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="index.html">Home</a>
+        <a class="btn" href="dashboard.html">Plan an event</a>
+        <a class="btn" href="events.html">Events</a>
+      </div>
+    </header>
+
+    <div class="settingsCard">
+      <div class="settingsRow">
+        <div>
+          <label for="themeSelect">Theme</label>
+          <div class="hint">Pick a vibe. Saved when you hit Save.</div>
+        </div>
+        <select id="themeSelect">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="ocean">Ocean</option>
+          <option value="sunset">Sunset</option>
+          <option value="forest">Forest</option>
+          <option value="midnight">Midnight</option>
+        </select>
+      </div>
+
+      <div class="settingsRow">
+        <div>
+          <label for="rightNowSize">Right now size</label>
+          <div class="hint">0 = smaller, 1 = normal, 2 = bigger.</div>
+        </div>
+        <input id="rightNowSize" type="range" min="0" max="2" step="1" />
+      </div>
+
+      <div class="settingsRow">
+        <div>
+          <label>Actions</label>
+          <div class="hint">Save applies to the whole site.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button id="saveSettings" class="btn primary" type="button">Save</button>
+          <button id="resetSettings" class="btn" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div class="settingsRow">
+        <div>
+          <label>Status</label>
+          <div class="hint" id="saveStatus">No changes saved yet.</div>
+        </div>
+        <a class="btn" href="index.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const themeSelect  = document.getElementById("themeSelect");
+    const rightNowSize = document.getElementById("rightNowSize");
+    const statusEl     = document.getElementById("saveStatus");
+
+    function loadControls(){
+      const theme = localStorage.getItem("fw_theme") || "dark";
+      const rn    = localStorage.getItem("fw_rightnow_size") || "1";
+      if (themeSelect) themeSelect.value = theme;
+      if (rightNowSize) rightNowSize.value = rn;
+      applyNow(theme, rn);
+    }
+
+    function applyNow(theme, rn){
+      document.documentElement.setAttribute("data-theme", theme);
+      document.body.classList.remove("rn-size-0","rn-size-1","rn-size-2");
+      document.body.classList.add(`rn-size-${rn}`);
+    }
+
+    function save(){
+      const theme = themeSelect ? themeSelect.value : "dark";
+      const rn    = rightNowSize ? rightNowSize.value : "1";
+
+      localStorage.setItem("fw_theme", theme);
+      localStorage.setItem("fw_rightnow_size", rn);
+
+      applyNow(theme, rn);
+
+      // Tell app.js (and other pages) to re-apply settings
+      window.dispatchEvent(new Event("fw:settings"));
+
+      if (statusEl) statusEl.textContent = "Saved. Taking you back to Home…";
+      setTimeout(() => window.location.href = "index.html", 250);
+    }
+
+    function reset(){
+      localStorage.removeItem("fw_theme");
+      localStorage.removeItem("fw_rightnow_size");
+      if (statusEl) statusEl.textContent = "Reset to defaults (dark + normal).";
+      loadControls();
+      window.dispatchEvent(new Event("fw:settings"));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadControls();
+
+      // Preview live on settings page (optional but nice)
+      themeSelect?.addEventListener("change", () => applyNow(themeSelect.value, rightNowSize?.value || "1"));
+      rightNowSize?.addEventListener("input", () => applyNow(themeSelect?.value || "dark", rightNowSize.value));
+
+      document.getElementById("saveSettings")?.addEventListener("click", save);
+      document.getElementById("resetSettings")?.addEventListener("click", reset);
+    });
+  })();
+  </script>
+</body>
+</html>
