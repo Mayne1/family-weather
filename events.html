@@ -2,197 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Family Weather • Events</title>
+  <title>Events · Family Weather</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    :root{
-      --bg1:#020617; --bg2:#020617; --bg3:#0f172a;
-      --card:rgba(255,255,255,0.05);
-      --border:rgba(255,255,255,0.1);
-      --text:#fff; --muted:rgba(255,255,255,0.7);
-      --accent:#fff;
-      --chip:rgba(255,255,255,0.06);
-      --okbg:rgba(34,197,94,0.14); --okbd:rgba(34,197,94,0.25);
-      --warnbg:rgba(245,158,11,0.14); --warnbd:rgba(245,158,11,0.25);
-      --infobg:rgba(56,189,248,0.14); --infbd:rgba(56,189,248,0.25);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      background:linear-gradient(to bottom,var(--bg1),var(--bg2),var(--bg3));
-      color:var(--text);
-      min-height:100vh;
-    }
-    a{color:inherit;text-decoration:none}
-    .container{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
-
-    .topbar{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:12px 14px;border:1px solid var(--border);background:var(--card);
-      border-radius:18px;backdrop-filter:blur(6px);
-      position:sticky;top:12px;z-index:5;
-    }
-    .brand{display:flex;align-items:center;gap:10px;min-width:220px}
-    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
-    .brand strong{font-size:13px;letter-spacing:0.04em;text-transform:uppercase;opacity:.9}
-    .nav{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-    .nav a{
-      padding:8px 12px;border-radius:12px;border:1px solid var(--border);
-      background:transparent;font-size:13px;font-weight:600;opacity:.9;
-    }
-    .nav a.active{background:rgba(255,255,255,0.12)}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .btn{
-      padding:9px 14px;border-radius:14px;font-size:13px;font-weight:800;
-      border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;
-      display:inline-flex;align-items:center;justify-content:center;
-    }
-    .btn.primary{background:var(--accent);color:#020617;border:none}
-
-    header{margin:18px 0 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
-    .kicker{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
-    h1{margin:6px 0 0;font-size:26px;font-weight:650}
-    .subtitle{margin-top:6px;max-width:760px;font-size:14px;color:var(--muted)}
-
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{
-      padding:8px 10px;border-radius:999px;border:1px solid var(--border);
-      background:var(--chip);font-size:12px;color:rgba(255,255,255,0.85)
-    }
-
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid.cols-2{grid-template-columns:1fr 1fr}}
-
-    .card{
-      background:var(--card);border:1px solid var(--border);border-radius:18px;
-      padding:16px;backdrop-filter:blur(6px);
-    }
-    .card h2{margin:0 0 12px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;opacity:.9}
-
-    .event{
-      border:1px solid var(--border);
-      background:rgba(255,255,255,0.04);
-      border-radius:16px;
-      padding:12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .event-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
-    .event-title{font-weight:800;font-size:14px;line-height:1.25}
-    .event-meta{font-size:12px;color:var(--muted);line-height:1.4}
-    .pillrow{display:flex;gap:8px;flex-wrap:wrap}
-    .pill{
-      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;
-      border:1px solid var(--border);background:rgba(255,255,255,0.03);
-      color:rgba(255,255,255,0.9);
-    }
-    .pill.ok{background:var(--okbg);border-color:var(--okbd)}
-    .pill.warn{background:var(--warnbg);border-color:var(--warnbd)}
-    .pill.info{background:rgba(56,189,248,0.14);border-color:rgba(56,189,248,0.25)}
-
-    .event-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .mini{
-      padding:8px 10px;border-radius:12px;font-size:12px;font-weight:900;
-      border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;
-    }
-    .mini.primary{background:rgba(255,255,255,0.12)}
-
-    .empty{
-      border:1px dashed rgba(255,255,255,0.18);
-      background:rgba(255,255,255,0.03);
-      border-radius:16px;
-      padding:14px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    footer{margin-top:26px;font-size:12px;opacity:.45}
-  </style>
   <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-  <main class="container">
-    <div class="topbar">
-      <div class="brand">
-        <div class="dot" aria-hidden="true"></div>
-        <strong>Family Weather</strong>
-      </div>
-
-      <nav class="nav" aria-label="Primary">
-        <a href="index.html">Home</a>
-        <a href="dashboard.html">Dashboard</a>
-        <a class="active" href="events.html">Events</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-      </nav>
-
-      <div class="actions">
-        <a class="btn primary" href="dashboard.html">New event</a>
-      </div>
+<main class="wrap">
+  <header>
+    <div>
+      <div class="kicker">Family Weather</div>
+      <h1>Events</h1>
+      <p class="subtitle">Upcoming and past events (MVP). Invites + RSVPs next.</p>
     </div>
+    <div class="actions">
+      <a class="btn" href="/">Home</a>
+      <a class="btn primary" href="dashboard.html">Create event</a>
+      <a class="btn" href="about.html">About</a>
+      <a class="btn" href="contact.html">Contact</a>
+      <a class="btn" href="settings.html">⚙️ Settings</a>
+    </div>
+  </header>
 
-    <header>
-      <div>
-        <div class="kicker">Events</div>
-        <h1>Your plans, in one place.</h1>
-        <p class="subtitle">
-          (Pages-only MVP) Track what you created, what you accepted, and what needs your attention.
-        </p>
-      </div>
+  <section class="card">
+    <h2>Upcoming</h2>
+    <div id="upcomingList" class="tileGrid"></div>
+    <div id="upcomingEmpty" class="muted" style="display:none">No upcoming events. Create one on the Dashboard.</div>
+  </section>
 
-      <div class="chips" aria-label="Status">
-        <span class="chip">Created: <span id="createdCount">0</span></span>
-        <span class="chip">Accepted: <span id="acceptedCount">0</span></span>
-        <span class="chip">Awaiting RSVPs: <span id="awaitingCount">0</span></span>
-      </div>
-    </header>
+  <section class="card" style="margin-top:16px">
+    <h2>Past</h2>
+    <div id="pastList" class="tileGrid"></div>
+    <div id="pastEmpty" class="muted" style="display:none">No past events yet.</div>
+  </section>
 
-    <section class="grid cols-2">
-      <div class="card">
+  <footer>© <span id="year"></span> Family Weather</footer>
+</main>
 
-        <h2>Created by you</h2>
-
-        <div id="createdList"></div>
-
-        <div id="createdEmpty" class="empty" style="display:none">
-          No events yet. Create one on the dashboard, then come back here.
-        </div>
-
-      </div>
-
-      <div class="card">
-
-        <h2>Accepted / invited</h2>
-
-        <div id="acceptedList"></div>
-
-        <div id="acceptedEmpty" class="empty" style="display:none">
-          Nothing here yet. Drafts (saved on dashboard) will appear here for MVP.
-        </div>
-
-        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap">
-          <a class="btn primary" href="dashboard.html">Create your first event</a>
-          <a class="btn" href="index.html">Back home</a>
-        </div>
-
-      </div>
-    </section>
-
-    <footer>
-      © <span id="year"></span> Family Weather · Events (pages-only MVP)
-    </footer>
-  </main>
-
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
-  <script src="events.js" defer></script>
-  <script src="app.js" defer></script>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="app.js" defer></script>
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+document.addEventListener("DOMContentLoaded", () => {
+  window.FW.renderEventsSplit("upcomingList","upcomingEmpty","pastList","pastEmpty");
+});
+</script>
+  <script type="module" src="authGate.js"></script>
 </body>
 </html>

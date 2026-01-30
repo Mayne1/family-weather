@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Event · Family Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <div class="kicker">Family Weather</div>
+      <h1 id="evTitle">Event</h1>
+      <p class="subtitle" id="evSub">Loading…</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/">Home</a>
+      <a class="btn" href="dashboard.html">Dashboard</a>
+      <a class="btn" href="events.html">Events</a>
+      <a class="btn" href="settings.html">⚙️ Settings</a>
+    </div>
+  </header>
+
+  <section class="grid cols-3">
+    <div class="card">
+      <h2>Details</h2>
+      <div class="muted"><strong id="evWhen">—</strong></div>
+      <div class="muted" style="margin-top:6px"><strong id="evPlace">—</strong></div>
+      <div class="muted" style="margin-top:10px" id="evNotes"></div>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="events.html">Back to events</a>
+        <button class="btn" id="deleteBtn" type="button">Delete</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Weather Intelligence</h2>
+      <div id="wxState" class="muted">Loading forecast…</div>
+
+      <div id="wxBox" style="display:none">
+        <div class="row"><span>Forecast</span><span><strong id="wxSummary">—</strong></span></div>
+        <div class="row"><span>High / Low</span><span><strong id="wxHiLo">—</strong></span></div>
+        <div class="row"><span>Precip chance</span><span><strong id="wxPop">—</strong></span></div>
+        <div class="row"><span>Wind</span><span><strong id="wxWind">—</strong></span></div>
+
+        <div class="muted" style="margin-top:10px">
+          <strong>Almanac trend (MVP):</strong>
+          <span id="almText">—</span>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:8px;opacity:.85">
+        Almanac should still show even if forecast fails.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Invites</h2>
+      <div class="muted">(Next) Paste contacts, send SMS/email, track RSVPs.</div>
+    </div>
+  </section>
+
+  <footer>© <span id="year"></span> Family Weather</footer>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="authBox.js"></script>
+<script src="apiBox.js"></script>
+<script src="app.js" defer></script>
+
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const id = qs("id");
+  if (!id) { location.href = "events.html"; return; }
+
+  const ev = await window.FW.getEvent(id);
+  if (!ev) { location.href = "events.html"; return; }
+
+  document.getElementById("evTitle").textContent = ev.title;
+  document.getElementById("evSub").textContent = `${new Date(ev.whenISO).toLocaleString()} · ${ev.place}`;
+  document.getElementById("evWhen").textContent = new Date(ev.whenISO).toLocaleString();
+  document.getElementById("evPlace").textContent = ev.place;
+  document.getElementById("evNotes").textContent = ev.notes ? `Notes: ${ev.notes}` : "";
+
+  document.getElementById("deleteBtn").addEventListener("click", async () => {
+    if (!confirm("Delete this event?")) return;
+    await window.FW.deleteEvent(ev.id);
+    window.FW.toast("Deleted.");
+    location.href = "events.html";
+  });
+
+  try {
+    const out = await window.FW.getEventWeatherIntelligence(ev);
+    document.getElementById("wxState").style.display = "none";
+    document.getElementById("wxBox").style.display = "block";
+    document.getElementById("wxSummary").textContent = out.summary || "—";
+    document.getElementById("wxHiLo").textContent = out.hiLo || "—";
+    document.getElementById("wxPop").textContent = out.pop || "—";
+    document.getElementById("wxWind").textContent = out.wind || "—";
+    document.getElementById("almText").textContent = out.almanac || "—";
+  } catch(e){
+    document.getElementById("wxState").style.display = "none";
+    document.getElementById("wxBox").style.display = "block";
+    document.getElementById("wxSummary").textContent = "Unavailable";
+    document.getElementById("almText").textContent = "Try again later (provider/network).";
+  }
+});
+</script>
+  <script type="module" src="authGate.js"></script>
+</body>
+</html>

@@ -739,3 +739,288 @@ body.dashboard header .subtitle{
   border-color: rgba(239,68,68,.40);
   background: rgba(239,68,68,.14);
 }
+
+/* ==============================
+   FW_CONTRAST_PATCH (2026-01-29)
+   - Improves readability across themes
+   - Safe override appended at end
+   ============================== */
+
+/* Base text handling */
+html, body { color: var(--fw-text, #ffffff); }
+.muted, .subtitle { color: var(--fw-muted, rgba(255,255,255,.78)) !important; }
+
+/* Make “row” backgrounds a bit stronger so text doesn't wash out */
+.row { background: rgba(255,255,255,.06) !important; }
+
+/* Improve inputs/select/textarea readability */
+input, textarea, select{
+  color: var(--fw-text, #fff) !important;
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+input::placeholder, textarea::placeholder{ color: rgba(255,255,255,.55) !important; }
+
+/* Light theme: force dark text + stronger borders */
+html[data-theme="light"]{
+  --fw-text: #0b1220;
+  --fw-muted: rgba(2,6,23,.72);
+}
+html[data-theme="light"] body{
+  color: var(--fw-text) !important;
+}
+html[data-theme="light"] .card{
+  background: rgba(255,255,255,.92) !important;
+  border-color: rgba(2,6,23,.12) !important;
+}
+html[data-theme="light"] .row{
+  background: rgba(2,6,23,.05) !important;
+}
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select{
+  color: #0b1220 !important;
+  background: rgba(2,6,23,.04) !important;
+  border-color: rgba(2,6,23,.14) !important;
+}
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder{
+  color: rgba(2,6,23,.52) !important;
+}
+
+/* ==============================
+   FW_HOME_UPCOMING_TILES (2026-01-29)
+   - Keeps upcoming event tiles compact
+   ============================== */
+
+/* If your tile container uses any of these ids/classes, this will catch it */
+#fwUpcoming, #upcomingEvents, .fwUpcoming, .fwEventTiles {
+  display:grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 12px !important;
+}
+
+.fwEventTile, .fwUpcomingTile, .eventTile {
+  max-width: 520px;
+  padding: 12px 12px !important;
+  border-radius: 16px !important;
+}
+
+/* If a “red” state exists, keep it strong but not obnoxious */
+.fwEventTile.is-red, .fwUpcomingTile.is-red, .eventTile.is-red {
+  background: rgba(239,68,68,.14) !important;
+  border-color: rgba(239,68,68,.30) !important;
+}
+
+/* =========================
+   FW_MVP_TEXT_BOOST (global)
+   Makes small helper/MVP text bigger + bolder + more readable everywhere
+   ========================= */
+.muted{
+  font-size: 14.5px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.01em !important;
+  opacity: 0.92 !important;
+  line-height: 1.35 !important;
+}
+
+/* Any inline MVP helper lines often have extra opacity — bump readability */
+.muted[style*="opacity"]{
+  opacity: 0.92 !important;
+}
+
+/* =========================
+   FW_EVENTS_MVP
+   ========================= */
+.input, .select{
+  width:100%;
+  padding:12px 12px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:inherit;
+  outline:none;
+}
+.input:focus, .select:focus{ box-shadow:0 0 0 3px rgba(56,189,248,.15); border-color: rgba(56,189,248,.35); }
+
+.formGrid{ display:grid; gap:12px; }
+@media(min-width:900px){ .formGrid.cols2{ grid-template-columns: 1fr 1fr; } }
+
+.kbdHint{ font-size:12px; opacity:.75; }
+
+.toast{
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+  background:rgba(2,6,23,.9);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  border-radius:14px;
+  font-size:13px;
+  opacity:0; pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+}
+.toast.on{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+.tileGrid{ display:grid; gap:10px; }
+@media(min-width:900px){ .tileGrid{ grid-template-columns:repeat(2,1fr); } }
+
+.tile{
+  display:block;
+  padding:12px 12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+}
+.tile strong{ display:block; font-size:15px; }
+.tile .muted{ margin-top:4px; }
+
+/* =========================
+   FW_THEME_V1 (A)
+   Deep rich color, low contrast, light/dark mode
+   ========================= */
+
+:root{
+  --fw-accent:#7c3aed;
+  --fw-accent2:#06b6d4;
+
+  --fw-bg1:#050816;
+  --fw-bg2:#08112a;
+  --fw-bg3:#0b1b3a;
+
+  --fw-card: rgba(255,255,255,.06);
+  --fw-border: rgba(255,255,255,.12);
+  --fw-muted: rgba(255,255,255,.72);
+  --fw-text: #ffffff;
+}
+
+html[data-theme="midnight"]{
+  --bg1: var(--fw-bg1);
+  --bg2: var(--fw-bg2);
+  --bg3: var(--fw-bg3);
+  --card: var(--fw-card);
+  --border: var(--fw-border);
+  --muted: var(--fw-muted);
+  color-scheme: dark;
+}
+
+html[data-theme="daylight"]{
+  --bg1:#f6f7fb;
+  --bg2:#eef2ff;
+  --bg3:#e6f7ff;
+  --card: rgba(0,0,0,.04);
+  --border: rgba(0,0,0,.10);
+  --muted: rgba(0,0,0,.62);
+  --ring: rgba(0,0,0,.12);
+  color-scheme: light;
+}
+
+body{
+  background:
+    radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.25), transparent 55%),
+    radial-gradient(900px 500px at 85% 20%, rgba(6,182,212,.18), transparent 60%),
+    linear-gradient(to bottom, var(--bg1), var(--bg2), var(--bg3));
+}
+
+.card{
+  backdrop-filter: blur(6px);
+}
+
+.btn.primary{
+  background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(6,182,212,.75));
+  color:#fff;
+}
+
+.row{
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+html[data-theme="daylight"] .row{
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+.aqiChip{
+  border: 1px solid var(--border);
+}
+
+
+/* =========================
+   FW_EVENT_COLORS_V1
+   Upcoming: green -> yellow -> red
+   Past: muted
+   ========================= */
+
+.tileGrid .tile{
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle left accent bar */
+.tileGrid .tile::before{
+  content:"";
+  position:absolute; left:0; top:0; bottom:0;
+  width:6px;
+  opacity:.9;
+  background: rgba(148,163,184,.35);
+}
+
+/* FAR OUT (green) */
+.tileGrid .tile.ev-good{
+  border-color: rgba(34,197,94,.22);
+  background: rgba(34,197,94,.06);
+}
+.tileGrid .tile.ev-good::before{ background: rgba(34,197,94,.70); }
+
+/* SOON (yellow) */
+.tileGrid .tile.ev-soon{
+  border-color: rgba(245,158,11,.24);
+  background: rgba(245,158,11,.07);
+}
+.tileGrid .tile.ev-soon::before{ background: rgba(245,158,11,.78); }
+
+/* URGENT (red) */
+.tileGrid .tile.ev-urgent{
+  border-color: rgba(239,68,68,.26);
+  background: rgba(239,68,68,.07);
+}
+.tileGrid .tile.ev-urgent::before{ background: rgba(239,68,68,.80); }
+
+/* PAST (muted) */
+.tileGrid .tile.ev-past{
+  opacity: .78;
+  border-color: rgba(148,163,184,.18);
+  background: rgba(148,163,184,.05);
+}
+.tileGrid .tile.ev-past::before{ background: rgba(148,163,184,.55); }
+
+
+/* FW_EVENT_COLORS_OVERRIDE_V1 — apply colors to .tile anywhere */
+.tile{
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.tile::before{
+  content:"";
+  position:absolute; left:0; top:0; bottom:0;
+  width:6px; opacity:.9;
+  background: rgba(148,163,184,.35);
+}
+.tile.ev-good{ border-color: rgba(34,197,94,.22); background: rgba(34,197,94,.06); }
+.tile.ev-good::before{ background: rgba(34,197,94,.70); }
+
+.tile.ev-soon{ border-color: rgba(245,158,11,.24); background: rgba(245,158,11,.07); }
+.tile.ev-soon::before{ background: rgba(245,158,11,.78); }
+
+.tile.ev-urgent{ border-color: rgba(239,68,68,.26); background: rgba(239,68,68,.07); }
+.tile.ev-urgent::before{ background: rgba(239,68,68,.80); }
+
+.tile.ev-past{ opacity:.78; border-color: rgba(148,163,184,.18); background: rgba(148,163,184,.05); }
+.tile.ev-past::before{ background: rgba(148,163,184,.55); }
+

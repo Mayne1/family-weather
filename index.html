@@ -1,3 +1,4 @@
+<!-- FW_UI_1769747025_9507 -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -236,7 +237,11 @@
     <a class="btn" href="about.html">About</a>
     <a class="btn" href="contact.html">Contact</a>
       <a class="btn" href="settings.html">⚙️ Settings</a>
-  </div>
+  
+    <a class="btn" id="navSignIn" href="login.html">Sign in / Sign up</a>
+    <a class="btn" id="navDashboard" href="dashboard.html" style="display:none">Dashboard</a>
+    <button class="btn" id="navSignOut" type="button" style="display:none">Sign out</button>
+</div>
 </header>
 
 <section class="grid cols-3">
@@ -299,8 +304,15 @@
       </div>
     </div>
 
-    <div class="muted" style="margin-top:8px; opacity:.85">(MVP) Animated icon based on current conditions.</div>
-  </div>
+    <div class="muted" style="margin-top:8px; opacity:.85">
+(MVP) Animated icon based on current conditions.</div>
+  
+    <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,.12); padding-top:12px">
+      <h3 style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.04em">Fab 5 cities</h3>
+      <div id="cities" class="fabGrid"></div>
+      <div class="muted" style="margin-top:10px;opacity:.85">Click a city to update “Right now” + full 10-day.</div>
+    </div>
+</div>
 
   <!-- 10-day forecast -->
   <div class="card">
@@ -317,22 +329,21 @@
   </div>
 </section>
 
+
+<!-- ===== FW_HOME_EVENT_TILES_CARD ===== -->
+    
 <section class="card" style="margin-top:16px">
-  <h2>Fab 5 cities</h2>
-  <div id="cities" class="fabGrid"></div>
-  <div class="muted" style="margin-top:10px;opacity:.85">Click a city to update “Right now” + full 10-day.</div>
+  <h2>Upcoming events</h2>
+  <div id="homeAuthMsg" class="muted" style="display:none;margin:10px 0">Sign in to see your events.</div>
+  <div id="homeUpcoming" class="tileGrid"></div>
+  <div id="homeUpcomingEmpty" class="muted" style="display:none">No upcoming events yet. Create one from the Dashboard.</div>
 </section>
 
-
-    <!-- ===== FW_HOME_EVENT_TILES_CARD ===== -->
-    <section class="card" id="homeUpcomingCard" style="margin-top:16px">
-      <h2>Upcoming events</h2>
-      <div class="muted">Your next 4 plans. (Green → RSVP open, Yellow → RSVP closed, Red → coming up soon.)</div>
-      <div id="upcomingEvents" class="eventTiles" aria-label="Upcoming events"></div>
-      <div id="upcomingEmpty" class="muted" style="margin-top:10px; opacity:.75; display:none">
-        No upcoming events yet. Create one on the Dashboard.
-      </div>
-    </section>
+<section class="card" style="margin-top:16px">
+  <h2>Past events</h2>
+  <div id="homePast" class="tileGrid"></div>
+  <div id="homePastEmpty" class="muted" style="display:none">No past events yet.</div>
+</section>
 
 <footer>© <span id="year"></span> Family Weather</footer>
 </main>
@@ -342,5 +353,15 @@
 
   <script src="app.js?v=1769667575" defer></script>
   <script src="home.js?v=1769667575" defer></script>
+<script>
+/* FW_HOME_EVENTS_RENDER */
+document.addEventListener("DOMContentLoaded",()=>{
+  if(window.FW && window.FW.renderHomeEvents){
+    window.FW.renderHomeEvents("homeUpcoming","homeUpcomingEmpty","homePast","homePastEmpty");
+  }
+});
+</script>
+  <script type="module" src="authNav.js"></script>
+  <script type="module" src="authHome.js"></script>
 </body>
 </html>
