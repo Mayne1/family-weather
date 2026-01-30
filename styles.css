@@ -1024,3 +1024,41 @@ html[data-theme="daylight"] .row{
 .tile.ev-past{ opacity:.78; border-color: rgba(148,163,184,.18); background: rgba(148,163,184,.05); }
 .tile.ev-past::before{ background: rgba(148,163,184,.55); }
 
+/* ========================= FW_LOGIN_POLISH_V1 ========================= */ .authPage{ min-height: 100vh; background: radial-gradient(1200px 600px at 15% 10%, 
+    rgba(124,58,237,.25), transparent 55%), radial-gradient(900px 500px at 85% 20%, rgba(6,182,212,.18), transparent 60%), linear-gradient(to bottom, var(--bg1), 
+    var(--bg2), var(--bg3));
+}
+.topbar .wrap{ max-width: 1100px; margin: 0 auto; padding: 16px 18px; display:flex; align-items:center; justify-content:space-between;
+}
+.brand{ font-weight:900; letter-spacing:.4px; opacity:.9; } .authWrap{ display:flex; align-items:center; justify-content:center; padding: 26px 16px 60px;
+}
+.authCard{ width: min(520px, 92vw); padding: 18px 18px 16px; border: 1px solid var(--border); background: var(--card); border-radius: 18px;
+}
+.authTitle{ margin: 4px 0 2px; font-size: 26px; } .authSub{ margin: 0 0 14px; } .authTabs{ display:flex; gap:10px; margin: 10px 0 14px;
+}
+.tab{ flex:1; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: inherit; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-weight: 
+  800;
+}
+.tab.active{ border-color: rgba(124,58,237,.45); background: rgba(124,58,237,.12);
+}
+.field{ margin: 10px 0; } .field label{ display:block; font-size: 13px; opacity:.85; margin: 0 0 6px; } .inputIcon{ display:flex; align-items:center; gap:10px; border: 1px 
+  solid var(--border); background: rgba(255,255,255,.04); border-radius: 12px; padding: 10px 12px;
+}
+.inputIcon input{ width:100%; background: transparent; border:0; outline:0; color: inherit; font-size: 15px;
+}
+.ico{ opacity:.85; } .authActions{ display:flex; gap:10px; margin-top: 10px;
+}
+.authActions .btn{ flex:1;
+}
+.authDivider{ display:flex; align-items:center; gap:12px; margin: 14px 0; opacity: .8;
+}
+.authDivider::before, .authDivider::after{ content:""; flex:1; height:1px; background: rgba(255,255,255,.16);
+}
+.authDivider span{ font-size: 12px; text-transform: uppercase; letter-spacing: .12em;
+}
+.btn.google{ display:flex; align-items:center; justify-content:center; gap:10px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06);
+}
+.gDot{ width: 14px; height: 14px; border-radius: 50%; background: conic-gradient(#4285F4 0 25%, #34A853 0 50%, #FBBC05 0 75%, #EA4335 0 100%);
+}
+.authMsg{ white-space: pre-wrap; }
+.tiny{ font-size: 12px; }
