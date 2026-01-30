@@ -14,11 +14,38 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// If you're not signed in, bounce to login.
-// Keep the page you asked for in ?next= so we can return you after login.
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    const next = encodeURIComponent(location.pathname.replace(/^\//,"") + location.search);
-    location.href = `login.html?next=${next}`;
+// Optional: show a quick “checking auth…” message if the page has #msg
+function show(msg){
+  const el = document.getElementById("msg");
+  if(el){
+    el.style.display = "block";
+    el.textContent = msg;
   }
+}
+
+show("Checking sign-in…");
+
+const next = encodeURIComponent(location.pathname + location.search + location.hash);
+
+let decided = false;
+onAuthStateChanged(auth, (user) => {
+  if (decided) return;
+  decided = true;
+
+  if (user) {
+    // Signed in — allow page to render
+    const el = document.getElementById("msg");
+    if(el) el.style.display = "none";
+    return;
+  }
+
+  // Not signed in — go login
+  location.href = `login.html?next=${next}`;
 });
+
+// Failsafe: if auth never responds (rare), don’t trap forever
+setTimeout(() => {
+  if (!decided) location.href = `login.html?next=${next}`;
+}, 4000);
+
+console.log("authGate.js loaded");

@@ -136,5 +136,18 @@
   })();
   </script>
   <script type="module" src="authGate.js"></script>
+
+    <div id="pwBox" class="card" style="margin-top:16px; display:none">
+      <h3>Set a password (so you don’t have to use Google)</h3>
+      <p class="muted">Create a password for this same account. Must be 8+ chars with upper/lower/number/symbol.</p>
+      <div style="display:grid; gap:10px; max-width:420px;">
+        <input id="newPw" type="password" placeholder="New password" />
+        <input id="newPw2" type="password" placeholder="Re-type new password" />
+        <button class="btn" id="setPwBtn" type="button">Set password</button>
+        <div id="pwMsg" class="muted" style="display:none"></div>
+      </div>
+    </div>
+    
+  <script type="module" src="setPassword.js"></script>
 </body>
 </html>

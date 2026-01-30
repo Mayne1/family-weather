@@ -1,20 +1,64 @@
-<!doctype html> <html lang="en" data-theme="midnight"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width,initial-scale=1" /> <title>Sign in 
-  — Family Weather</title> <link rel="stylesheet" href="styles.css" />
-</head> <body class="authPage"> <header class="topbar"> <div class="wrap"> <div class="brand">Family Weather</div> <div class="actions"> <a class="btn" href="/">Home</a> 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sign in · Family Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="kicker">Family Weather</div>
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in to create events, invite people, and manage your dashboard.</p>
       </div>
-    </div> </header> <main class="authWrap"> <section class="authCard card"> <h1 class="authTitle">Sign in</h1> <p class="muted authSub">Use email + password, or 
-      Google.</p> <div class="authTabs">
-        <button id="tabSignIn" class="tab active" type="button">Sign in</button> <button id="tabSignUp" class="tab" type="button">Create account</button> </div> <div 
-      class="field">
-        <label for="email">Email</label> <div class="inputIcon"> <span class="ico" aria-hidden="true">✉️</span> <input id="email" autocomplete="email" 
-          placeholder="you@email.com" />
-        </div> </div> <div class="field"> <label for="password">Password</label> <div class="inputIcon"> <span class="ico" aria-hidden="true">🔒</span> <input id="password" 
-          type="password" autocomplete="current-password" placeholder="••••••••" />
-        </div> </div> <div id="confirmWrap" class="field" style="display:none"> <label for="confirm">Confirm password</label> <div class="inputIcon"> <span class="ico" 
-          aria-hidden="true">✅</span> <input id="confirm" type="password" autocomplete="new-password" placeholder="••••••••" />
-        </div> <div class="muted tiny"> Minimum 8 chars. (We’ll add stronger rules next.) </div> </div> <div class="authActions"> <button id="loginBtn" class="btn primary" 
-        type="button">Sign in</button> <button id="signupBtn" class="btn" type="button" style="display:none">Create account</button>
-      </div> <div class="authDivider"><span>or</span></div> <button id="googleBtn" class="btn google" type="button"> <span class="gDot" aria-hidden="true"></span> Continue 
-        with Google
-      </button> <div id="msg" class="muted authMsg" style="display:none;margin-top:12px"></div> </section> </main> <script type="module" src="/login.js"></script> </body>
+      <div class="actions">
+        <a class="btn" href="/">Home</a>
+        <a class="btn" href="dashboard.html">Dashboard</a>
+      </div>
+    </header>
+
+    <section class="grid cols-2" style="margin-top:16px">
+      <div class="card">
+        <h2>Email + password</h2>
+
+        <label class="muted" for="email" style="display:block;margin-top:8px">Email</label>
+        <input id="email" type="email" autocomplete="email" placeholder="you@domain.com"
+               style="width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text, #fff)">
+
+        <label class="muted" for="password" style="display:block;margin-top:12px">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••"
+               style="width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text, #fff)">
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn primary" id="loginBtn" type="button">Sign in</button>
+          <button class="btn" id="signupBtn" type="button">Create account</button>
+        </div>
+
+        <div class="muted" style="margin-top:10px;opacity:.85">
+          If you already used Google with this email, click <strong>Sign in</strong> (not Create account).
+        </div>
+
+        <div id="msg" class="muted" style="display:none;margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <h2>Or</h2>
+        <p class="muted">Use Google when you don’t want to type a password on this device.</p>
+        <button class="btn" id="googleBtn" type="button">Sign in with Google</button>
+
+        <div class="muted" style="margin-top:12px;opacity:.85">
+          (Mobile tip) Google often uses a redirect flow — that’s normal.
+        </div>
+      </div>
+    </section>
+
+    <footer>© <span id="year"></span> Family Weather</footer>
+  </main>
+
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+  <script type="module" src="/login.js"></script>
+</body>
 </html>

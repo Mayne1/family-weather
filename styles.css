@@ -1062,3 +1062,15 @@ html[data-theme="daylight"] .row{
 }
 .authMsg{ white-space: pre-wrap; }
 .tiny{ font-size: 12px; }
+
+/* --- Fix Chrome autofill turning inputs white --- */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text, #e9eefc) !important;
+  transition: background-color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px rgba(20, 24, 40, 0.85) inset !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
