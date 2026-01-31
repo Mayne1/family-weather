@@ -9,7 +9,7 @@ if (window.authBox) {
       location.pathname.includes("event");
 
     if (needsAuth && !user) {
-      location.href = "/login.html";
+      location.href = "/signin.html";
     }
   });
 }

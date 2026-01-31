@@ -40,12 +40,12 @@ onAuthStateChanged(auth, (user) => {
   }
 
   // Not signed in — go login
-  location.href = `login.html?next=${next}`;
+  location.href = `signin.html?next=${next}`;
 });
 
 // Failsafe: if auth never responds (rare), don’t trap forever
 setTimeout(() => {
-  if (!decided) location.href = `login.html?next=${next}`;
+  if (!decided) location.href = `signin.html?next=${next}`;
 }, 4000);
 
 console.log("authGate.js loaded");

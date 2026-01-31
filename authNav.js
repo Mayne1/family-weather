@@ -38,7 +38,7 @@ function ensureUserChip(){
     signInLink = document.createElement("a");
     signInLink.className = "btn";
     signInLink.id = "navSignIn";
-    signInLink.href = "login.html";
+    signInLink.href = "signin.html";
     signInLink.textContent = "Sign in / Sign up";
     actions.appendChild(signInLink);
   }

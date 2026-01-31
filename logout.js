@@ -18,6 +18,6 @@ const btn = document.getElementById("signOutBtn");
 if (btn) {
   btn.addEventListener("click", async () => {
     await signOut(auth);
-    location.href = "login.html";
+    location.href = "signin.html";
   });
 }
