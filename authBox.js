@@ -10,7 +10,7 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
   updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -59,5 +59,12 @@ const authBox = {
 
 window.authBox = authBox;
 
-// Added for module reuse (signup/signin pages)
-export { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut };
+/* Module exports for reuse (signup/signin pages) */
+export {
+  auth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged,
+  signOut
+};
