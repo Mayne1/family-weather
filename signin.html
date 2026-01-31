@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Family Weather — Sign in</title>
+  <link rel="stylesheet" href="/auth-ui.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="h1">Sign in</div>
+      <p class="p">Use your email and password to access your family group.</p>
+
+      <label>Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+
+      <div style="height:12px"></div>
+
+      <label>Password</label>
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Password" />
+
+      <div style="height:14px"></div>
+
+      <button id="btnSignIn" class="btn primary">Sign in</button>
+      <button id="btnGoSignup" class="btn ghost" style="margin-top:10px" onclick="location.href='/signup.html'">Sign up</button>
+
+      <div id="msg" class=""></div>
+    </div>
+  </div>
+
+  <script>
+    // If your existing app already has a sign-in system, keep using it.
+    // This page is a clean entry point + a clean link to signup.
+    // You can wire this to your existing sign-in JS later (or we can do it next).
+  </script>
+</body>
+</html>

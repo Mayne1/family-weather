@@ -149,5 +149,35 @@
     </div>
     
   <script type="module" src="setPassword.js"></script>
+
+    <div id="baseLocBox" class="card" style="margin-top:16px">
+      <h3>Base location</h3>
+      <p class="muted">Choose how the site picks your local weather + alerts.</p>
+
+      <div style="display:grid; gap:10px; max-width:520px;">
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input type="radio" name="baseMode" id="baseModeDevice" checked />
+          <span>Use my device location (asks permission)</span>
+        </label>
+
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input type="radio" name="baseMode" id="baseModeHome" />
+          <span>Use Home ZIP from settings</span>
+        </label>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <input id="homeZip" inputmode="numeric" maxlength="5" placeholder="Home ZIP (e.g., 95206)" style="max-width:220px" />
+          <button class="btn" id="saveZipBtn" type="button">Save Home ZIP</button>
+          <button class="btn" id="useDeviceBtn" type="button">Use device location</button>
+          <button class="btn" id="clearBaseBtn" type="button">Clear</button>
+        </div>
+
+        <div id="baseLocCurrent" class="muted"></div>
+        <div id="baseLocMsg" class="muted" style="display:none"></div>
+      </div>
+    </div>
+    
+  <script src="baseLocation.js" defer></script>
+  <script type="module" src="authNav.js"></script>
 </body>
 </html>

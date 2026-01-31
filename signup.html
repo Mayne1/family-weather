@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Family Weather — Sign up</title>
+  <link rel="stylesheet" href="/auth-ui.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="h1">Create your account</div>
+      <p class="p">Email + password, and (optional) a username your invited people will see.</p>
+
+      <div class="row">
+        <div>
+          <label>Email</label>
+          <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+        </div>
+        <div>
+          <label>Username (optional)</label>
+          <input id="username" type="text" autocomplete="nickname" placeholder="Manx" />
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="row">
+        <div>
+          <label>Password</label>
+          <input id="pw1" type="password" autocomplete="new-password" placeholder="Password" />
+        </div>
+        <div>
+          <label>Confirm password</label>
+          <input id="pw2" type="password" autocomplete="new-password" placeholder="Confirm" />
+        </div>
+      </div>
+
+      <div style="height:14px"></div>
+
+      <button id="btnCreate" class="btn primary">Create account</button>
+      <div class="small">
+        Already have an account? <a href="/signin.html">Back to sign in</a>
+      </div>
+
+      <div id="msg" class=""></div>
+    </div>
+  </div>
+
+  <!-- This assumes your site already loads Firebase in the existing app.
+       If your Firebase init lives in a file, we’ll reuse it in signup.js by scanning for it. -->
+    <script type="module" src="/signup.js"></script>
+</body>
+</html>

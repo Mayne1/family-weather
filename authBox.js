@@ -57,3 +57,6 @@ const authBox = {
 };
 
 window.authBox = authBox;
+
+// Added for module reuse (signup/signin pages)
+export { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut };

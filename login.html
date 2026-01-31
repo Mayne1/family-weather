@@ -25,11 +25,13 @@
         <h2>Email + password</h2>
 
         <label class="muted" for="email" style="display:block;margin-top:8px">Email</label>
-        <input id="email" type="email" autocomplete="email" placeholder="you@domain.com"
+        <input id="email" placeholder="Email" />
+  <input id="username" placeholder="Username (optional)" type="email" autocomplete="email" placeholder="you@domain.com"
                style="width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text, #fff)">
 
         <label class="muted" for="password" style="display:block;margin-top:12px">Password</label>
-        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••"
+        <input id="password" type="password" placeholder="Password" />
+  <input id="password2" type="password" placeholder="Re-type password (for sign up)" autocomplete="current-password" placeholder="••••••••"
                style="width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text, #fff)">
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
@@ -59,6 +61,8 @@
   </main>
 
   <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+  <script type="module" src="authNav.js"></script>
+<div class="small" style="text-align:center;margin:18px 0 0;"><a href="/signup.html">Create an account</a></div>
   <script type="module" src="/login.js"></script>
 </body>
 </html>
