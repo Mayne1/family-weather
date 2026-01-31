@@ -36,7 +36,6 @@ async function createAccount() {
     const cred = await createUserWithEmailAndPassword(auth, email, pw1);
     const user = cred?.user;
 
-    // Optional display name (Firebase Auth profile)
     if (user && username) {
       try { await updateProfile(user, { displayName: username }); } catch {}
       localStorage.setItem("fw_username", username);

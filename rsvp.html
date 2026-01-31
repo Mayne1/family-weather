@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RSVP</title>
+  <link rel="stylesheet" href="/auth-ui.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="h1">RSVP</div>
+      <p id="eventLine" class="p">Loading invite…</p>
+
+      <label>Your name</label>
+      <input id="name" type="text" placeholder="Your name" />
+
+      <div style="height:12px"></div>
+
+      <label>Email (optional)</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+
+      <div style="height:12px"></div>
+
+      <label>Response</label>
+      <select id="response">
+        <option value="yes">Yes</option>
+        <option value="maybe">Maybe</option>
+        <option value="no">No</option>
+      </select>
+
+      <div style="height:12px"></div>
+
+      <label>Guests count</label>
+      <input id="guests_count" type="number" min="0" value="0" />
+
+      <div style="height:12px"></div>
+
+      <label>Message (optional)</label>
+      <textarea id="message" rows="3" placeholder="Anything you want to add"></textarea>
+
+      <div style="height:14px"></div>
+
+      <button id="btnSend" class="btn primary">Send RSVP</button>
+
+      <div style="height:12px"></div>
+      <div id="msg" class=""></div>
+    </div>
+  </div>
+
+  <script type="module" src="/rsvp.js"></script>
+</body>
+</html>

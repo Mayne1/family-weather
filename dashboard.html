@@ -72,7 +72,7 @@
       <textarea id="notes" rows="3" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff"></textarea>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-        <button id="createBtn" class="btn primary" type="submit" disabled>Create event</button>
+        <button type="button" id="createBtn" class="btn primary" disabled>Create event</button>
       </div>
 
       <div id="err" class="muted" style="margin-top:10px;color:rgba(239,68,68,.95)"></div>
@@ -95,6 +95,8 @@
 <script src="app.js" defer></script>
 
 <script>
+
+  let __creatingEvent = false;
 document.getElementById("year").textContent = new Date().getFullYear();
 
 function toast(msg){
@@ -156,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       stateEl.textContent = "Not verified.";
       errEl.textContent = "Could not locate ZIP. Try a valid 5-digit US ZIP.";
     }
+    __creatingEvent = false;
   });
 
   document.getElementById("eventForm").addEventListener("submit", async (e) => {
