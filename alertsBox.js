@@ -160,22 +160,4 @@
     }catch(e){
       // ignore, fallback next
     }
-
-    // 2) Fallback to server-generated /alerts.json (CALFIRE etc.)
-    try{
-      const j = await fetchJSON(`/alerts.json?ts=${Date.now()}`);
-      const items = Array.isArray(j.items) ? j.items : [];
-      if(!items.length){
-        const err = j.nwsError || j.calfireError;
-        render(box, [], err ? "Alerts unavailable right now." : "No active alerts.");
-        return;
-      }
-      render(box, items, "");
-    }catch(e){
-      render(box, [], "Alerts unavailable right now.");
-      console.warn("alertsBox failed:", e);
-    }
   }
-
-  document.addEventListener("DOMContentLoaded", load);
-})();
