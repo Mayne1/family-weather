@@ -1,0 +1,220 @@
+/* polish.css - FW_POLISH_V1 */
+
+/* Global contrast + weight */
+body{ font-weight:600; }
+.muted{ color: rgba(255,255,255,.84) !important; }
+.card h2{ font-weight:900; }
+.kicker{ opacity:.8; }
+
+h1{
+  font-size:34px !important;
+  font-weight:900 !important;
+  letter-spacing:-.02em;
+  margin-top:8px;
+}
+.subtitle{
+  font-size:15px !important;
+  color: rgba(255,255,255,.88) !important;
+  max-width: 980px !important;
+}
+
+/* Make the top 3 cards feel equally “filled” */
+@media(min-width:900px){
+  .grid.cols-3 > .card{ min-height: 320px; }
+}
+
+/* Heads-up: if it’s short, it still looks intentional */
+#headsUpList:empty::before{
+  content:"All clear right now. No heads-up items.";
+  display:block;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.88);
+  font-weight:800;
+}
+
+/* Clock readability */
+#clock{
+  font-weight:900 !important;
+  opacity:1 !important;
+  text-shadow:0 1px 0 rgba(0,0,0,.35);
+}
+
+/* Buttons readability */
+.btn{
+  font-weight:900 !important;
+  color: rgba(255,255,255,.96) !important;
+}
+.btn.primary{
+  color:#020617 !important;
+}
+
+/* Fab grid spacing */
+.fabGrid{ gap:10px !important; }
+.row{ font-weight:800; }
+
+/* Footer: make sure it exists and is readable */
+footer{
+  opacity:.7 !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* === FW_POLISH_V2: Right Now art positioning + prominence === */
+.wxArt{ height:140px !important; } /* a bit more breathing room */
+.wxCloud{
+  left:56px !important;  /* move left so it doesn't clip */
+  top:44px !important;
+  opacity:1 !important;
+}
+.wxSun, .wxMoon{ left:14px !important; }  /* keep main orb left-aligned */
+.wxBolt{ left:142px !important; }         /* nudge lightning with cloud */
+
+/* Make the art read more “premium” */
+.wxArt{
+  background:
+    radial-gradient(160px 110px at 18% 30%, rgba(255,255,255,.14), rgba(255,255,255,0)),
+    linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* === FW_POLISH_V2: header prominence === */
+header{
+  align-items:flex-start !important;
+}
+h1{
+  font-size:40px !important;
+  line-height:1.05 !important;
+  max-width: 980px !important;
+}
+.subtitle{
+  font-size:16px !important;
+  max-width: 980px !important;
+  opacity: .95 !important;
+}
+.actions{
+  margin-top: 8px !important;
+}
+.metaRow .pill strong{
+  font-weight:900 !important;
+}
+
+/* Make the top area feel less “tiny corner” */
+.wrap{ padding-top:26px !important; }
+
+/* === FW_POLISH_V2: subtle premium glow === */
+.card{
+  box-shadow:
+    0 12px 36px rgba(0,0,0,.25),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius:18px;
+  pointer-events:none;
+  background: radial-gradient(280px 160px at 20% 10%, rgba(255,255,255,.08), rgba(255,255,255,0));
+  opacity:.9;
+}
+
+/* === FW_SCALE_V1: bigger cards + text on desktop/tablet === */
+@media (min-width: 900px){
+  /* Cards feel more "app-like" */
+  .grid.cols-3 > .card{ min-height: 360px !important; padding: 18px !important; }
+
+  /* Right Now: time + location bigger */
+  #clock{ font-size: 18px !important; }
+  #place{ font-size: 16px !important; font-weight: 900 !important; }
+
+  /* Temperature bigger */
+  .temp{ font-size: 62px !important; }
+
+  /* Section titles */
+  .card h2{ font-size: 14px !important; }
+
+  /* Heads-up content readability */
+  #headsUpList .row, #headsUpList, .alertsList{ font-size: 14px !important; }
+
+  /* 10-day rows bigger */
+  #forecast .row{ font-size: 14px !important; padding: 10px 12px !important; }
+}
+
+/* === FW_BRAND_V1: hero/header presence === */
+header{
+  margin-bottom: 26px !important;
+}
+.kicker{
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  opacity: .9 !important;
+}
+h1{
+  font-size: 44px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.03em !important;
+  margin-top: 10px !important;
+}
+.subtitle{
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  opacity: .95 !important;
+}
+
+/* Make hero text span the same "visual width" as the nav/actions */
+header > div:first-child{
+  max-width: 980px !important;
+}
+
+/* Buttons look more premium */
+.btn{
+  border-radius: 16px !important;
+  padding: 11px 16px !important;
+  backdrop-filter: blur(6px);
+}
+
+/* === FW_BG_V1: premium depth without clutter === */
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 480px at 18% 10%, rgba(255,255,255,.08), rgba(255,255,255,0)),
+    radial-gradient(700px 420px at 88% 18%, rgba(56,189,248,.08), rgba(255,255,255,0)),
+    radial-gradient(900px 520px at 60% 90%, rgba(34,197,94,.05), rgba(255,255,255,0));
+  opacity: .9;
+  mix-blend-mode: screen;
+}
+body::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: .04; /* subtle texture */
+}
+
+/* === FW_RN_STAR_V1: make Right Now the hero card === */
+@media (min-width: 900px){
+  .grid.cols-3 > .card:first-child{
+    transform: translateY(-2px);
+  }
+  #clock{
+    font-size: 20px !important;
+    letter-spacing: .02em;
+  }
+  #place{
+    font-size: 18px !important;
+    font-weight: 950 !important;
+  }
+  .temp{
+    font-size: 70px !important;
+  }
+  .wxIconWrap img, #wxIcon{
+    width: 54px !important;
+    height: 54px !important;
+  }
+}
