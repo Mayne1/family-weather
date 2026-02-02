@@ -1,10 +1,11 @@
-<!-- FW_UI_1769747025_9507 -->
+<!-- FW_UI_HOME_HEADSUP_GRID_V2 -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Family Weather</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     :root{
       --bg1:#020617;--bg2:#020617;--bg3:#0f172a;
@@ -21,7 +22,8 @@
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
       background: var(--page-bg, linear-gradient(to bottom,var(--bg1),var(--bg2),var(--bg3)));
-      color:#fff; min-height:100vh;
+      color:#fff;
+      min-height:100vh;
     }
     a{text-decoration:none;color:inherit}
     .wrap{max-width:1100px;margin:auto;padding:32px 16px 48px}
@@ -34,185 +36,22 @@
     .btn.primary{background:#fff;color:#020617;border:none}
     .grid{display:grid;gap:16px}
     @media(min-width:900px){.grid.cols-3{grid-template-columns:repeat(3,1fr)}}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px; position:relative; overflow:hidden}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;position:relative;overflow:hidden}
     .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
     .temp{font-size:48px;font-weight:650;line-height:1}
     .muted{color:var(--muted);font-size:13px}
-    .row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:12px;margin-bottom:6px;font-size:13px}
-    button.city{all:unset;cursor:pointer}
-    button.city:focus{outline:2px solid rgba(255,255,255,.35);outline-offset:2px;border-radius:12px}
-    .fabGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
     footer{margin-top:48px;font-size:12px;opacity:.45}
+
     .metaRow{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.04);font-size:12px;color:rgba(255,255,255,.88)}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--ring);background:rgba(255,255,255,.04);font-size:12px}
     .aqiChip{padding:6px 10px;border-radius:999px;border:1px solid var(--ring);font-weight:900;font-size:12px}
     .aqi-good{background:var(--good)}
     .aqi-mod{background:var(--mod)}
     .aqi-bad{background:var(--bad)}
-
-    /* ===== Animated Weather Art (fills Right Now dead space) ===== */
-    .wxArt{
-      margin-top:14px;
-      height:118px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: radial-gradient(120px 80px at 20% 30%, rgba(255,255,255,.10), rgba(255,255,255,0)),
-                  linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      position:relative;
-      overflow:hidden;
-    }
-    .wxArt::after{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius:18px;
-      pointer-events:none;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-
-    /* shared bits */
-    .wxMoon, .wxSun, .wxCloud, .wxFog, .wxBolt { position:absolute; }
-    .wxStars { position:absolute; inset:0; opacity:.9; }
-    .wxStars span{
-      position:absolute; width:2px; height:2px; border-radius:50%;
-      background:rgba(255,255,255,.85);
-      animation: twinkle 2.8s ease-in-out infinite;
-    }
-    .wxStars span:nth-child(2n){ animation-duration:3.6s; opacity:.6 }
-    .wxStars span:nth-child(3n){ animation-duration:4.4s; opacity:.5 }
-
-    @keyframes twinkle { 0%,100%{ transform:scale(1); opacity:.55 } 50%{ transform:scale(1.8); opacity:1 } }
-
-    .wxMoon{
-      width:56px; height:56px; border-radius:50%;
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(255,255,255,.70));
-      top:18px; left:18px;
-      box-shadow: 0 0 18px rgba(255,255,255,.15);
-    }
-    .wxMoon::after{
-      content:"";
-      position:absolute; width:50px; height:50px; border-radius:50%;
-      top:10px; left:18px;
-      background: rgba(2,6,23,.85);
-    }
-    .wxSun{
-      width:58px; height:58px; border-radius:50%;
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(255,255,255,.70));
-      top:16px; left:18px;
-      box-shadow: 0 0 22px rgba(255,255,255,.12);
-      animation: floaty 3.6s ease-in-out infinite;
-    }
-    .wxSun::before{
-      content:"";
-      position:absolute; inset:-10px;
-      border-radius:50%;
-      border: 1px dashed rgba(255,255,255,.18);
-      animation: spin 10s linear infinite;
-    }
-    @keyframes spin{ to{ transform:rotate(360deg) } }
-    @keyframes floaty{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-4px) } }
-
-    .wxCloud{
-      width:140px; height:46px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius:999px;
-      top:46px; left:84px;
-      filter: blur(.0px);
-      animation: drift 6.5s ease-in-out infinite;
-    }
-    .wxCloud::before{
-      content:"";
-      position:absolute; width:58px; height:58px; border-radius:50%;
-      left:18px; top:-30px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.12);
-    }
-    .wxCloud::after{
-      content:"";
-      position:absolute; width:72px; height:72px; border-radius:50%;
-      left:56px; top:-40px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.12);
-    }
-    @keyframes drift{ 0%,100%{ transform:translateX(0) } 50%{ transform:translateX(10px) } }
-
-    .wxRain{
-      position:absolute; left:0; right:0; bottom:0; top:0;
-      pointer-events:none;
-    }
-    .wxRain i{
-      position:absolute; width:2px; height:18px; border-radius:2px;
-      background: rgba(255,255,255,.28);
-      top:72px;
-      animation: rain 0.9s linear infinite;
-    }
-    .wxRain i:nth-child(2n){ animation-duration:1.05s; opacity:.22 }
-    .wxRain i:nth-child(3n){ animation-duration:0.8s; opacity:.26 }
-    @keyframes rain{
-      from{ transform:translateY(-18px) }
-      to{ transform:translateY(58px) }
-    }
-
-    .wxSnow{
-      position:absolute; inset:0; pointer-events:none;
-    }
-    .wxSnow i{
-      position:absolute; width:6px; height:6px; border-radius:50%;
-      background: rgba(255,255,255,.42);
-      top:66px;
-      animation: snow 2.6s linear infinite;
-    }
-    .wxSnow i:nth-child(2n){ animation-duration:3.2s; opacity:.35 }
-    .wxSnow i:nth-child(3n){ animation-duration:2.2s; opacity:.30 }
-    @keyframes snow{
-      from{ transform:translateY(-10px) translateX(0) }
-      to{ transform:translateY(62px) translateX(10px) }
-    }
-
-    .wxFog{
-      left:-20px; right:-20px; top:60px; height:46px;
-      background:: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.10), rgba(255,255,255,0));
-      opacity:.8;
-      filter: blur(1px);
-      animation: fog 3.2s ease-in-out infinite;
-    }
-    @keyframes fog{ 0%,100%{ transform:translateX(-10px) } 50%{ transform:translateX(10px) } }
-
-    .wxBolt{
-      width:0;height:0;
-      border-left:10px solid transparent;
-      border-right:10px solid transparent;
-      border-top:24px solid rgba(255,255,255,.45);
-      top:62px; left:155px;
-      transform:skewX(-10deg);
-      animation: flash 3.2s ease-in-out infinite;
-      opacity:.2;
-    }
-    .wxBolt::after{
-      content:"";
-      position:absolute;
-      left:-8px; top:-2px;
-      width:0;height:0;
-      border-left:8px solid transparent;
-      border-right:8px solid transparent;
-      border-top:18px solid rgba(255,255,255,.45);
-      transform:translateX(8px) translateY(14px);
-    }
-    @keyframes flash{
-      0%,78%,100%{ opacity:.10 }
-      80%{ opacity:.85 }
-      82%{ opacity:.15 }
-      84%{ opacity:.65 }
-      86%{ opacity:.12 }
-    }
-
-    /* hide/show scenes */
-    .scene{ display:none; }
-    .scene.on{ display:block; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=1769667575">
-  <!-- FW_CSS_OVERRIDE_LINK: keep styles.css last so themes override inline CSS -->
-  
+
+  <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="polish.css?v=1">
 </head>
 
 <body>
@@ -224,10 +63,9 @@
     <h1>Weather that helps you plan real life.</h1>
     <p class="subtitle">Glance, plan, invite. Forecasts + context built for families and groups.</p>
 
-    <div class="metaRow" aria-label="Status">
+    <div class="metaRow">
       <span class="pill">Location: <strong id="locName">—</strong></span>
       <span class="pill">Updated: <strong id="updated">—</strong></span>
-      <span class="pill" id="loadState" style="display:none">Loading…</span>
     </div>
   </div>
 
@@ -236,143 +74,151 @@
     <a class="btn" href="events.html">Events</a>
     <a class="btn" href="about.html">About</a>
     <a class="btn" href="contact.html">Contact</a>
-      <a class="btn" href="settings.html">⚙️ Settings</a>
-  
+    <a class="btn" href="settings.html">⚙️ Settings</a>
+
     <a class="btn" id="navSignIn" href="signin.html">Sign in / Sign up</a>
     <a class="btn" id="navDashboard" href="dashboard.html" style="display:none">Dashboard</a>
     <button class="btn" id="navSignOut" type="button" style="display:none">Sign out</button>
-</div>
+  </div>
 </header>
 
+<!-- TOP GRID -->
 <section class="grid cols-3">
-  <!-- Right now -->
+
+  <!-- Right Now -->
   <div class="card">
     <h2>Right now</h2>
+    <div class="muted" id="clock" style="margin-top:4px">—</div>
     <div class="muted" id="place">—</div>
 
-    <div style="display:flex; align-items:flex-end; gap:12px; margin-top:6px">
+    <div style="display:flex;align-items:flex-end;gap:12px;margin-top:6px">
       <div class="temp"><span id="temp">—</span>°</div>
-
-    <div class="wxIconWrap"><img id="wxIcon" src="/icons/weather/clear-day.svg" alt="Weather icon"></div>
-      <div class="muted" style="padding-bottom:8px"><span id="cond">—</span></div>
+      <img id="wxIcon" src="/icons/weather/clear-day.svg" alt="Weather icon">
+      <div class="muted"><span id="cond">—</span></div>
     </div>
 
     <div class="muted" style="margin-top:6px">
       Feels like <strong id="feels">—</strong>° · Wind <strong id="wind">—</strong> mph · Humidity <strong id="hum">—</strong>%
-    </div><div class="muted" style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-      <span>Air quality:</span>
+
+  <div id="baseLocBox" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <span style="font-size:12px;opacity:.85;font-weight:900">Base:</span>
+    <button id="btnBaseDevice" class="btn" type="button" style="padding:8px 10px">Use device</button>
+    <button id="btnBaseZip" class="btn" type="button" style="padding:8px 10px">Use ZIP</button>
+    <input id="baseZipInput" inputmode="numeric" placeholder="ZIP" style="width:92px;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff" />
+    <button id="btnBaseSave" class="btn primary" type="button" style="padding:8px 12px">Save</button>
+    <span id="baseLocStatus" style="font-size:12px;opacity:.8"></span>
+  </div>
+
+    <div class="muted" style="margin-top:6px">
+      Precip (next hr) <strong id="precipChance">—</strong> · Amount <strong id="precipAmt">—</strong>
+    </div>
+    </div>
+
+    <div class="muted" style="margin-top:10px">
+      Air quality:
       <span id="aqiChip" class="aqiChip">AQI —</span>
-      <span>PM2.5 <strong id="pm25">—</strong> µg/m³</span>
-    </div>
-
-    <!-- Animated scene fills the empty space -->
-    <div class="wxArt" aria-hidden="true">
-      <div id="scene-clear-day" class="scene">
-        <div class="wxSun"></div>
-      </div>
-
-      <div id="scene-clear-night" class="scene">
-        <div class="wxStars">
-          <span style="top:18px;left:130px"></span><span style="top:32px;left:190px"></span><span style="top:54px;left:160px"></span>
-          <span style="top:22px;left:240px"></span><span style="top:44px;left:220px"></span><span style="top:62px;left:260px"></span>
-        </div>
-        <div class="wxMoon"></div>
-      </div>
-
-      <div id="scene-cloudy" class="scene">
-        <div class="wxCloud"></div>
-      </div>
-
-      <div id="scene-rain" class="scene">
-        <div class="wxCloud"></div>
-        <div class="wxRain" aria-hidden="true" id="rainDrops"></div>
-      </div>
-
-      <div id="scene-snow" class="scene">
-        <div class="wxCloud"></div>
-        <div class="wxSnow" aria-hidden="true" id="snowFlakes"></div>
-      </div>
-
-      <div id="scene-thunder" class="scene">
-        <div class="wxCloud"></div>
-        <div class="wxBolt"></div>
-        <div class="wxRain" aria-hidden="true" id="stormDrops"></div>
-      </div>
-
-      <div id="scene-fog" class="scene">
-        <div class="wxFog"></div>
-      </div>
-    </div>
-
-    <div class="muted" style="margin-top:8px; opacity:.85">
-(MVP) Animated icon based on current conditions.</div>
-  
+      · PM2.5 <strong id="pm25">—</strong> µg/m³
     <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,.12); padding-top:12px">
       <h3 style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.04em">Fab 5 cities</h3>
       <div id="cities" class="fabGrid"></div>
       <div class="muted" style="margin-top:10px;opacity:.85">Click a city to update “Right now” + full 10-day.</div>
     </div>
-</div>
+    </div>
+  </div>
 
-  <!-- 10-day forecast -->
+  <!-- 10-Day -->
   <div class="card">
     <h2>10-day forecast</h2>
     <div id="forecast"></div>
-    <div class="muted" style="margin-top:8px;opacity:.85">(Live via Open-Meteo. Paid API swap later.)</div>
+    <div class="muted" style="margin-top:8px">(Live via Open-Meteo)</div>
   </div>
 
-  <!-- Alerts -->
+  <!-- Heads-Up (REPLACES ALERTS SLOT) -->
   <div class="card">
-    <h2>Alerts</h2>
-    <div class="muted">No alerts right now.</div>
-    <div id="alertsList" class="alertsList"></div>
-    <div class="muted" style="margin-top:8px;opacity:.85">(MVP) Real alerts after paid provider hookup.</div>
-  </div>
-</section>
-  <!-- Heads-up -->
-  <section class="card" style="margin-top:14px">
     <h2>Heads-up</h2>
-    <div class="muted">Forecast-based heads-up (fog/wind/rain/heat).</div>
-    <div id="headsUpList" class="alertsList" style="margin-top:10px"></div>
-  </section>
+    <div class="muted">Forecast-based heads-up (fog, wind, rain, heat).</div>
+    <div id="headsUpList" style="margin-top:10px"></div>
+  </div>
 
+</section>
 
-
-<!-- ===== FW_HOME_EVENT_TILES_CARD ===== -->
-    
 <section class="card" style="margin-top:16px">
   <h2>Upcoming events</h2>
-  <div id="homeAuthMsg" class="muted" style="display:none;margin:10px 0">Sign in to see your events.</div>
-  <div id="homeUpcoming" class="tileGrid"></div>
-  <div id="homeUpcomingEmpty" class="muted" style="display:none">No upcoming events yet. Create one from the Dashboard.</div>
+  <div id="homeUpcoming"></div>
+  <div id="homeUpcomingEmpty" class="muted" style="display:none">No upcoming events yet.</div>
 </section>
 
 <section class="card" style="margin-top:16px">
   <h2>Past events</h2>
-  <div id="homePast" class="tileGrid"></div>
+  <div id="homePast"></div>
   <div id="homePastEmpty" class="muted" style="display:none">No past events yet.</div>
 </section>
 
 <footer>© <span id="year"></span> Family Weather</footer>
+
 </main>
 
-
-
-
-  <script src="app.js?v=1769667575" defer></script>
-  <script src="home.js?v=1769793166" defer></script>
+<!-- Core -->
+<script src="baseLocation.js?v=99" defer></script>
+<script src="app.js" defer></script>
+<script src="home.js?v=99" defer></script>
+<script type="module" src="authNav.js"></script>
+<script type="module" src="authHome.js"></script>
+<script src="geo.js" defer></script>
 <script>
-/* FW_HOME_EVENTS_RENDER */
-document.addEventListener("DOMContentLoaded",()=>{
-  if(window.FW && window.FW.renderHomeEvents){
-    window.FW.renderHomeEvents("homeUpcoming","homeUpcomingEmpty","homePast","homePastEmpty");
+document.addEventListener("DOMContentLoaded", () => {
+  const clock = document.getElementById("clock");
+  const updated = document.getElementById("updated");
+  const year = document.getElementById("year");
+
+  function tick(){
+    const now = new Date();
+    if(clock){
+      clock.textContent = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+  }
+
+  // Initial + live clock
+  tick();
+  setInterval(tick, 60000);
+
+  // Updated timestamp (once)
+  if(updated){
+    updated.textContent = new Date().toLocaleString([], {
+      weekday:"short",
+      month:"short",
+      day:"numeric",
+      hour:"2-digit",
+      minute:"2-digit"
+    });
+  }
+
+  // Footer year
+  if(year){
+    year.textContent = new Date().getFullYear();
   }
 });
 </script>
-  <script type="module" src="authNav.js"></script>
-  <script type="module" src="authHome.js"></script>
-  <script src="alertsBox.js?v=1769796630" defer></script>
-  <script src="geo.js" defer></script>
-  <script src="headsUpBox.js" defer></script>
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.FW && typeof window.FW.renderFabCities === "function") {
+    window.FW.renderFabCities("cities");
+  }
+});
+</script>
+
+<script src="fabFiveBox.js" defer></script>
+<script src="uiPolish.js?v=1" defer></script>
+<script src="fabFiveBridge.js?v=1" defer></script>
+<script src="rightNowExtras.js?v=1" defer></script>
+<script src="rightNowTruth.js?v=1" defer></script>
+<script src="headsUpBox.js" defer></script>
+<script src="homeBaseLocation.js?v=1" defer></script>
 </body>
 </html>

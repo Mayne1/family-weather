@@ -308,8 +308,21 @@
     fwBadge();
     setYearSafe();
     renderFab5();
-    loadWeather(fab5[loadLastCityIndex(fab5.length)]);
-  }
+    const qs = new URLSearchParams(location.search);
+      const lat = parseFloat(qs.get("latitude"));
+      const lon = parseFloat(qs.get("longitude"));
+      const hasLatLon = Number.isFinite(lat) && Number.isFinite(lon);
+
+      if(hasLatLon) {
+        loadWeather({
+          name: (qs.get("label") ? qs.get("label").trim() : null),
+          lat:lat,
+          lon:lon
+        });
+      } else {
+        loadWeather(fab5[loadLastCityIndex(fab5.length)]);
+      }
+}
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);

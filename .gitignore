@@ -16,3 +16,14 @@ tmp/
 
 # node stuff (if it ever appears here)
 node_modules/
+
+# --- Family Weather: keep repo clean ---
+*.bak_*
+*.broken.*
+*.pre_*
+backups/
+*.tgz
+
+# accidental weird files
+"\n> \n"
+

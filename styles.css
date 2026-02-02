@@ -1148,3 +1148,60 @@ select:-webkit-autofill {
   background: rgba(110,168,255,0.18);
   border: 1px solid rgba(110,168,255,0.35);
 }
+
+/* FW: kill leftover Alerts card/containers (we replaced Alerts with Heads-Up) */
+#alertsBox,
+#alertsList,
+[data-alerts],
+.alertsBox,
+.alertsList,
+.alerts-card,
+.card-alerts {
+  display: none !important;
+}
+
+
+/* FW_HEADSUP_CLOCK_LIGHTBOX_V1 */
+.nowClock{
+  font-size: .95rem;
+  opacity: .85;
+  margin: 8px 0 10px 0;
+}
+
+/* stop the “lightbox” from sitting on top of everything */
+#lightbox, .lightbox, .lightboxOverlay, .lightbox-overlay, .lb-overlay{
+  display: none !important;
+}
+
+
+/* FW_CLOCK_IN_NOW_V2 */
+/* Bigger clock/date for the Right Now card */
+.nowClockBig{
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+  opacity: .92;
+  margin: 2px 0 10px 0;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.06);
+}
+
+/* Make the time pop a bit more (uses system fonts) */
+.nowClockBig::before{
+  content: "🕒";
+  font-size: 1.05rem;
+  opacity: .95;
+}
+
+
+/* FW_CLOCK_IN_RIGHTNOW_V1 */
+.nowClock{
+  margin-top: 6px;
+  font-size: 1.05rem;
+  font-weight: 650;
+  opacity: .92;
+}
