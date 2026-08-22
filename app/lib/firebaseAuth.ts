@@ -69,6 +69,34 @@ export function loadSession(): AuthSession | null {
   }
 }
 
+export async function getValidSession(): Promise<AuthSession | null> {
+  const session = loadSession();
+  if (!session) return null;
+  if (session.expiresAt > Date.now() + 60_000) return session;
+
+  try {
+    const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: session.refreshToken }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error("SESSION_REFRESH_FAILED");
+    const refreshed: AuthSession = {
+      email: session.email,
+      localId: data.user_id || session.localId,
+      idToken: data.id_token,
+      refreshToken: data.refresh_token || session.refreshToken,
+      expiresAt: Date.now() + Number(data.expires_in || 3600) * 1000,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(refreshed));
+    return refreshed;
+  } catch {
+    signOut();
+    return null;
+  }
+}
+
 export function signOut() {
   localStorage.removeItem(SESSION_KEY);
 }
