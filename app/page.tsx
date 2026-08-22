@@ -22,7 +22,7 @@ const fallbackForecast = [
 ];
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number }; days: WeatherDay[] };
+type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number } | null; days: WeatherDay[] };
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
@@ -33,6 +33,21 @@ function weatherSymbol(code: number) {
   if (code === 800) return "☀";
   if (code > 800) return "◒";
   return "☁";
+}
+
+function weatherDescription(code: number) {
+  if (code >= 200 && code < 300) return "Thunderstorms possible.";
+  if (code >= 300 && code < 700) return "Wet weather is possible.";
+  if (code === 741) return "Reduced visibility is possible.";
+  if (code === 800) return "Clear and sunny.";
+  if (code === 801) return "Mostly sunny.";
+  if (code === 802) return "Partly cloudy.";
+  if (code >= 803) return "Mostly cloudy.";
+  return "Forecast loaded.";
+}
+
+function hasResolvedLocation(label?: string) {
+  return Boolean(label && label !== "Your location");
 }
 
 export default function Home() {
@@ -64,33 +79,70 @@ export default function Home() {
 
   useEffect(() => {
     getValidSession().then(setSession);
-    const loadWeather = (url: string, updatePlanner = false) => fetch(url, { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => {
-        if (!data.ok) return;
-        setHomeWeather(data);
-        setHomeLocation(data.label || "Your location");
-        if (updatePlanner && data.label) setPlannerLocation(data.label);
-      })
-      .catch(() => setHomeWeather(null));
-    loadWeather("/api/weather/home");
+
+    const applyWeather = (data: HomeWeather, updatePlanner = false) => {
+      setHomeWeather(data);
+      if (hasResolvedLocation(data.label)) {
+        setHomeLocation(data.label!);
+        if (updatePlanner) setPlannerLocation(data.label!);
+        return true;
+      }
+      return false;
+    };
+
+    const loadDefault = () =>
+      fetch("/api/weather/home", { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject())
+        .then((data) => data.ok && applyWeather(data))
+        .catch(() => undefined);
+
+    const loadCoordinates = (coordinates: { lat: number; lon: number }, remember: boolean) =>
+      fetch(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject())
+        .then((data) => {
+          if (!data.ok || !hasResolvedLocation(data.label)) {
+            localStorage.removeItem("family-weather-home-location");
+            return false;
+          }
+          if (remember) {
+            localStorage.setItem("family-weather-home-location", JSON.stringify({
+              ...coordinates,
+              savedAt: Date.now(),
+            }));
+          }
+          applyWeather(data, true);
+          return true;
+        })
+        .catch(() => {
+          localStorage.removeItem("family-weather-home-location");
+          return false;
+        });
+
+    loadDefault();
 
     const saved = localStorage.getItem("family-weather-home-location");
     if (saved) {
       try {
         const coordinates = JSON.parse(saved);
-        loadWeather(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, true);
-        return;
+        const fresh = Number(coordinates.savedAt || 0) > Date.now() - 6 * 60 * 60 * 1000;
+        if (fresh && Number.isFinite(coordinates.lat) && Number.isFinite(coordinates.lon)) {
+          loadCoordinates(coordinates, false);
+          return;
+        }
+        localStorage.removeItem("family-weather-home-location");
       } catch {
         localStorage.removeItem("family-weather-home-location");
       }
     }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(({ coords }) => {
-        const coordinates = { lat: coords.latitude, lon: coords.longitude };
-        localStorage.setItem("family-weather-home-location", JSON.stringify(coordinates));
-        loadWeather(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, true);
-      }, () => undefined, { enableHighAccuracy: false, timeout: 8000, maximumAge: 900000 });
+        loadCoordinates({ lat: coords.latitude, lon: coords.longitude }, true);
+      }, () => undefined, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
     }
   }, []);
 
@@ -99,18 +151,27 @@ export default function Home() {
     setLocationLoading(true);
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       const coordinates = { lat: coords.latitude, lon: coords.longitude };
-      localStorage.setItem("family-weather-home-location", JSON.stringify(coordinates));
       fetch(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, { cache: "no-store" })
-        .then((response) => response.json())
+        .then((response) => response.ok ? response.json() : Promise.reject())
         .then((data) => {
-          if (!data.ok) throw new Error();
+          if (!data.ok || !hasResolvedLocation(data.label)) {
+            throw new Error("We could not verify that location.");
+          }
+          localStorage.setItem("family-weather-home-location", JSON.stringify({
+            ...coordinates,
+            savedAt: Date.now(),
+          }));
           setHomeWeather(data);
-          setHomeLocation(data.label || "Your location");
-          setPlannerLocation(data.label || plannerLocation);
+          setHomeLocation(data.label);
+          setPlannerLocation(data.label);
         })
-        .catch(() => undefined)
+        .catch(() => localStorage.removeItem("family-weather-home-location"))
         .finally(() => setLocationLoading(false));
-    }, () => setLocationLoading(false), { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 });
+    }, () => setLocationLoading(false), {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    });
   };
 
   const dateChoices = (homeWeather?.days || []).slice(0, 4);
@@ -313,7 +374,7 @@ export default function Home() {
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
                 <div className="score" aria-label="Today’s forecast high"><span>{today?.temp_max_f ?? "—"}°</span><small>HIGH</small></div>
               </div>
-              <p><strong>{today?.shortForecast || "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
+              <p><strong>{today ? (today.shortForecast || weatherDescription(today.weather_code)) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
             </div>
           </div>
 
