@@ -311,11 +311,11 @@ export default function Home() {
     const recipientText = String(values.get("recipients") || "").trim();
     const recipients = [...new Set(
       recipientText
-        .split(/[\\s,;]+/)
+        .split(/[\s,;]+/)
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean),
     )];
-    const invalid = recipients.filter((email) => !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email));
+    const invalid = recipients.filter((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
     if (!recipients.length) {
       setInviteError("Enter at least one email address.");
       return;
