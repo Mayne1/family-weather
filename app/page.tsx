@@ -22,7 +22,7 @@ const fallbackForecast = [
 ];
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number }; days: WeatherDay[] };
+type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number }; days: WeatherDay[] };
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
@@ -43,6 +43,9 @@ export default function Home() {
   const [eventStep, setEventStep] = useState<"details" | "review">("details");
   const [eventSpace, setEventSpace] = useState("outdoor");
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
+  const [homeLocation, setHomeLocation] = useState("Stockton, California");
+  const [plannerLocation, setPlannerLocation] = useState("Stockton, CA 95206");
+  const [locationLoading, setLocationLoading] = useState(false);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState("");
@@ -61,11 +64,54 @@ export default function Home() {
 
   useEffect(() => {
     getValidSession().then(setSession);
-    fetch("/api/weather/home", { cache: "no-store" })
+    const loadWeather = (url: string, updatePlanner = false) => fetch(url, { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => data.ok && setHomeWeather(data))
+      .then((data) => {
+        if (!data.ok) return;
+        setHomeWeather(data);
+        setHomeLocation(data.label || "Your location");
+        if (updatePlanner && data.label) setPlannerLocation(data.label);
+      })
       .catch(() => setHomeWeather(null));
+    loadWeather("/api/weather/home");
+
+    const saved = localStorage.getItem("family-weather-home-location");
+    if (saved) {
+      try {
+        const coordinates = JSON.parse(saved);
+        loadWeather(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, true);
+        return;
+      } catch {
+        localStorage.removeItem("family-weather-home-location");
+      }
+    }
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(({ coords }) => {
+        const coordinates = { lat: coords.latitude, lon: coords.longitude };
+        localStorage.setItem("family-weather-home-location", JSON.stringify(coordinates));
+        loadWeather(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, true);
+      }, () => undefined, { enableHighAccuracy: false, timeout: 8000, maximumAge: 900000 });
+    }
   }, []);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) return;
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      const coordinates = { lat: coords.latitude, lon: coords.longitude };
+      localStorage.setItem("family-weather-home-location", JSON.stringify(coordinates));
+      fetch(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.ok) throw new Error();
+          setHomeWeather(data);
+          setHomeLocation(data.label || "Your location");
+          setPlannerLocation(data.label || plannerLocation);
+        })
+        .catch(() => undefined)
+        .finally(() => setLocationLoading(false));
+    }, () => setLocationLoading(false), { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 });
+  };
 
   const dateChoices = (homeWeather?.days || []).slice(0, 4);
   const selectedDay = dateChoices[date] || homeWeather?.days?.[0] || null;
@@ -236,11 +282,11 @@ export default function Home() {
       <main id="top">
         <section className="hero">
           <div className="heroCopy">
-            <p className="eyebrow"><span /> Stockton · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+            <p className="eyebrow"><span /> {homeLocation} · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
             <p className="intro">Family Weather turns the forecast into a simple decision—when to go, what to expect, and what your people need to know.</p>
             <div className="decisionCard">
-              <div className="decisionTop"><span className="statusDot" /><span>Stockton right now</span><strong>LIVE</strong></div>
+              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now</span><strong>LIVE</strong></div>
               <div className="decisionMain">
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
                 <div className="score" aria-label="Today’s forecast high"><span>{today?.temp_max_f ?? "—"}°</span><small>HIGH</small></div>
@@ -257,7 +303,7 @@ export default function Home() {
               ))}
             </div>
             <label className="fieldLabel" htmlFor="location">Where?</label>
-            <div className="inputShell"><span aria-hidden="true">⌖</span><input id="location" defaultValue="Stockton, California" autoComplete="off" /><button type="button" aria-label="Use current location">◎</button></div>
+            <div className="inputShell"><span aria-hidden="true">⌖</span><input id="location" value={plannerLocation} onChange={(event) => setPlannerLocation(event.target.value)} autoComplete="off" /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <span className="fieldLabel">When?</span>
             <div className="dateRow">
               {(dateChoices.length ? dateChoices : Array.from({ length: 4 }, (_, index) => ({ date: (() => { const value = new Date(); value.setDate(value.getDate() + index); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; })() }))).map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
@@ -310,7 +356,7 @@ export default function Home() {
                   <label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label>
                   <label className="formField"><span>Activity</span><select name="activity" defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
                   <label className="formField"><span>Guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label>
-                  <label className="formField full"><span>Location or ZIP code</span><input name="location" required defaultValue="Stockton, CA 95206" /></label>
+                  <label className="formField full"><span>Location or ZIP code</span><input name="location" required defaultValue={plannerLocation} /></label>
                   <label className="formField"><span>Date</span><input name="date" type="date" defaultValue={selectedDate} /></label>
                   <label className="formField"><span>Start time</span><input name="time" type="time" defaultValue="16:00" /></label>
                 </div>
