@@ -217,7 +217,7 @@ export default function Home() {
           <span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#how">How it works</a>
+          <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#how">How it works</a><a href="/events">My events</a>
         </nav>
         <div className="headerActions">
           {session ? <button className="textButton" type="button" onClick={() => { signOut(); setSession(null); }}>{session.email} · Sign out</button> : <button className="textButton" type="button" onClick={() => setShowAuth(true)}>Sign in</button>}
