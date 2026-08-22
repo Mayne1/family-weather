@@ -114,13 +114,35 @@ export default function Home() {
   };
 
   const dateChoices = (homeWeather?.days || []).slice(0, 4);
-  const selectedDay = dateChoices[date] || homeWeather?.days?.[0] || null;
-  const selectedDate = selectedDay?.date || (() => {
+  const chosenDay = dateChoices[date] || homeWeather?.days?.[0] || null;
+  const selectedDate = chosenDay?.date || (() => {
     const value = new Date();
     value.setDate(value.getDate() + date);
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   })();
-  const selectedBestWindow = selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…";
+  const selectedDay = plan?.day || chosenDay;
+  const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
+
+  const checkPlan = async () => {
+    setPlanLoading(true);
+    setPlanError("");
+    setPlan(null);
+    try {
+      const response = await fetch("/api/weather/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ location: plannerLocation, date: selectedDate, activity, space: "outdoor" }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Weather check failed");
+      setPlan(data);
+      setShowResult(true);
+    } catch (error) {
+      setPlanError(error instanceof Error ? error.message : "Weather check failed");
+    } finally {
+      setPlanLoading(false);
+    }
+  };
 
   const openEvent = () => {
     setShowResult(false);
@@ -310,7 +332,8 @@ export default function Home() {
                 <button key={choice.date} className={`dateOption ${date === index ? "active" : ""}`} onClick={() => setDate(index)} type="button"><small>{value.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}</small><strong>{value.getDate()}</strong><span>{index === 0 ? "Today" : index === 1 ? "Tomorrow" : value.toLocaleDateString("en-US", { weekday: "long" })}</span></button>
               ); })}
             </div>
-            <button className="primaryCta" type="button" onClick={() => setShowResult(true)}>Check my plan <span>→</span></button>
+            <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
+            {planError && <p className="formError" role="alert">{planError}</p>}
             <p className="quietNote">No account needed to check the weather.</p>
           </div>
         </section>
@@ -336,7 +359,7 @@ export default function Home() {
 
       <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p>Privacy · Terms · SMS consent</p></footer>
 
-      {showResult && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">Your {activity} has a weather window.</h2><div className="resultAnswer"><span>BEST TIME</span><strong>{selectedBestWindow}</strong></div><p>{selectedDay ? `${selectedDay.shortForecast || "Forecast available"}. High ${selectedDay.temp_max_f}°, ${selectedDay.precip_prob_pct}% rain chance, and wind near ${selectedDay.wind_max_mph} mph.` : "The current forecast is still loading. You can continue and run the full event check."}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">Your {activity} has a weather window.</h2><p className="resultLocation">Official NWS forecast for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>BEST TIME</span><strong>{selectedBestWindow}</strong></div><p>{`${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 
       {showEvent && (
         <div className="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="event-title" onMouseDown={(event) => event.target === event.currentTarget && setShowEvent(false)}>
