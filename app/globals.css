@@ -131,8 +131,8 @@ footer a{color:inherit}
 .formField{display:grid;gap:.45rem}
 .formField.full{grid-column:1/-1}
 .formField>span,.spaceChoice legend,.concerns legend{font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#52656c}
-.formField input,.formField select{width:100%;height:52px;border:1px solid var(--line);border-radius:12px;padding:0 .9rem;background:white;color:var(--ink);outline:none}
-.formField input:focus,.formField select:focus{border-color:#4f8997;box-shadow:0 0 0 3px rgba(79,137,151,.12)}
+.formField input,.formField select,.formField textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:0 .9rem;background:white;color:var(--ink);outline:none}.formField input,.formField select{height:52px}.formField textarea{min-height:112px;padding:.85rem .9rem;resize:vertical;font:inherit;line-height:1.45}
+.formField input:focus,.formField select:focus,.formField textarea:focus{border-color:#4f8997;box-shadow:0 0 0 3px rgba(79,137,151,.12)}
 .spaceChoice,.concerns{margin:1.5rem 0 0;padding:0;border:0}
 .spaceChoice legend,.concerns legend{margin-bottom:.7rem}
 .spaceChoice>div{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem}
