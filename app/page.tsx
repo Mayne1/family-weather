@@ -33,6 +33,7 @@ type HomeWeather = { current: { temp_f: number; feels_like_f: number; wind_mph: 
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
+type CreatedInvite = { id: string; link: string; delivery: string; recipient_email?: string; recipient_phone?: string; sms?: { ok?: boolean; skipped?: boolean; reason?: string } };
 
 function weatherSymbol(code: number) {
   if (code >= 200 && code < 700) return "☂";
@@ -61,6 +62,10 @@ export default function Home() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [savedEvent, setSavedEvent] = useState<{ id: string; title: string } | null>(null);
   const [saveError, setSaveError] = useState("");
+  const [inviteDelivery, setInviteDelivery] = useState<"email" | "sms">("email");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [createdInvites, setCreatedInvites] = useState<CreatedInvite[]>([]);
 
   useEffect(() => {
     setSession(loadSession());
@@ -162,6 +167,36 @@ export default function Home() {
       setSaveError(error instanceof Error ? error.message : "Event could not be saved");
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const createInvite = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!savedEvent) return;
+    const values = new FormData(event.currentTarget);
+    const recipient = String(values.get("recipient") || "").trim();
+    setInviteLoading(true);
+    setInviteError("");
+    try {
+      const response = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invites`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delivery: inviteDelivery,
+          recipient_email: inviteDelivery === "email" ? recipient : null,
+          recipient_phone: inviteDelivery === "sms" ? recipient : null,
+          created_by_email: session?.email || null,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be created");
+      setCreatedInvites((current) => [...data.invites, ...current]);
+      form.reset();
+    } catch (error) {
+      setInviteError(error instanceof Error ? error.message : "Invitation could not be created");
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -298,7 +333,7 @@ export default function Home() {
                 <p className="formIntro">Real {plan?.source?.toUpperCase() || "weather"} data for {plan?.location}. The recommendation reflects an {plan?.space} {plan?.activity}.</p>
                 <div className="reviewScore"><div><small>WEATHER FIT</small><strong>{plan?.score ?? "—"}</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>{plan?.bestWindow ?? "—"}</strong><span>Based on the selected setting</span></div></div>
                 <div className="adviceList">{plan?.advice.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
-                {savedEvent ? <div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
+                {savedEvent ? <><div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div><form className="inviteBuilder" onSubmit={createInvite}><div><small>03 · INVITE YOUR PEOPLE</small><h3>Create a private RSVP link.</h3><p>Add one person at a time. You can copy and share every link yourself.</p></div><div className="inviteMethod"><button type="button" className={inviteDelivery === "email" ? "active" : ""} onClick={() => setInviteDelivery("email")}>Email</button><button type="button" className={inviteDelivery === "sms" ? "active" : ""} onClick={() => setInviteDelivery("sms")}>Phone</button></div><label className="formField"><span>{inviteDelivery === "email" ? "Family member’s email" : "Mobile number with country code"}</span><input name="recipient" required type={inviteDelivery === "email" ? "email" : "tel"} placeholder={inviteDelivery === "email" ? "family@example.com" : "+12095550123"} /></label><button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitation…" : "Create invitation"}<span>→</span></button>{inviteError && <p className="formError">{inviteError}</p>}</form>{createdInvites.length > 0 && <div className="inviteResults">{createdInvites.map((invite) => <article key={invite.id}><div><strong>{invite.recipient_email || invite.recipient_phone || "Shareable invitation"}</strong><small>{invite.delivery === "sms" && invite.sms?.ok ? "Text sent" : "Link ready to share"}</small></div><button type="button" onClick={() => navigator.clipboard.writeText(invite.link)}>Copy link</button><a href={invite.link} target="_blank" rel="noreferrer">Open</a></article>)}</div>}</> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
                 {saveError && <p className="formError">{saveError}</p>}
                 <p className="quietNote">{savedEvent ? `Event ID: ${savedEvent.id}` : session ? `Saving as ${session.email}` : "Your plan stays on this screen while you sign in."}</p>
               </div>
