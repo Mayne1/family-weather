@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API = "http://127.0.0.1:3000";
 const FIREBASE_API_KEY = "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function parseEmails(value: unknown) {
+  const raw = Array.isArray(value) ? value.map(String) : [String(value || "")];
+  return [...new Set(
+    raw
+      .flatMap((item) => item.split(/[\s,;]+/))
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  )];
+}
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -33,31 +44,79 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const body = await request.json();
-    const recipientEmail = String(body.recipient_email || "").trim();
-    if (!recipientEmail) {
-      return NextResponse.json({ ok: false, error: "Enter an email address." }, { status: 400 });
+    const emails = parseEmails(body.recipient_emails ?? body.recipient_email);
+    if (!emails.length) {
+      return NextResponse.json({ ok: false, error: "Enter at least one email address." }, { status: 400 });
     }
-    const response = await fetch(`${API}/invites/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId: id, inviterEmail: signedInEmail, invitedEmail: recipientEmail, expiresHours: 168 }),
-      cache: "no-store",
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) return NextResponse.json(data, { status: response.status });
+    if (emails.length > 100) {
+      return NextResponse.json({ ok: false, error: "Send no more than 100 invitations in one batch." }, { status: 400 });
+    }
+
+    const invalid = emails.filter((email) => !EMAIL_PATTERN.test(email));
+    if (invalid.length) {
+      return NextResponse.json({
+        ok: false,
+        error: `Fix these email addresses: ${invalid.slice(0, 5).join(", ")}${invalid.length > 5 ? "…" : ""}`,
+      }, { status: 400 });
+    }
+
+    const invites = [];
+    const failures: { recipient_email: string; error: string }[] = [];
+    const origin = request.nextUrl.origin;
+
+    for (const recipientEmail of emails) {
+      try {
+        const response = await fetch(`${API}/invites/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId: id,
+            inviterEmail: signedInEmail,
+            invitedEmail: recipientEmail,
+            expiresHours: 168,
+          }),
+          cache: "no-store",
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          failures.push({ recipient_email: recipientEmail, error: data.error || "Invitation could not be created" });
+          continue;
+        }
+        invites.push({
+          id: data.token,
+          token: data.token,
+          event_id: id,
+          delivery: "email",
+          recipient_email: recipientEmail,
+          expires_at: data.expiresAt,
+          link: `${origin}/rsvp.html?token=${encodeURIComponent(data.token)}`,
+        });
+      } catch (error) {
+        failures.push({
+          recipient_email: recipientEmail,
+          error: error instanceof Error ? error.message : "Invitation could not be created",
+        });
+      }
+    }
+
+    if (!invites.length) {
+      return NextResponse.json({
+        ok: false,
+        error: failures[0]?.error || "No invitations could be created.",
+        failures,
+      }, { status: 502 });
+    }
+
     return NextResponse.json({
       ok: true,
-      invites: [{
-        id: data.token,
-        token: data.token,
-        event_id: id,
-        delivery: "email",
-        recipient_email: recipientEmail,
-        expires_at: data.expiresAt,
-        link: `https://staging.thefamilyweather.com/rsvp.html?token=${encodeURIComponent(data.token)}`,
-      }],
+      count: invites.length,
+      invites,
+      failures,
     });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Invitation service unavailable" }, { status: 502 });
+    return NextResponse.json({
+      ok: false,
+      error: error instanceof Error ? error.message : "Invitation service unavailable",
+    }, { status: 502 });
   }
 }
