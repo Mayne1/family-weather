@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { loadSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
+import type { AuthSession } from "./lib/firebaseAuth";
 
 const activities = [
   ["cookout", "♨", "Cookout"],
@@ -30,6 +32,7 @@ type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp
 type HomeWeather = { current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number }; days: WeatherDay[] };
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
+type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
 
 function weatherSymbol(code: number) {
   if (code >= 200 && code < 700) return "☂";
@@ -49,8 +52,18 @@ export default function Home() {
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState("");
+  const [eventDetails, setEventDetails] = useState<EventDetails | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [savedEvent, setSavedEvent] = useState<{ id: string; title: string } | null>(null);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
+    setSession(loadSession());
     fetch("/api/weather/home", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => data.ok && setHomeWeather(data))
@@ -68,6 +81,14 @@ export default function Home() {
     setPlanLoading(true);
     setPlanError("");
     const values = Object.fromEntries(new FormData(event.currentTarget));
+    const details = {
+      name: String(values.name || "Family event"),
+      activity: String(values.activity || "event"),
+      guests: String(values.guests || ""),
+      location: String(values.location || ""),
+      date: String(values.date || ""),
+      time: String(values.time || ""),
+    };
     try {
       const response = await fetch("/api/weather/plan", {
         method: "POST",
@@ -76,12 +97,71 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "Weather check failed");
+      setEventDetails(details);
       setPlan(data);
       setEventStep("review");
     } catch (error) {
       setPlanError(error instanceof Error ? error.message : "Weather check failed");
     } finally {
       setPlanLoading(false);
+    }
+  };
+
+  const authenticate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const email = String(values.get("email") || "").trim();
+      const password = String(values.get("password") || "");
+      const nextSession = authMode === "signin" ? await signIn(email, password) : await signUp(email, password);
+      setSession(nextSession);
+      setShowAuth(false);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Sign in failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const saveEvent = async () => {
+    if (!session) {
+      setShowAuth(true);
+      return;
+    }
+    if (!eventDetails || !plan) return;
+    setSaveLoading(true);
+    setSaveError("");
+    try {
+      const starts = new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`);
+      const ends = new Date(starts.getTime() + 3 * 60 * 60 * 1000);
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.idToken}` },
+        body: JSON.stringify({
+          title: eventDetails.name,
+          description: `${eventDetails.activity} · ${eventSpace} · ${eventDetails.guests || "unspecified"} guests · Weather fit ${plan.score}/100 · Best window ${plan.bestWindow}`,
+          location: eventDetails.location,
+          starts_at: starts.toISOString(),
+          ends_at: ends.toISOString(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        if (response.status === 401) {
+          signOut();
+          setSession(null);
+          setShowAuth(true);
+          throw new Error("Your sign-in expired. Please sign in again.");
+        }
+        throw new Error(data.error || "Event could not be saved");
+      }
+      setSavedEvent(data.event);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Event could not be saved");
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -107,7 +187,7 @@ export default function Home() {
           <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#how">How it works</a>
         </nav>
         <div className="headerActions">
-          <button className="textButton" type="button">Sign in</button>
+          {session ? <button className="textButton" type="button" onClick={() => { signOut(); setSession(null); }}>{session.email} · Sign out</button> : <button className="textButton" type="button" onClick={() => setShowAuth(true)}>Sign in</button>}
           <button className="pillButton" type="button" onClick={openEvent}>Create event</button>
         </div>
       </header>
@@ -218,13 +298,16 @@ export default function Home() {
                 <p className="formIntro">Real {plan?.source?.toUpperCase() || "weather"} data for {plan?.location}. The recommendation reflects an {plan?.space} {plan?.activity}.</p>
                 <div className="reviewScore"><div><small>WEATHER FIT</small><strong>{plan?.score ?? "—"}</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>{plan?.bestWindow ?? "—"}</strong><span>Based on the selected setting</span></div></div>
                 <div className="adviceList">{plan?.advice.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
-                <button className="primaryCta" type="button">Save event and invite family <span>→</span></button>
-                <p className="quietNote">Preview only—nothing will be saved or sent yet.</p>
+                {savedEvent ? <div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
+                {saveError && <p className="formError">{saveError}</p>}
+                <p className="quietNote">{savedEvent ? `Event ID: ${savedEvent.id}` : session ? `Saving as ${session.email}` : "Your plan stays on this screen while you sign in."}</p>
               </div>
             )}
           </section>
         </div>
       )}
+
+      {showAuth && <div className="modal authModal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onMouseDown={(event) => event.target === event.currentTarget && setShowAuth(false)}><form className="modalCard" onSubmit={authenticate}><button className="close" type="button" onClick={() => setShowAuth(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Family Weather account</p><h2 id="auth-title">{authMode === "signin" ? "Welcome back." : "Create your account."}</h2><p>{authMode === "signin" ? "Sign in to save this plan and invite your family." : "Use your email to keep events and invitations together."}</p><label className="formField"><span>Email address</span><input name="email" type="email" required autoComplete="email" /></label><label className="formField"><span>Password</span><input name="password" type="password" required minLength={6} autoComplete={authMode === "signin" ? "current-password" : "new-password"} /></label>{authError && <p className="formError">{authError}</p>}<button className="primaryCta" type="submit" disabled={authLoading}>{authLoading ? "One moment…" : authMode === "signin" ? "Sign in" : "Create account"}<span>→</span></button><button className="authSwitch" type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); }}>{authMode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}</button></form></div>}
     </>
   );
 }
