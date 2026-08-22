@@ -6,10 +6,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ to
   try {
     const { token } = await context.params;
     const body = await request.json();
-    const response = await fetch(`${API}/invites/${encodeURIComponent(token)}/rsvp`, {
+    const response = await fetch(`${API}/invites/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ token, response: body.response, responderEmail: body.email || null }),
       cache: "no-store",
     });
     const data = await response.json();
