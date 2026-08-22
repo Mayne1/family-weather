@@ -62,7 +62,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const invites = [];
     const failures: { recipient_email: string; error: string }[] = [];
-    const origin = request.nextUrl.origin;
+    const forwardedHost = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "")
+      .split(",")[0]
+      .trim();
+    const forwardedProto = (request.headers.get("x-forwarded-proto") || "https")
+      .split(",")[0]
+      .trim()
+      .toLowerCase();
+    const publicHost = /^(?:[a-z0-9-]+\.)?thefamilyweather\.com(?::\d+)?$/i.test(forwardedHost)
+      ? forwardedHost
+      : "staging.thefamilyweather.com";
+    const origin = `${forwardedProto === "http" ? "http" : "https"}://${publicHost}`;
 
     for (const recipientEmail of emails) {
       try {
