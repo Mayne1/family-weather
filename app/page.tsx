@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
 const activities = [
   ["cookout", "♨", "Cookout"],
@@ -18,12 +19,24 @@ const dates = [
   ["MORE", "＋", "Choose"],
 ];
 
-const forecast = [
+const fallbackForecast = [
   ["TODAY", "Saturday", "☀", "86°", "Best bet", "after 4 PM", "featured"],
   ["TOMORROW", "Sunday", "◒", "83°", "Easy day", "for outdoor plans", ""],
   ["MON", "Monday", "☁", "78°", "Comfortable", "most of the day", ""],
   ["TUE", "Tuesday", "☂", "72°", "Have cover", "ready after 2 PM", "caution"],
 ];
+
+type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
+type HomeWeather = { current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number }; days: WeatherDay[] };
+type PlanAdvice = { tone: string; title: string; copy: string };
+type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
+
+function weatherSymbol(code: number) {
+  if (code >= 200 && code < 700) return "☂";
+  if (code === 800) return "☀";
+  if (code > 800) return "◒";
+  return "☁";
+}
 
 export default function Home() {
   const [activity, setActivity] = useState("cookout");
@@ -32,12 +45,50 @@ export default function Home() {
   const [showEvent, setShowEvent] = useState(false);
   const [eventStep, setEventStep] = useState<"details" | "review">("details");
   const [eventSpace, setEventSpace] = useState("outdoor");
+  const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
+  const [plan, setPlan] = useState<PlanResult | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/weather/home", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((data) => data.ok && setHomeWeather(data))
+      .catch(() => setHomeWeather(null));
+  }, []);
 
   const openEvent = () => {
     setShowResult(false);
     setEventStep("details");
     setShowEvent(true);
   };
+
+  const reviewEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPlanLoading(true);
+    setPlanError("");
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    try {
+      const response = await fetch("/api/weather/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...values, space: eventSpace }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Weather check failed");
+      setPlan(data);
+      setEventStep("review");
+    } catch (error) {
+      setPlanError(error instanceof Error ? error.message : "Weather check failed");
+    } finally {
+      setPlanLoading(false);
+    }
+  };
+
+  const today = homeWeather?.days?.[0];
+  const liveForecast = homeWeather?.days?.length
+    ? homeWeather.days.map((item, index) => [index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), weatherSymbol(item.weather_code), `${item.temp_max_f}°`, item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : ""])
+    : fallbackForecast;
 
   return (
     <>
@@ -68,12 +119,12 @@ export default function Home() {
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
             <p className="intro">Family Weather turns the forecast into a simple decision—when to go, what to expect, and what your people need to know.</p>
             <div className="decisionCard">
-              <div className="decisionTop"><span className="statusDot" /><span>Best outdoor window</span><strong>4–7 PM</strong></div>
+              <div className="decisionTop"><span className="statusDot" /><span>Stockton right now</span><strong>LIVE</strong></div>
               <div className="decisionMain">
-                <div><span className="temperature">82°</span><span className="condition">Clear skies<br />Light breeze</span></div>
-                <div className="score" aria-label="Weather fit score 92 out of 100"><span>92</span><small>FIT</small></div>
+                <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
+                <div className="score" aria-label="Today’s forecast high"><span>{today?.temp_max_f ?? "—"}°</span><small>HIGH</small></div>
               </div>
-              <p><strong>Go for it.</strong> Shade will help before 5 PM. Wind stays comfortable through sunset.</p>
+              <p><strong>{today?.shortForecast || "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
             </div>
           </div>
 
@@ -100,7 +151,7 @@ export default function Home() {
         <section className="outlook" id="outlook">
           <div className="sectionHeading"><div><p className="eyebrow dark"><span /> The next few days</p><h2>Weather you can use.</h2></div><p>Not just numbers. Each day comes with a plain-language recommendation for your plans.</p></div>
           <div className="forecastGrid">
-            {forecast.map(([label, day, icon, temp, lead, copy, style]) => (
+            {liveForecast.map(([label, day, icon, temp, lead, copy, style]) => (
               <article className={`forecastDay ${style}`} key={day}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p></article>
             ))}
           </div>
@@ -130,17 +181,17 @@ export default function Home() {
             </div>
 
             {eventStep === "details" ? (
-              <form className="eventForm" onSubmit={(event) => { event.preventDefault(); setEventStep("review"); }}>
+              <form className="eventForm" onSubmit={reviewEvent}>
                 <h2 id="event-title">Tell us what you’re planning.</h2>
                 <p className="formIntro">Just the useful details. We’ll use them to judge the weather for this particular event.</p>
 
                 <div className="formGrid">
-                  <label className="formField full"><span>Event name</span><input required placeholder="Johnson family cookout" /></label>
-                  <label className="formField"><span>Activity</span><select defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
-                  <label className="formField"><span>Guests</span><input type="number" min="1" defaultValue="12" /></label>
-                  <label className="formField full"><span>Location</span><input required defaultValue="Stockton, California" /></label>
-                  <label className="formField"><span>Date</span><input type="date" defaultValue="2026-08-22" /></label>
-                  <label className="formField"><span>Start time</span><input type="time" defaultValue="16:00" /></label>
+                  <label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label>
+                  <label className="formField"><span>Activity</span><select name="activity" defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
+                  <label className="formField"><span>Guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label>
+                  <label className="formField full"><span>Location or ZIP code</span><input name="location" required defaultValue="Stockton, CA 95206" /></label>
+                  <label className="formField"><span>Date</span><input name="date" type="date" defaultValue="2026-08-22" /></label>
+                  <label className="formField"><span>Start time</span><input name="time" type="time" defaultValue="16:00" /></label>
                 </div>
 
                 <fieldset className="spaceChoice">
@@ -154,18 +205,19 @@ export default function Home() {
 
                 <fieldset className="concerns">
                   <legend>What could ruin the plan?</legend>
-                  <label><input type="checkbox" defaultChecked /> Rain</label><label><input type="checkbox" defaultChecked /> Heat</label><label><input type="checkbox" /> Wind</label><label><input type="checkbox" /> Air quality</label>
+                  <label><input name="concern" value="rain" type="checkbox" defaultChecked /> Rain</label><label><input name="concern" value="heat" type="checkbox" defaultChecked /> Heat</label><label><input name="concern" value="wind" type="checkbox" /> Wind</label><label><input name="concern" value="air" type="checkbox" /> Air quality</label>
                 </fieldset>
 
-                <button className="primaryCta" type="submit">Review the weather fit <span>→</span></button>
+                {planError && <p className="formError">{planError}</p>}
+                <button className="primaryCta" type="submit" disabled={planLoading}>{planLoading ? "Checking real weather…" : "Review the weather fit"} <span>→</span></button>
               </form>
             ) : (
               <div className="eventReview">
                 <button className="backButton" type="button" onClick={() => setEventStep("details")}>← Edit details</button>
-                <h2>This plan has a strong weather window.</h2>
-                <p className="formIntro">Saturday’s conditions favor an {eventSpace} event. The best balance of temperature, wind and sun begins after 4 PM.</p>
-                <div className="reviewScore"><div><small>WEATHER FIT</small><strong>92</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>4–7 PM</strong><span>Comfortable through sunset</span></div></div>
-                <div className="adviceList"><article><span>✓</span><div><strong>Good to go</strong><p>Rain is unlikely during your event window.</p></div></article><article><span>!</span><div><strong>Plan for early heat</strong><p>Provide shade and cold drinks until about 5 PM.</p></div></article><article><span>✓</span><div><strong>Wind stays manageable</strong><p>No special setup changes are expected.</p></div></article></div>
+                <h2>{(plan?.score ?? 0) >= 80 ? "This plan has a strong weather window." : (plan?.score ?? 0) >= 60 ? "This plan can work with preparation." : "This plan needs a backup."}</h2>
+                <p className="formIntro">Real {plan?.source?.toUpperCase() || "weather"} data for {plan?.location}. The recommendation reflects an {plan?.space} {plan?.activity}.</p>
+                <div className="reviewScore"><div><small>WEATHER FIT</small><strong>{plan?.score ?? "—"}</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>{plan?.bestWindow ?? "—"}</strong><span>Based on the selected setting</span></div></div>
+                <div className="adviceList">{plan?.advice.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
                 <button className="primaryCta" type="button">Save event and invite family <span>→</span></button>
                 <p className="quietNote">Preview only—nothing will be saved or sent yet.</p>
               </div>
