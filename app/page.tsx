@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { loadSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
+import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
 
 const activities = [
@@ -60,7 +60,7 @@ export default function Home() {
   const [createdInvites, setCreatedInvites] = useState<CreatedInvite[]>([]);
 
   useEffect(() => {
-    setSession(loadSession());
+    getValidSession().then(setSession);
     fetch("/api/weather/home", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => data.ok && setHomeWeather(data))
@@ -132,10 +132,13 @@ export default function Home() {
   };
 
   const saveEvent = async () => {
-    if (!session) {
+    const activeSession = await getValidSession();
+    if (!activeSession) {
+      setSession(null);
       setShowAuth(true);
       return;
     }
+    setSession(activeSession);
     if (!eventDetails || !plan) return;
     setSaveLoading(true);
     setSaveError("");
@@ -144,7 +147,7 @@ export default function Home() {
       const ends = new Date(starts.getTime() + 3 * 60 * 60 * 1000);
       const response = await fetch("/api/events", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.idToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
         body: JSON.stringify({
           title: eventDetails.name,
           description: `${eventDetails.activity} · ${eventSpace} · ${eventDetails.guests || "unspecified"} guests · Weather fit ${plan.score}/100 · Best window ${plan.bestWindow}`,
@@ -180,13 +183,16 @@ export default function Home() {
     setInviteLoading(true);
     setInviteError("");
     try {
+      const activeSession = await getValidSession();
+      if (!activeSession) throw new Error("Your sign-in expired. Sign in again before creating an invitation.");
+      setSession(activeSession);
       const response = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invites`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.idToken || ""}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
         body: JSON.stringify({
           delivery: "email",
           recipient_email: recipient,
-          created_by_email: session?.email || null,
+          created_by_email: activeSession.email,
         }),
       });
       const data = await response.json();
