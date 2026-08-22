@@ -49,7 +49,7 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
 }
 
 async function resolveLocation(query: string) {
-  const normalized = query.match(/^(.+?)\\s+([A-Za-z]{2})$/) ? query.replace(/^(.+?)\\s+([A-Za-z]{2})$/, "$1, $2") : query;
+  const normalized = query.match(/^(.+?)\s+([A-Za-z]{2})$/) ? query.replace(/^(.+?)\s+([A-Za-z]{2})$/, "$1, $2") : query;
   const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(normalized)}&count=5&language=en&format=json&countryCode=US`, { cache: "no-store" });
   if (!response.ok) throw new Error("Location lookup failed");
   const data = await response.json();
