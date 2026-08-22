@@ -33,14 +33,30 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const body = await request.json();
-    const response = await fetch(`${API}/events/${encodeURIComponent(id)}/invites`, {
+    const recipientEmail = String(body.recipient_email || "").trim();
+    if (!recipientEmail) {
+      return NextResponse.json({ ok: false, error: "Enter an email address." }, { status: 400 });
+    }
+    const response = await fetch(`${API}/invites/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, delivery: "email", recipient_phone: null, base_url: "https://staging.thefamilyweather.com" }),
+      body: JSON.stringify({ eventId: id, inviterEmail: signedInEmail, invitedEmail: recipientEmail, expiresHours: 168 }),
       cache: "no-store",
     });
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    if (!response.ok || !data.ok) return NextResponse.json(data, { status: response.status });
+    return NextResponse.json({
+      ok: true,
+      invites: [{
+        id: data.token,
+        token: data.token,
+        event_id: id,
+        delivery: "email",
+        recipient_email: recipientEmail,
+        expires_at: data.expiresAt,
+        link: `https://staging.thefamilyweather.com/rsvp.html?token=${encodeURIComponent(data.token)}`,
+      }],
+    });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Invitation service unavailable" }, { status: 502 });
   }
