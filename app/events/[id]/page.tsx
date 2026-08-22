@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { loadSession } from "../../lib/firebaseAuth";
+import { getValidSession } from "../../lib/firebaseAuth";
 
 type EventDetail = {
   id: string;
@@ -32,13 +32,10 @@ export default function EventDetailPage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const session = loadSession();
-    if (!session) {
-      setError("Sign in to manage this event.");
-      setLoading(false);
-      return;
-    }
-    fetch(`/api/events/${id}`, { headers: { Authorization: `Bearer ${session.idToken}` }, cache: "no-store" })
+    getValidSession().then((session) => {
+      if (!session) throw new Error("Your sign-in expired. Return home and sign in again.");
+      return fetch(`/api/events/${id}`, { headers: { Authorization: `Bearer ${session.idToken}` }, cache: "no-store" });
+    })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.error || "Event unavailable");
@@ -58,7 +55,7 @@ export default function EventDetailPage() {
 
   async function deleteEvent() {
     if (!event || !window.confirm(`Delete “${event.title}”? This also removes its invitations and RSVP answers.`)) return;
-    const session = loadSession();
+    const session = await getValidSession();
     if (!session) return setError("Sign in again before deleting.");
     setDeleting(true);
     const response = await fetch(`/api/events/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.idToken}` } });
