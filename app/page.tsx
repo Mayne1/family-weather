@@ -308,7 +308,26 @@ export default function Home() {
     const form = event.currentTarget;
     if (!savedEvent) return;
     const values = new FormData(event.currentTarget);
-    const recipient = String(values.get("recipient") || "").trim();
+    const recipientText = String(values.get("recipients") || "").trim();
+    const recipients = [...new Set(
+      recipientText
+        .split(/[\\s,;]+/)
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    )];
+    const invalid = recipients.filter((email) => !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email));
+    if (!recipients.length) {
+      setInviteError("Enter at least one email address.");
+      return;
+    }
+    if (recipients.length > 100) {
+      setInviteError("Paste no more than 100 email addresses at a time.");
+      return;
+    }
+    if (invalid.length) {
+      setInviteError(`Fix these email addresses: ${invalid.slice(0, 5).join(", ")}${invalid.length > 5 ? "…" : ""}`);
+      return;
+    }
     setInviteLoading(true);
     setInviteError("");
     try {
@@ -320,7 +339,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
         body: JSON.stringify({
           delivery: "email",
-          recipient_email: recipient,
+          recipient_emails: recipients,
           created_by_email: activeSession.email,
         }),
       });
@@ -469,7 +488,7 @@ export default function Home() {
                 <p className="formIntro">Real {plan?.source?.toUpperCase() || "weather"} data for {plan?.location}. The recommendation reflects an {plan?.space} {plan?.activity}.</p>
                 <div className="reviewScore"><div><small>WEATHER FIT</small><strong>{plan?.score ?? "—"}</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>{plan?.bestWindow ?? "—"}</strong><span>Based on the selected setting</span></div></div>
                 <div className="adviceList">{plan?.advice.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
-                {savedEvent ? <><div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div><form className="inviteBuilder" onSubmit={createInvite}><div><small>03 · INVITE YOUR PEOPLE</small><h3>Create a private RSVP link.</h3><p>Add one person at a time. You can copy and share every link yourself.</p></div><label className="formField"><span>Family member’s email</span><input name="recipient" required type="email" placeholder="family@example.com" /></label><button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitation…" : "Create invitation"}<span>→</span></button>{inviteError && <p className="formError">{inviteError}</p>}</form>{createdInvites.length > 0 && <div className="inviteResults">{createdInvites.map((invite) => <article key={invite.id}><div><strong>{invite.recipient_email || "Shareable invitation"}</strong><small>Link ready to share</small></div><button type="button" onClick={() => navigator.clipboard.writeText(invite.link)}>Copy link</button><a href={invite.link} target="_blank" rel="noreferrer">Open</a></article>)}</div>}</> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
+                {savedEvent ? <><div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div><form className="inviteBuilder" onSubmit={createInvite}><div><small>03 · INVITE YOUR PEOPLE</small><h3>Create private RSVP links.</h3><p>Paste up to 100 email addresses. Separate them with commas, semicolons, spaces, or new lines. Each person receives their own private response link.</p></div><label className="formField"><span>Family members’ email addresses</span><textarea name="recipients" required rows={5} placeholder={"maya@example.com, jordan@example.com\\nterry@example.com"} /></label><button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitations…" : "Create invitations"}<span>→</span></button>{inviteError && <p className="formError">{inviteError}</p>}</form>{createdInvites.length > 0 && <div className="inviteResults">{createdInvites.map((invite) => <article key={invite.id}><div><strong>{invite.recipient_email || "Shareable invitation"}</strong><small>Link ready to share</small></div><button type="button" onClick={() => navigator.clipboard.writeText(invite.link)}>Copy link</button><a href={invite.link} target="_blank" rel="noreferrer">Open</a></article>)}</div>}</> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
                 {saveError && <p className="formError">{saveError}</p>}
                 <p className="quietNote">{savedEvent ? `Event ID: ${savedEvent.id}` : session ? `Saving as ${session.email}` : "Your plan stays on this screen while you sign in."}</p>
               </div>
