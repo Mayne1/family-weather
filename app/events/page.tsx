@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loadSession } from "../lib/firebaseAuth";
+import { getValidSession } from "../lib/firebaseAuth";
 import type { AuthSession } from "../lib/firebaseAuth";
 
 type FamilyEvent = {
@@ -22,13 +22,11 @@ export default function EventsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const current = loadSession();
-    setSession(current);
-    if (!current) {
-      setLoading(false);
-      return;
-    }
-    fetch("/api/events", { headers: { Authorization: `Bearer ${current.idToken}` }, cache: "no-store" })
+    getValidSession().then((current) => {
+      setSession(current);
+      if (!current) throw new Error("Sign in to see your events.");
+      return fetch("/api/events", { headers: { Authorization: `Bearer ${current.idToken}` }, cache: "no-store" });
+    })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.error || "Events unavailable");
