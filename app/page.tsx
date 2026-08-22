@@ -29,6 +29,15 @@ export default function Home() {
   const [activity, setActivity] = useState("cookout");
   const [date, setDate] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [showEvent, setShowEvent] = useState(false);
+  const [eventStep, setEventStep] = useState<"details" | "review">("details");
+  const [eventSpace, setEventSpace] = useState("outdoor");
+
+  const openEvent = () => {
+    setShowResult(false);
+    setEventStep("details");
+    setShowEvent(true);
+  };
 
   return (
     <>
@@ -48,7 +57,7 @@ export default function Home() {
         </nav>
         <div className="headerActions">
           <button className="textButton" type="button">Sign in</button>
-          <button className="pillButton" type="button">Create event</button>
+          <button className="pillButton" type="button" onClick={openEvent}>Create event</button>
         </div>
       </header>
 
@@ -109,7 +118,61 @@ export default function Home() {
 
       <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p>Privacy · Terms · SMS consent</p></footer>
 
-      {showResult && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Your planning answer</p><h2 id="result-title">Your {activity} looks good.</h2><div className="resultAnswer"><span>BEST TIME</span><strong>4–7 PM</strong></div><p>Clear skies and manageable heat. Set up shade for the first hour and secure lightweight table coverings.</p><button className="primaryCta" type="button">Create this event <span>→</span></button></div></div>}
+      {showResult && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Your planning answer</p><h2 id="result-title">Your {activity} looks good.</h2><div className="resultAnswer"><span>BEST TIME</span><strong>4–7 PM</strong></div><p>Clear skies and manageable heat. Set up shade for the first hour and secure lightweight table coverings.</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+
+      {showEvent && (
+        <div className="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="event-title" onMouseDown={(event) => event.target === event.currentTarget && setShowEvent(false)}>
+          <section className="eventPanel">
+            <button className="close" type="button" onClick={() => setShowEvent(false)} aria-label="Close">×</button>
+            <div className="eventHeader">
+              <p className="eyebrow dark"><span /> Create an event</p>
+              <p className="progressLabel">{eventStep === "details" ? "01 · THE PLAN" : "02 · WEATHER CHECK"}</p>
+            </div>
+
+            {eventStep === "details" ? (
+              <form className="eventForm" onSubmit={(event) => { event.preventDefault(); setEventStep("review"); }}>
+                <h2 id="event-title">Tell us what you’re planning.</h2>
+                <p className="formIntro">Just the useful details. We’ll use them to judge the weather for this particular event.</p>
+
+                <div className="formGrid">
+                  <label className="formField full"><span>Event name</span><input required placeholder="Johnson family cookout" /></label>
+                  <label className="formField"><span>Activity</span><select defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
+                  <label className="formField"><span>Guests</span><input type="number" min="1" defaultValue="12" /></label>
+                  <label className="formField full"><span>Location</span><input required defaultValue="Stockton, California" /></label>
+                  <label className="formField"><span>Date</span><input type="date" defaultValue="2026-08-22" /></label>
+                  <label className="formField"><span>Start time</span><input type="time" defaultValue="16:00" /></label>
+                </div>
+
+                <fieldset className="spaceChoice">
+                  <legend>Where will people spend their time?</legend>
+                  <div>
+                    {[["indoor", "⌂", "Indoor", "Weather matters mostly for travel."], ["outdoor", "☀", "Outdoor", "Comfort and exposure matter most."], ["both", "◐", "Both", "We’ll evaluate inside and outside." ]].map(([value, icon, title, copy]) => (
+                      <button key={value} className={eventSpace === value ? "active" : ""} type="button" onClick={() => setEventSpace(value)}><b>{icon}</b><span><strong>{title}</strong><small>{copy}</small></span></button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <fieldset className="concerns">
+                  <legend>What could ruin the plan?</legend>
+                  <label><input type="checkbox" defaultChecked /> Rain</label><label><input type="checkbox" defaultChecked /> Heat</label><label><input type="checkbox" /> Wind</label><label><input type="checkbox" /> Air quality</label>
+                </fieldset>
+
+                <button className="primaryCta" type="submit">Review the weather fit <span>→</span></button>
+              </form>
+            ) : (
+              <div className="eventReview">
+                <button className="backButton" type="button" onClick={() => setEventStep("details")}>← Edit details</button>
+                <h2>This plan has a strong weather window.</h2>
+                <p className="formIntro">Saturday’s conditions favor an {eventSpace} event. The best balance of temperature, wind and sun begins after 4 PM.</p>
+                <div className="reviewScore"><div><small>WEATHER FIT</small><strong>92</strong><span>out of 100</span></div><div><small>BEST WINDOW</small><strong>4–7 PM</strong><span>Comfortable through sunset</span></div></div>
+                <div className="adviceList"><article><span>✓</span><div><strong>Good to go</strong><p>Rain is unlikely during your event window.</p></div></article><article><span>!</span><div><strong>Plan for early heat</strong><p>Provide shade and cold drinks until about 5 PM.</p></div></article><article><span>✓</span><div><strong>Wind stays manageable</strong><p>No special setup changes are expected.</p></div></article></div>
+                <button className="primaryCta" type="button">Save event and invite family <span>→</span></button>
+                <p className="quietNote">Preview only—nothing will be saved or sent yet.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </>
   );
 }
