@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const API = "http://127.0.0.1:3000";
 const FIREBASE_API_KEY = "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const INVITATION_DESIGNS = new Set(["classic", "birthday", "graduation", "garden", "family", "night", "basic"]);
 
 function parseEmails(value: unknown) {
   const raw = Array.isArray(value) ? value.map(String) : [String(value || "")];
@@ -44,8 +45,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const body = await request.json();
+    const requestedDesign = String(body.design || "classic").trim().toLowerCase();
+    const design = INVITATION_DESIGNS.has(requestedDesign) ? requestedDesign : "classic";
+    const shareable = body.shareable === true;
     const emails = parseEmails(body.recipient_emails ?? body.recipient_email);
-    if (!emails.length) {
+    if (!shareable && !emails.length) {
       return NextResponse.json({ ok: false, error: "Enter at least one email address." }, { status: 400 });
     }
     if (emails.length > 100) {
@@ -74,7 +78,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       : "staging.thefamilyweather.com";
     const origin = `${forwardedProto === "http" ? "http" : "https"}://${publicHost}`;
 
-    for (const recipientEmail of emails) {
+    const recipients: Array<string | null> = shareable ? [null] : emails;
+    for (const recipientEmail of recipients) {
       try {
         const response = await fetch(`${API}/invites/create`, {
           method: "POST",
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           body: JSON.stringify({
             eventId: id,
             inviterEmail: signedInEmail,
-            invitedEmail: recipientEmail,
+            invitedEmail: recipientEmail || undefined,
             expiresHours: 168,
           }),
           cache: "no-store",
@@ -97,13 +102,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           token: data.token,
           event_id: id,
           delivery: "email",
-          recipient_email: recipientEmail,
+          recipient_email: recipientEmail || undefined,
           expires_at: data.expiresAt,
-          link: `${origin}/rsvp.html?token=${encodeURIComponent(data.token)}`,
+          design,
+          link: `${origin}/rsvp.html?token=${encodeURIComponent(data.token)}&design=${encodeURIComponent(design)}`,
         });
       } catch (error) {
         failures.push({
-          recipient_email: recipientEmail,
+          recipient_email: recipientEmail || "Shareable link",
           error: error instanceof Error ? error.message : "Invitation could not be created",
         });
       }

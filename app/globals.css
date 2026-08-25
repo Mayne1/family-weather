@@ -220,6 +220,19 @@ to{opacity:1;transform:none}
 .inviteBuilder small{font-size:.63rem;font-weight:800;letter-spacing:.12em;color:#528492}
 .inviteBuilder h3{margin:.4rem 0;font-size:1.25rem}
 .inviteBuilder p{margin:0 0 1rem;color:var(--muted);font-size:.82rem}
+.invitePeopleIntro{margin-top:1.3rem;padding-top:1.3rem;border-top:1px solid var(--line)}
+.designChooser{margin:1rem 0 0;padding:0;border:0}
+.designChooser legend{margin-bottom:.65rem;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#52656c}
+.designChooser>div{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem}
+.designChooser button{--design-accent:#f5c451;display:flex;align-items:center;gap:.65rem;min-height:76px;padding:.7rem;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
+.designChooser button>b{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:50%;background:color-mix(in srgb,var(--design-accent) 24%,white);font-size:1.05rem}
+.designChooser button span,.designChooser button strong,.designChooser button small{display:block}
+.designChooser button small{margin-top:.15rem;color:var(--muted);font-size:.64rem;letter-spacing:0}
+.designChooser button.active{border-color:var(--design-accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--design-accent) 28%,transparent);background:color-mix(in srgb,var(--design-accent) 7%,white)}
+.designChooser .design-birthday{--design-accent:#ef6f74}.designChooser .design-graduation{--design-accent:#1b5770}.designChooser .design-garden{--design-accent:#70a37f}.designChooser .design-family{--design-accent:#dc8f74}.designChooser .design-night{--design-accent:#745ca4}.designChooser .design-basic{--design-accent:#7e8e92}
+.shareLinkOption{margin-top:1rem;padding:.8rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-radius:14px;background:#eaf3f1}
+.shareLinkOption strong,.shareLinkOption small{display:block}.shareLinkOption small{margin-top:.2rem;color:var(--muted);font-size:.7rem;line-height:1.4}
+.shareLinkOption button{flex:0 0 auto;padding:.65rem .85rem;border:0;border-radius:999px;background:var(--ink);color:white;font-size:.72rem;font-weight:800;cursor:pointer}.shareLinkOption button:disabled{opacity:.55;cursor:wait}
 .inviteMethod{display:flex;gap:.5rem;margin-bottom:1rem}
 .inviteMethod button{padding:.55rem 1rem;border:1px solid var(--line);border-radius:999px;background:white;color:var(--ink);cursor:pointer}
 .inviteMethod button.active{background:var(--ink);color:white}
@@ -229,10 +242,32 @@ to{opacity:1;transform:none}
 .inviteResults small{margin-top:.2rem;color:var(--muted)}
 .inviteResults button,.inviteResults a{border:0;background:white;border-radius:999px;padding:.5rem .7rem;color:#286e7e;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer}
 
-.rsvpPage{min-height:100vh;padding:5vh 1rem;display:grid;place-items:center;background:linear-gradient(135deg,#071b25,#0b4054 60%,#65c8d7)}
-.rsvpCard{width:min(650px,100%);padding:clamp(1.3rem,4vw,3rem);border-radius:28px;background:var(--paper);box-shadow:var(--shadow)}
+.rsvpPage{--invitation-ink:#102c36;--invitation-accent:#d29e35;--invitation-paper:#fffaf0;min-height:100vh;padding:5vh 1rem;display:grid;place-items:center;background:linear-gradient(135deg,#071b25,#0b4054 60%,#65c8d7)}
+.rsvpTheme-birthday{--invitation-ink:#542135;--invitation-accent:#ef6f74;--invitation-paper:#fff2ea;background:linear-gradient(135deg,#3c1830,#b23d62 58%,#ffbe68)}
+.rsvpTheme-graduation{--invitation-ink:#142c45;--invitation-accent:#d6a73e;--invitation-paper:#f4f8fb;background:linear-gradient(135deg,#091a2f,#1b5770 62%,#d5aa48)}
+.rsvpTheme-garden{--invitation-ink:#284531;--invitation-accent:#70a37f;--invitation-paper:#fbfaee;background:linear-gradient(135deg,#183b32,#5f9074 55%,#d6c686)}
+.rsvpTheme-family{--invitation-ink:#4f2b27;--invitation-accent:#dc8f74;--invitation-paper:#fff8f0;background:linear-gradient(135deg,#492820,#a65d4d 58%,#edbd87)}
+.rsvpTheme-night{--invitation-ink:#eee8ff;--invitation-accent:#d7ad5c;--invitation-paper:#171329;background:radial-gradient(circle at 70% 18%,#745ca4,#211936 47%,#090b17)}
+.rsvpTheme-basic{--invitation-ink:#17323a;--invitation-accent:#5ca0ad;--invitation-paper:#f8fbfa}
+.rsvpCard{width:min(760px,100%);padding:clamp(1rem,3vw,2rem);border-radius:28px;background:var(--paper);box-shadow:var(--shadow)}
 .rsvpBrand{display:inline-flex;margin-bottom:2rem;color:var(--ink);font-weight:900;text-decoration:none}
 .rsvpCard h1{margin:.4rem 0 1.4rem;font-size:clamp(2.3rem,7vw,4rem);line-height:.96;letter-spacing:-.05em}
+.invitationCover{position:relative;overflow:hidden;padding:clamp(.75rem,2vw,1.25rem);border-radius:22px;background:var(--invitation-paper);color:var(--invitation-ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--invitation-accent) 32%,transparent)}
+.invitationCover:before,.invitationCover:after{content:"";position:absolute;width:250px;height:250px;border:1px solid color-mix(in srgb,var(--invitation-accent) 35%,transparent);border-radius:50%;pointer-events:none}
+.invitationCover:before{left:-150px;top:-150px}.invitationCover:after{right:-160px;bottom:-160px}
+.invitationFrame{position:relative;z-index:1;min-height:560px;padding:clamp(2rem,7vw,5.5rem) clamp(1.2rem,7vw,5rem);border:1px solid color-mix(in srgb,var(--invitation-accent) 45%,transparent);border-radius:15px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.invitationMark{display:grid;place-items:center;width:64px;height:64px;margin-bottom:1.1rem;border-radius:50%;background:color-mix(in srgb,var(--invitation-accent) 18%,transparent);color:var(--invitation-accent);font-size:1.8rem}
+.invitationKicker{margin:0 0 1rem;color:var(--invitation-accent);font-size:.72rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
+.invitationCover h1{max-width:600px;margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2.8rem,8vw,5.5rem);font-weight:500;line-height:.93;letter-spacing:-.055em;text-wrap:balance}
+.invitationNote{max-width:440px;margin:1.25rem auto 1.7rem;font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;font-style:italic;line-height:1.5;opacity:.76}
+.invitationSummary{width:min(100%,560px);display:grid;grid-template-columns:1fr 1fr;border-top:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent);border-bottom:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
+.invitationSummary p{margin:0;padding:1rem}.invitationSummary p+ p{border-left:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
+.invitationSummary span,.invitationSummary strong{display:block}.invitationSummary span{margin-bottom:.35rem;color:var(--invitation-accent);font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.invitationSummary strong{font-size:.9rem;line-height:1.45}
+.invitationAction{width:min(100%,560px);margin-top:1.3rem;padding:1rem 1.15rem;border:0;border-radius:999px;display:flex;justify-content:space-between;background:var(--invitation-accent);color:#071b25;font-weight:900;cursor:pointer}
+.invitation-night .invitationAction{color:#171329}.invitation-basic .invitationFrame{min-height:480px}.invitation-basic:before,.invitation-basic:after{display:none}
+.rsvpDetails{margin-top:1rem;padding:clamp(1.2rem,4vw,2.3rem);border-radius:22px;background:var(--paper);animation:rsvpReveal .35s ease both}
+.rsvpDetails h2{margin:.3rem 0 1.2rem;font-size:clamp(2rem,6vw,3.3rem);letter-spacing:-.045em}
+@keyframes rsvpReveal{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .eventFacts{display:grid;gap:.6rem;margin:0 0 1.5rem}
 .eventFacts div{padding:1rem;border-radius:14px;background:#eaf3f1}
 .eventFacts dt{font-size:.62rem;font-weight:800;letter-spacing:.12em;color:#557179}
@@ -249,6 +284,11 @@ to{opacity:1;transform:none}
 
 @media(max-width:600px){.inviteResults article{grid-template-columns:1fr auto}
 .inviteResults a{display:none}
+.designChooser>div{grid-template-columns:1fr 1fr}
+.designChooser button{min-height:68px}.designChooser button>b{display:none}
+.shareLinkOption{align-items:flex-start;flex-direction:column}.shareLinkOption button{width:100%}
+.invitationFrame{min-height:500px;padding:2.5rem 1rem}
+.invitationSummary{grid-template-columns:1fr}.invitationSummary p+ p{border-left:0;border-top:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
 .rsvpForm fieldset>div{grid-template-columns:1fr}
 }
 
