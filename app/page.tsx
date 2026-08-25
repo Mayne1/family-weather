@@ -131,7 +131,8 @@ export default function Home() {
           return false;
         });
 
-    loadDefault();
+    // Do not overwrite a detected or saved location with the Stockton fallback.
+    // loadDefault();
 
     const saved = localStorage.getItem("family-weather-home-location");
     if (saved) {

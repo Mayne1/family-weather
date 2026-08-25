@@ -94,7 +94,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         });
         const data = await response.json();
         if (!response.ok || !data.ok) {
-          failures.push({ recipient_email: recipientEmail, error: data.error || "Invitation could not be created" });
+          failures.push({
+            recipient_email: recipientEmail || "Shareable link",
+            error: data.error || "Invitation could not be created",
+          });
           continue;
         }
         invites.push({
