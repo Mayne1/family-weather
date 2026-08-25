@@ -15,12 +15,11 @@ const activities = [
 ];
 
 const invitationDesigns = [
-  { id: "classic", name: "Classic", note: "Warm and timeless", mark: "✦" },
-  { id: "birthday", name: "Birthday", note: "Bright and playful", mark: "🎂" },
-  { id: "graduation", name: "Graduation", note: "Proud and polished", mark: "🎓" },
-  { id: "garden", name: "Garden party", note: "Fresh and relaxed", mark: "❀" },
-  { id: "family", name: "Family gathering", note: "Comfortable and close", mark: "♡" },
-  { id: "night", name: "Evening celebration", note: "Bold after dark", mark: "✧" },
+  { id: "baby", name: "Baby shower", note: "Storybook woodland", mark: "☾" },
+  { id: "birthday", name: "Birthday", note: "Cake, gifts & confetti", mark: "🎂" },
+  { id: "graduation", name: "Graduation", note: "Cap, diploma & gold", mark: "🎓" },
+  { id: "reunion", name: "Family reunion", note: "Generations together", mark: "♡" },
+  { id: "cookout", name: "Cookout", note: "Backyard summer gathering", mark: "♨" },
   { id: "basic", name: "Simple RSVP", note: "Just the useful details", mark: "→" },
 ] as const;
 
@@ -88,7 +87,7 @@ export default function Home() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [createdInvites, setCreatedInvites] = useState<CreatedInvite[]>([]);
-  const [inviteDesign, setInviteDesign] = useState<InvitationDesign>("classic");
+  const [inviteDesign, setInviteDesign] = useState<InvitationDesign>("birthday");
 
   useEffect(() => {
     getValidSession().then(setSession);

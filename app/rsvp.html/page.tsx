@@ -11,6 +11,9 @@ type InviteData = {
 };
 
 const invitationThemes = {
+  baby: { kicker: "A little one is on the way", mark: "☾", note: "Join us in showering this growing family with love." },
+  reunion: { kicker: "Together again", mark: "♡", note: "Come reconnect, laugh, eat, and make another family memory." },
+  cookout: { kicker: "Pull up a chair", mark: "♨", note: "Good food, open air, and good people are waiting." },
   classic: { kicker: "You’re warmly invited", mark: "✦", note: "A plan made for the people who matter." },
   birthday: { kicker: "Come celebrate", mark: "🎂", note: "Another trip around the sun deserves good company." },
   graduation: { kicker: "A proud moment", mark: "🎓", note: "Join us as we celebrate what comes next." },

@@ -229,7 +229,9 @@ to{opacity:1;transform:none}
 .designChooser button span,.designChooser button strong,.designChooser button small{display:block}
 .designChooser button small{margin-top:.15rem;color:var(--muted);font-size:.64rem;letter-spacing:0}
 .designChooser button.active{border-color:var(--design-accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--design-accent) 28%,transparent);background:color-mix(in srgb,var(--design-accent) 7%,white)}
-.designChooser .design-birthday{--design-accent:#ef6f74}.designChooser .design-graduation{--design-accent:#1b5770}.designChooser .design-garden{--design-accent:#70a37f}.designChooser .design-family{--design-accent:#dc8f74}.designChooser .design-night{--design-accent:#745ca4}.designChooser .design-basic{--design-accent:#7e8e92}
+.designChooser .design-baby{--design-accent:#77978d}.designChooser .design-birthday{--design-accent:#ef6f74}.designChooser .design-graduation{--design-accent:#1b5770}.designChooser .design-reunion{--design-accent:#a8663f}.designChooser .design-cookout{--design-accent:#e05e36}.designChooser .design-basic{--design-accent:#7e8e92}
+.designChooser .design-baby>b,.designChooser .design-birthday>b,.designChooser .design-graduation>b,.designChooser .design-reunion>b,.designChooser .design-cookout>b{width:46px;height:52px;border-radius:9px;background-position:center;background-size:cover;color:transparent;box-shadow:inset 0 0 0 1px rgba(7,27,37,.12)}
+.designChooser .design-baby>b{background-image:url('/invitations/baby-shower.webp')}.designChooser .design-birthday>b{background-image:url('/invitations/birthday.webp')}.designChooser .design-graduation>b{background-image:url('/invitations/graduation.webp')}.designChooser .design-reunion>b{background-image:url('/invitations/family-reunion.webp')}.designChooser .design-cookout>b{background-image:url('/invitations/cookout.webp')}
 .shareLinkOption{margin-top:1rem;padding:.8rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-radius:14px;background:#eaf3f1}
 .shareLinkOption strong,.shareLinkOption small{display:block}.shareLinkOption small{margin-top:.2rem;color:var(--muted);font-size:.7rem;line-height:1.4}
 .shareLinkOption button{flex:0 0 auto;padding:.65rem .85rem;border:0;border-radius:999px;background:var(--ink);color:white;font-size:.72rem;font-weight:800;cursor:pointer}.shareLinkOption button:disabled{opacity:.55;cursor:wait}
@@ -245,6 +247,9 @@ to{opacity:1;transform:none}
 .rsvpPage{--invitation-ink:#102c36;--invitation-accent:#d29e35;--invitation-paper:#fffaf0;min-height:100vh;padding:5vh 1rem;display:grid;place-items:center;background:linear-gradient(135deg,#071b25,#0b4054 60%,#65c8d7)}
 .rsvpTheme-birthday{--invitation-ink:#542135;--invitation-accent:#ef6f74;--invitation-paper:#fff2ea;background:linear-gradient(135deg,#3c1830,#b23d62 58%,#ffbe68)}
 .rsvpTheme-graduation{--invitation-ink:#142c45;--invitation-accent:#d6a73e;--invitation-paper:#f4f8fb;background:linear-gradient(135deg,#091a2f,#1b5770 62%,#d5aa48)}
+.rsvpTheme-baby{--invitation-ink:#354b47;--invitation-accent:#9a7438;--invitation-paper:#f7f0df;background:linear-gradient(135deg,#344f52,#7f9f96 55%,#d8b27e)}
+.rsvpTheme-reunion{--invitation-ink:#3d2c22;--invitation-accent:#996239;--invitation-paper:#f8edda;background:linear-gradient(135deg,#233d30,#87633c 58%,#d5a55f)}
+.rsvpTheme-cookout{--invitation-ink:#183d43;--invitation-accent:#cf4e2c;--invitation-paper:#f8edcf;background:linear-gradient(135deg,#0c5660,#68a5a3 55%,#e6b74e)}
 .rsvpTheme-garden{--invitation-ink:#284531;--invitation-accent:#70a37f;--invitation-paper:#fbfaee;background:linear-gradient(135deg,#183b32,#5f9074 55%,#d6c686)}
 .rsvpTheme-family{--invitation-ink:#4f2b27;--invitation-accent:#dc8f74;--invitation-paper:#fff8f0;background:linear-gradient(135deg,#492820,#a65d4d 58%,#edbd87)}
 .rsvpTheme-night{--invitation-ink:#eee8ff;--invitation-accent:#d7ad5c;--invitation-paper:#171329;background:radial-gradient(circle at 70% 18%,#745ca4,#211936 47%,#090b17)}
@@ -265,6 +270,15 @@ to{opacity:1;transform:none}
 .invitationSummary span,.invitationSummary strong{display:block}.invitationSummary span{margin-bottom:.35rem;color:var(--invitation-accent);font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.invitationSummary strong{font-size:.9rem;line-height:1.45}
 .invitationAction{width:min(100%,560px);margin-top:1.3rem;padding:1rem 1.15rem;border:0;border-radius:999px;display:flex;justify-content:space-between;background:var(--invitation-accent);color:#071b25;font-weight:900;cursor:pointer}
 .invitation-night .invitationAction{color:#171329}.invitation-basic .invitationFrame{min-height:480px}.invitation-basic:before,.invitation-basic:after{display:none}
+.invitation-baby,.invitation-birthday,.invitation-graduation,.invitation-reunion,.invitation-cookout{background-position:center;background-size:cover;background-repeat:no-repeat;box-shadow:0 26px 70px rgba(7,27,37,.2)}
+.invitation-baby{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(255,250,239,.94) 36% 75%,transparent 90%),url('/invitations/baby-shower.webp')}
+.invitation-birthday{background-image:linear-gradient(to bottom,transparent 0 25%,rgba(255,247,230,.94) 37% 76%,transparent 91%),url('/invitations/birthday.webp')}
+.invitation-graduation{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(250,248,239,.94) 36% 75%,transparent 90%),url('/invitations/graduation.webp')}
+.invitation-reunion{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(255,246,226,.94) 37% 76%,transparent 91%),url('/invitations/family-reunion.webp')}
+.invitation-cookout{background-image:linear-gradient(to bottom,transparent 0 23%,rgba(255,249,228,.95) 36% 76%,transparent 91%),url('/invitations/cookout.webp')}
+.invitation-baby:before,.invitation-baby:after,.invitation-birthday:before,.invitation-birthday:after,.invitation-graduation:before,.invitation-graduation:after,.invitation-reunion:before,.invitation-reunion:after,.invitation-cookout:before,.invitation-cookout:after{display:none}
+.invitation-baby .invitationFrame,.invitation-birthday .invitationFrame,.invitation-graduation .invitationFrame,.invitation-reunion .invitationFrame,.invitation-cookout .invitationFrame{min-height:720px;border:0;padding-top:12rem;padding-bottom:7.5rem;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.invitation-baby .invitationMark,.invitation-birthday .invitationMark,.invitation-graduation .invitationMark,.invitation-reunion .invitationMark,.invitation-cookout .invitationMark{width:54px;height:54px;margin-bottom:.65rem;background:rgba(255,255,255,.7);backdrop-filter:blur(5px)}
 .rsvpDetails{margin-top:1rem;padding:clamp(1.2rem,4vw,2.3rem);border-radius:22px;background:var(--paper);animation:rsvpReveal .35s ease both}
 .rsvpDetails h2{margin:.3rem 0 1.2rem;font-size:clamp(2rem,6vw,3.3rem);letter-spacing:-.045em}
 @keyframes rsvpReveal{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
@@ -285,7 +299,9 @@ to{opacity:1;transform:none}
 @media(max-width:600px){.inviteResults article{grid-template-columns:1fr auto}
 .inviteResults a{display:none}
 .designChooser>div{grid-template-columns:1fr 1fr}
-.designChooser button{min-height:68px}.designChooser button>b{display:none}
+.designChooser button{min-height:68px}.designChooser button>b{flex-basis:38px;width:38px;height:44px}
+.invitation-baby .invitationFrame,.invitation-birthday .invitationFrame,.invitation-graduation .invitationFrame,.invitation-reunion .invitationFrame,.invitation-cookout .invitationFrame{min-height:620px;padding:9rem .8rem 5.5rem}
+.invitation-baby .invitationFrame h1,.invitation-birthday .invitationFrame h1,.invitation-graduation .invitationFrame h1,.invitation-reunion .invitationFrame h1,.invitation-cookout .invitationFrame h1{font-size:clamp(2.25rem,13vw,4.2rem)}
 .shareLinkOption{align-items:flex-start;flex-direction:column}.shareLinkOption button{width:100%}
 .invitationFrame{min-height:500px;padding:2.5rem 1rem}
 .invitationSummary{grid-template-columns:1fr}.invitationSummary p+ p{border-left:0;border-top:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}

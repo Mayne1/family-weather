@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 const API = "http://127.0.0.1:3000";
 const FIREBASE_API_KEY = "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const INVITATION_DESIGNS = new Set(["classic", "birthday", "graduation", "garden", "family", "night", "basic"]);
+const INVITATION_DESIGNS = new Set([
+  "baby", "birthday", "graduation", "reunion", "cookout", "basic",
+  // Keep older invitation links valid while the visual library grows.
+  "classic", "garden", "family", "night",
+]);
 
 function parseEmails(value: unknown) {
   const raw = Array.isArray(value) ? value.map(String) : [String(value || "")];
