@@ -42,11 +42,14 @@ if "Invitation design endpoints" not in text:
     text = text.replace(marker, marker + "\n\n" + allow_block, 1)
 
 mount_line = 'app.use(makeEventInvitationsRouter(pool, requireFirebaseUser));'
-if mount_line not in text:
-    marker = 'app.use(requireApiKey);'
-    if marker not in text:
-        raise SystemExit("Could not find the router mount insertion point.")
-    text = text.replace(marker, marker + "\n" + mount_line, 1)
+# The API-key middleware is declared before `pool` in this server. Always move
+# the router mount to the event-route section, where the database pool already
+# exists, instead of mounting it beside `app.use(requireApiKey)`.
+text = text.replace(mount_line + "\n", "")
+marker = '// 1) Create an event'
+if marker not in text:
+    raise SystemExit("Could not find the event-route insertion point.")
+text = text.replace(marker, mount_line + "\n\n" + marker, 1)
 
 path.write_text(text)
 print(f"Patched {path}")
