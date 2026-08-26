@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
+import InvitationCard from "./invitations/InvitationCard";
+import { invitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
+import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
 
 const activities = [
   ["cookout", "♨", "Cookout"],
@@ -13,17 +16,6 @@ const activities = [
   ["concert", "♫", "Concert"],
   ["plan", "＋", "Something else"],
 ];
-
-const invitationDesigns = [
-  { id: "baby", name: "Baby shower", note: "Storybook woodland", mark: "☾" },
-  { id: "birthday", name: "Birthday", note: "Cake, gifts & confetti", mark: "🎂" },
-  { id: "graduation", name: "Graduation", note: "Cap, diploma & gold", mark: "🎓" },
-  { id: "reunion", name: "Family reunion", note: "Generations together", mark: "♡" },
-  { id: "cookout", name: "Cookout", note: "Backyard summer gathering", mark: "♨" },
-  { id: "basic", name: "Simple RSVP", note: "Just the useful details", mark: "→" },
-] as const;
-
-type InvitationDesign = typeof invitationDesigns[number]["id"];
 
 const fallbackForecast = [
   ["TODAY", "Saturday", "☀", "86°", "Best bet", "after 4 PM", "featured"],
@@ -37,7 +29,7 @@ type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
-type CreatedInvite = { id: string; link: string; delivery: string; design?: InvitationDesign; recipient_email?: string; recipient_phone?: string; sms?: { ok?: boolean; skipped?: boolean; reason?: string } };
+type CreatedInvite = { id: string; link: string; delivery: string; design?: InvitationDesignId; recipient_email?: string; recipient_phone?: string; sms?: { ok?: boolean; skipped?: boolean; reason?: string } };
 
 function weatherSymbol(code: number) {
   if (code >= 200 && code < 700) return "☂";
@@ -87,7 +79,13 @@ export default function Home() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [createdInvites, setCreatedInvites] = useState<CreatedInvite[]>([]);
-  const [inviteDesign, setInviteDesign] = useState<InvitationDesign>("birthday");
+  const [inviteDesign, setInviteDesign] = useState<InvitationDesignId>("birthday-after-dark");
+  const [invitationHeadline, setInvitationHeadline] = useState("");
+  const [invitationHonoree, setInvitationHonoree] = useState("");
+  const [invitationMessage, setInvitationMessage] = useState("");
+  const [invitationInstructions, setInvitationInstructions] = useState("");
+  const [invitationSaved, setInvitationSaved] = useState(false);
+  const [invitationLoading, setInvitationLoading] = useState(false);
 
   useEffect(() => {
     getValidSession().then(setSession);
@@ -309,10 +307,44 @@ export default function Home() {
         throw new Error(data.error || "Event could not be saved");
       }
       setSavedEvent(data.event);
+      setInvitationHeadline(data.event.title);
+      setInviteDesign(suggestedInvitationDesign(eventDetails.activity));
+      setInvitationSaved(false);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Event could not be saved");
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const currentInvitation: InvitationRecord = {
+    design_id: inviteDesign,
+    headline: invitationHeadline || savedEvent?.title || eventDetails?.name || "You’re invited",
+    honoree_names: invitationHonoree,
+    message: invitationMessage,
+    special_instructions: invitationInstructions,
+  };
+
+  const saveInvitation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!savedEvent) return;
+    setInvitationLoading(true);
+    setInviteError("");
+    try {
+      const activeSession = await getValidSession();
+      if (!activeSession) throw new Error("Your sign-in expired. Sign in again before saving the invitation.");
+      const response = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invitation`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
+        body: JSON.stringify(currentInvitation),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be saved");
+      setInvitationSaved(true);
+    } catch (error) {
+      setInviteError(error instanceof Error ? error.message : "Invitation could not be saved");
+    } finally {
+      setInvitationLoading(false);
     }
   };
 
@@ -527,18 +559,34 @@ export default function Home() {
                 <div className="adviceList">{plan?.advice.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
                 {savedEvent ? <>
                   <div className="savedNotice"><strong>Event saved.</strong><span>{savedEvent.title} is now in Family Weather.</span></div>
-                  <form className="inviteBuilder" onSubmit={createInvite}>
-                    <div><small>03 · DESIGN THE INVITATION</small><h3>Give people something worth opening.</h3><p>Choose a starting style. Your guests will see the invitation first, then open the event details and RSVP.</p></div>
-                    <fieldset className="designChooser">
-                      <legend>Invitation style</legend>
-                      <div>{invitationDesigns.map((design) => <button className={inviteDesign === design.id ? `active design-${design.id}` : `design-${design.id}`} type="button" key={design.id} onClick={() => setInviteDesign(design.id)} aria-pressed={inviteDesign === design.id}><b>{design.mark}</b><span><strong>{design.name}</strong><small>{design.note}</small></span></button>)}</div>
-                    </fieldset>
-                    <div className="shareLinkOption"><div><strong>Need one link for a family chat?</strong><small>Create one general invitation that everybody can open and identify themselves on.</small></div><button type="button" onClick={createShareableInvite} disabled={inviteLoading}>Create shareable link</button></div>
-                    <div className="invitePeopleIntro"><small>04 · INVITE YOUR PEOPLE</small><h3>Create private invitation links.</h3><p>Paste up to 100 email addresses. Separate them with commas, semicolons, spaces, or new lines. Each person receives their own private invitation and response link.</p></div>
-                    <label className="formField"><span>Family members’ email addresses</span><textarea name="recipients" required rows={5} placeholder={"maya@example.com, jordan@example.com\\nterry@example.com"} /></label>
-                    <button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitations…" : "Create invitations"}<span>→</span></button>
+                  <div className="inviteBuilder">
+                    <div><small>03 · DESIGN THE INVITATION</small><h3>Give people something worth keeping.</h3><p>This is the actual guest-facing invitation. The RSVP page remains a separate, temporary form for recording an answer.</p></div>
+                    <form className="invitationCustomizer" onSubmit={saveInvitation}>
+                      <fieldset className="designChooser">
+                        <legend>Choose a professional starting design</legend>
+                        <div>{invitationDesigns.map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
+                      </fieldset>
+                      <div className="invitationWorkArea">
+                        <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />
+                        <div className="invitationFields">
+                          <label className="formField"><span>Headline</span><input value={invitationHeadline} onChange={(event) => { setInvitationHeadline(event.target.value); setInvitationSaved(false); }} maxLength={120} placeholder={savedEvent.title} /></label>
+                          <label className="formField"><span>Person, couple, or group being celebrated (optional)</span><input value={invitationHonoree} onChange={(event) => { setInvitationHonoree(event.target.value); setInvitationSaved(false); }} maxLength={160} placeholder="Maya & Jordan" /></label>
+                          <label className="formField"><span>Invitation message</span><textarea value={invitationMessage} onChange={(event) => { setInvitationMessage(event.target.value); setInvitationSaved(false); }} rows={4} maxLength={500} placeholder="Please join us for a day worth remembering." /></label>
+                          <label className="formField"><span>Dress code or special instructions (optional)</span><textarea value={invitationInstructions} onChange={(event) => { setInvitationInstructions(event.target.value); setInvitationSaved(false); }} rows={3} maxLength={300} placeholder="Dressy casual · Ceremony begins promptly" /></label>
+                        </div>
+                      </div>
+                      <button className="primaryCta" disabled={invitationLoading}>{invitationLoading ? "Saving invitation…" : invitationSaved ? "Invitation saved" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
+                    </form>
+                    {invitationSaved && <>
+                      <div className="shareLinkOption"><div><strong>Need one link for a family chat?</strong><small>Create one general invitation that everybody can open and identify themselves on.</small></div><button type="button" onClick={createShareableInvite} disabled={inviteLoading}>Create shareable link</button></div>
+                      <form className="invitePeopleForm" onSubmit={createInvite}>
+                        <div className="invitePeopleIntro"><small>04 · INVITE YOUR PEOPLE</small><h3>Create private invitation links.</h3><p>Paste up to 100 email addresses. Separate them with commas, semicolons, spaces, or new lines. Each person receives their own private invitation and response link.</p></div>
+                        <label className="formField"><span>Family members’ email addresses</span><textarea name="recipients" required rows={5} placeholder={"maya@example.com, jordan@example.com\\nterry@example.com"} /></label>
+                        <button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitations…" : "Create invitations"}<span>→</span></button>
+                      </form>
+                    </>}
                     {inviteError && <p className="formError">{inviteError}</p>}
-                  </form>
+                  </div>
                   {createdInvites.length > 0 && <div className="inviteResults">{createdInvites.map((invite) => <article key={invite.id}><div><strong>{invite.recipient_email || "Shareable invitation"}</strong><small>{invitationDesigns.find((design) => design.id === invite.design)?.name || "Invitation"} · ready to share</small></div><button type="button" onClick={() => navigator.clipboard.writeText(invite.link)}>Copy link</button><a href={invite.link} target="_blank" rel="noreferrer">Open</a></article>)}</div>}
                 </> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
                 {saveError && <p className="formError">{saveError}</p>}

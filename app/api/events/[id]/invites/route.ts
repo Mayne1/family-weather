@@ -112,7 +112,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           recipient_email: recipientEmail || undefined,
           expires_at: data.expiresAt,
           design,
-          link: `${origin}/rsvp.html?token=${encodeURIComponent(data.token)}&design=${encodeURIComponent(design)}`,
+          link: `${origin}/invitation/${encodeURIComponent(data.token)}`,
         });
       } catch (error) {
         failures.push({

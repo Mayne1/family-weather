@@ -13,12 +13,15 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     const eventResponse = await fetch(`${API}/events/${encodeURIComponent(eventId)}`, { cache: "no-store" });
     const eventData = await eventResponse.json();
     if (!eventResponse.ok || !eventData.ok) return NextResponse.json(eventData, { status: eventResponse.status });
+    const invitationResponse = await fetch(`${API}/events/${encodeURIComponent(eventId)}/invitation`, { cache: "no-store" });
+    const invitationData = await invitationResponse.json().catch(() => null);
     return NextResponse.json({
       ok: true,
       valid: true,
       accepted: Boolean(data.invite?.response),
       invite: { status: data.invite?.response || "pending" },
       event: eventData.event,
+      invitation: invitationResponse.ok && invitationData?.ok ? invitationData.invitation : null,
     });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Invitation unavailable" }, { status: 502 });

@@ -220,18 +220,19 @@ to{opacity:1;transform:none}
 .inviteBuilder small{font-size:.63rem;font-weight:800;letter-spacing:.12em;color:#528492}
 .inviteBuilder h3{margin:.4rem 0;font-size:1.25rem}
 .inviteBuilder p{margin:0 0 1rem;color:var(--muted);font-size:.82rem}
-.invitePeopleIntro{margin-top:1.3rem;padding-top:1.3rem;border-top:1px solid var(--line)}
+.invitationCustomizer{display:grid;gap:1rem}
+.invitationWorkArea{display:grid;grid-template-columns:minmax(260px,.86fr) minmax(260px,1.14fr);gap:1rem;align-items:start}
+.invitationFields{display:grid;gap:.75rem}
+.invitePeopleForm{display:grid;gap:1rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)}
+.invitePeopleIntro{margin-top:.3rem}
 .designChooser{margin:1rem 0 0;padding:0;border:0}
 .designChooser legend{margin-bottom:.65rem;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#52656c}
 .designChooser>div{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem}
-.designChooser button{--design-accent:#f5c451;display:flex;align-items:center;gap:.65rem;min-height:76px;padding:.7rem;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
-.designChooser button>b{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:50%;background:color-mix(in srgb,var(--design-accent) 24%,white);font-size:1.05rem}
+.designChooser button{--design-accent:#d4a94f;display:flex;align-items:center;gap:.65rem;min-height:82px;padding:.7rem;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
+.designChooser button>b{display:grid;place-items:center;flex:0 0 48px;width:48px;height:60px;border-radius:8px;background-color:#e9e5db;background-position:center;background-size:cover;color:white;font-size:.72rem;text-shadow:0 1px 6px #000;box-shadow:inset 0 0 0 1px rgba(7,27,37,.1)}
 .designChooser button span,.designChooser button strong,.designChooser button small{display:block}
 .designChooser button small{margin-top:.15rem;color:var(--muted);font-size:.64rem;letter-spacing:0}
 .designChooser button.active{border-color:var(--design-accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--design-accent) 28%,transparent);background:color-mix(in srgb,var(--design-accent) 7%,white)}
-.designChooser .design-baby{--design-accent:#77978d}.designChooser .design-birthday{--design-accent:#ef6f74}.designChooser .design-graduation{--design-accent:#1b5770}.designChooser .design-reunion{--design-accent:#a8663f}.designChooser .design-cookout{--design-accent:#e05e36}.designChooser .design-basic{--design-accent:#7e8e92}
-.designChooser .design-baby>b,.designChooser .design-birthday>b,.designChooser .design-graduation>b,.designChooser .design-reunion>b,.designChooser .design-cookout>b{width:46px;height:52px;border-radius:9px;background-position:center;background-size:cover;color:transparent;box-shadow:inset 0 0 0 1px rgba(7,27,37,.12)}
-.designChooser .design-baby>b{background-image:url('/invitations/baby-shower.webp')}.designChooser .design-birthday>b{background-image:url('/invitations/birthday.webp')}.designChooser .design-graduation>b{background-image:url('/invitations/graduation.webp')}.designChooser .design-reunion>b{background-image:url('/invitations/family-reunion.webp')}.designChooser .design-cookout>b{background-image:url('/invitations/cookout.webp')}
 .shareLinkOption{margin-top:1rem;padding:.8rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-radius:14px;background:#eaf3f1}
 .shareLinkOption strong,.shareLinkOption small{display:block}.shareLinkOption small{margin-top:.2rem;color:var(--muted);font-size:.7rem;line-height:1.4}
 .shareLinkOption button{flex:0 0 auto;padding:.65rem .85rem;border:0;border-radius:999px;background:var(--ink);color:white;font-size:.72rem;font-weight:800;cursor:pointer}.shareLinkOption button:disabled{opacity:.55;cursor:wait}
@@ -243,6 +244,30 @@ to{opacity:1;transform:none}
 .inviteResults strong,.inviteResults small{display:block}
 .inviteResults small{margin-top:.2rem;color:var(--muted)}
 .inviteResults button,.inviteResults a{border:0;background:white;border-radius:999px;padding:.5rem .7rem;color:#286e7e;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer}
+
+.digitalInvitation{--invitation-art:none;position:relative;isolation:isolate;overflow:hidden;width:100%;aspect-ratio:4/5;border-radius:18px;background:#ede8dc var(--invitation-art) center/cover no-repeat;color:#18292d;box-shadow:0 18px 45px rgba(7,27,37,.18)}
+.digitalInvitationShade{position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.94) 33% 76%,rgba(255,255,255,.12))}
+.digitalInvitationContent{height:100%;padding:19% 9% 9%;display:flex;flex-direction:column;align-items:center;text-align:center}
+.digitalInvitationCategory{margin:0 0 .65rem!important;font-size:.61rem!important;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:inherit!important}
+.digitalInvitationHonoree{margin:0 0 .4rem!important;font:italic 1rem Georgia,serif!important;color:inherit!important}
+.digitalInvitation h1{margin:.15rem 0 .75rem;font:500 clamp(1.6rem,4vw,3rem)/.95 Georgia,serif;letter-spacing:-.04em;text-wrap:balance}
+.digitalInvitationMessage{max-width:390px;margin:0 0 .95rem!important;font:italic .78rem/1.45 Georgia,serif!important;color:inherit!important}
+.digitalInvitationFacts{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:.2rem;border-block:1px solid currentColor;padding:.65rem 0;opacity:.88}
+.digitalInvitationFacts p{margin:0!important;padding:.2rem;font-size:.64rem!important;color:inherit!important}.digitalInvitationFacts p:last-child{grid-column:1/-1}
+.digitalInvitationFacts span,.digitalInvitationFacts strong{display:block}.digitalInvitationFacts span{font-size:.52rem;letter-spacing:.16em;text-transform:uppercase}.digitalInvitationFacts strong{margin-top:.18rem;font-size:.69rem;line-height:1.25}
+.digitalInvitationInstructions{margin:.65rem 0 0!important;font-size:.62rem!important;color:inherit!important}.digitalInvitationInstructions span{display:block;font-size:.5rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+.digitalInvitationWeather{margin:auto 0 0!important;font-size:.48rem!important;letter-spacing:.08em;color:inherit!important;opacity:.62}
+.digitalInvitation.compact{border-radius:14px}.digitalInvitation.compact .digitalInvitationContent{padding-top:17%}.digitalInvitation.compact h1{font-size:clamp(1.35rem,3.2vw,2.2rem)}
+.invitationDesign-graduation-ascent,.invitationDesign-birthday-after-dark{color:#fff}.invitationDesign-graduation-ascent .digitalInvitationShade,.invitationDesign-birthday-after-dark .digitalInvitationShade{background:linear-gradient(180deg,rgba(2,10,22,.15),rgba(4,12,24,.9) 31% 82%,rgba(4,12,24,.35))}
+.invitationDesign-cookout-table .digitalInvitationShade{background:linear-gradient(180deg,rgba(255,252,234,.1),rgba(255,249,226,.93) 34% 77%,rgba(255,249,226,.28))}
+.invitationDesign-park-paper .digitalInvitationShade{background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(248,252,245,.9) 32% 78%,rgba(248,252,245,.2))}
+.guestInvitationPage{min-height:100vh;padding:clamp(1rem,4vw,3rem);display:grid;justify-items:center;gap:1rem;background:linear-gradient(145deg,#071b25,#0e5366 60%,#82d2da)}
+.guestInvitationBrand{width:min(680px,100%);color:white;font-weight:900;text-decoration:none;letter-spacing:.02em}
+.guestInvitationPage>.digitalInvitation{width:min(680px,100%)}
+.guestInvitationActions{width:min(680px,100%);padding:1rem 1.15rem;border-radius:18px;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:white;box-shadow:var(--shadow)}
+.guestInvitationActions small{font-size:.6rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:#528492}.guestInvitationActions h2{margin:.2rem 0;font-size:1.15rem}.guestInvitationActions p{margin:0;color:var(--muted);font-size:.75rem}
+.guestInvitationActions>a{flex:0 0 auto;padding:.9rem 1rem;border-radius:999px;background:#f5c451;color:#071b25;font-weight:900;text-decoration:none}.guestInvitationActions>a span{margin-left:.6rem}
+.guestInvitationState{width:min(620px,100%);margin:auto;padding:3rem 1.5rem;border-radius:24px;background:white;text-align:center;box-shadow:var(--shadow)}.guestInvitationState>span{display:grid;place-items:center;width:60px;height:60px;margin:auto;border-radius:50%;background:#fff0ce;color:#9f641b;font-size:1.5rem}.guestInvitationState h1{font-size:clamp(2rem,6vw,3.4rem);letter-spacing:-.05em}.guestInvitationState p{color:var(--muted)}
 
 .rsvpPage{--invitation-ink:#102c36;--invitation-accent:#d29e35;--invitation-paper:#fffaf0;min-height:100vh;padding:5vh 1rem;display:grid;place-items:center;background:linear-gradient(135deg,#071b25,#0b4054 60%,#65c8d7)}
 .rsvpTheme-birthday{--invitation-ink:#542135;--invitation-accent:#ef6f74;--invitation-paper:#fff2ea;background:linear-gradient(135deg,#3c1830,#b23d62 58%,#ffbe68)}
@@ -300,6 +325,8 @@ to{opacity:1;transform:none}
 .inviteResults a{display:none}
 .designChooser>div{grid-template-columns:1fr 1fr}
 .designChooser button{min-height:68px}.designChooser button>b{flex-basis:38px;width:38px;height:44px}
+.invitationWorkArea{grid-template-columns:1fr}.digitalInvitation.compact{width:min(340px,100%);margin:auto}
+.guestInvitationActions{align-items:stretch;flex-direction:column}.guestInvitationActions>a{text-align:center}
 .invitation-baby .invitationFrame,.invitation-birthday .invitationFrame,.invitation-graduation .invitationFrame,.invitation-reunion .invitationFrame,.invitation-cookout .invitationFrame{min-height:620px;padding:9rem .8rem 5.5rem}
 .invitation-baby .invitationFrame h1,.invitation-birthday .invitationFrame h1,.invitation-graduation .invitationFrame h1,.invitation-reunion .invitationFrame h1,.invitation-cookout .invitationFrame h1{font-size:clamp(2.25rem,13vw,4.2rem)}
 .shareLinkOption{align-items:flex-start;flex-direction:column}.shareLinkOption button{width:100%}
