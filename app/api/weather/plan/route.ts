@@ -49,6 +49,27 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
 }
 
 async function resolveLocation(query: string) {
+  // Keep the full venue/address on the event, but use an embedded ZIP code for
+  // weather geocoding when one is present. The weather service's place search
+  // understands cities and bare ZIP codes, not street addresses.
+  const embeddedZip = query.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1];
+  if (embeddedZip) {
+    const response = await fetch(
+      `http://127.0.0.1:3000/weather/geocode?zip=${encodeURIComponent(embeddedZip)}`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) throw new Error("Location lookup failed");
+    const data = await response.json();
+    if (!data?.ok || !Number.isFinite(Number(data.lat)) || !Number.isFinite(Number(data.lon))) {
+      throw new Error(`We couldn't find ZIP code ${embeddedZip}. Check the ZIP code and try again.`);
+    }
+    return {
+      lat: Number(data.lat),
+      lon: Number(data.lon),
+      label: String(data.label || embeddedZip),
+    };
+  }
+
   const normalized = query.match(/^(.+?)\s+([A-Za-z]{2})$/) ? query.replace(/^(.+?)\s+([A-Za-z]{2})$/, "$1, $2") : query;
   const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(normalized)}&count=5&language=en&format=json&countryCode=US`, { cache: "no-store" });
   if (!response.ok) throw new Error("Location lookup failed");

@@ -528,7 +528,7 @@ export default function Home() {
                   <label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label>
                   <label className="formField"><span>Activity</span><select name="activity" defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
                   <label className="formField"><span>Guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label>
-                  <label className="formField full"><span>Location or ZIP code</span><input name="location" required defaultValue={plannerLocation} /></label>
+                  <label className="formField full"><span>Venue, address, city, or ZIP code</span><input name="location" required defaultValue={plannerLocation} /></label>
                   <label className="formField"><span>Date</span><input name="date" type="date" defaultValue={selectedDate} /></label>
                   <label className="formField"><span>Start time</span><input name="time" type="time" defaultValue="16:00" /></label>
                 </div>
