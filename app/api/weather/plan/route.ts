@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-
+import { isAmbiguousLocation, isValidLocationCandidate, searchLocations } from "../../../lib/location";
+import type { LocationCandidate } from "../../../lib/location";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
 
@@ -48,36 +49,25 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
   });
 }
 
-async function resolveLocation(query: string) {
-  // Keep the full venue/address on the event, but use an embedded ZIP code for
-  // weather geocoding when one is present. The weather service's place search
-  // understands cities and bare ZIP codes, not street addresses.
-  const embeddedZip = query.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1];
-  if (embeddedZip) {
-    const response = await fetch(
-      `http://127.0.0.1:3000/weather/geocode?zip=${encodeURIComponent(embeddedZip)}`,
-      { cache: "no-store" },
-    );
-    if (!response.ok) throw new Error("Location lookup failed");
-    const data = await response.json();
-    if (!data?.ok || !Number.isFinite(Number(data.lat)) || !Number.isFinite(Number(data.lon))) {
-      throw new Error(`We couldn't find ZIP code ${embeddedZip}. Check the ZIP code and try again.`);
-    }
-    return {
-      lat: Number(data.lat),
-      lon: Number(data.lon),
-      label: String(data.label || embeddedZip),
-    };
-  }
+class AmbiguousLocationError extends Error {
+  suggestions: LocationCandidate[];
 
-  const normalized = query.match(/^(.+?)\s+([A-Za-z]{2})$/) ? query.replace(/^(.+?)\s+([A-Za-z]{2})$/, "$1, $2") : query;
-  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(normalized)}&count=5&language=en&format=json&countryCode=US`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Location lookup failed");
-  const data = await response.json();
-  const match = data?.results?.[0];
-  if (!match) throw new Error(`We couldn't find "${query}". Try a city and state or a ZIP code.`);
-  const label = [match.name, match.admin1].filter(Boolean).join(", ");
-  return { lat: match.latitude, lon: match.longitude, label };
+  constructor(query: string, suggestions: LocationCandidate[]) {
+    super(`We found several places named "${query}". Choose the one you mean.`);
+    this.suggestions = suggestions;
+  }
+}
+
+async function resolveLocation(query: string, supplied?: unknown) {
+  if (isValidLocationCandidate(supplied)) {
+    return { ...supplied, lat: Number(supplied.lat), lon: Number(supplied.lon), input: supplied.input || query };
+  }
+  const suggestions = await searchLocations(query, 6);
+  if (!suggestions.length) {
+    throw new Error(`We couldn't find "${query}". Try a venue, landmark, address, city, or postal code.`);
+  }
+  if (isAmbiguousLocation(query, suggestions)) throw new AmbiguousLocationError(query, suggestions);
+  return suggestions[0];
 }
 
 
@@ -124,6 +114,48 @@ function buildRecommendation(day: ForecastDay, space: string, activity: string) 
   return { score, bestWindow, advice };
 }
 
+async function nwsForecast(geo: LocationCandidate, date: string) {
+  const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, cache: "no-store" });
+  if (!pointResponse.ok) return null;
+  const point = await pointResponse.json();
+  const forecastUrl = point?.properties?.forecast;
+  if (!forecastUrl) return null;
+  const forecastResponse = await fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store" });
+  if (!forecastResponse.ok) return null;
+  const forecast = await forecastResponse.json();
+  const day = buildDays(forecast?.properties?.periods || []).find((item) => item.date === date);
+  if (!day) return null;
+  const place = point?.properties?.relativeLocation?.properties;
+  const label = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
+  return { source: "nws", label, day };
+}
+
+async function globalForecast(geo: LocationCandidate, date: string) {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(geo.lat));
+  url.searchParams.set("longitude", String(geo.lon));
+  url.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max");
+  url.searchParams.set("temperature_unit", "fahrenheit");
+  url.searchParams.set("wind_speed_unit", "mph");
+  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("forecast_days", "16");
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error("Worldwide forecast lookup failed");
+  const data = await response.json();
+  const index = Array.isArray(data?.daily?.time) ? data.daily.time.indexOf(date) : -1;
+  if (index < 0) throw new Error("That date is outside the live forecast window");
+  const day: ForecastDay = {
+    date,
+    weather_code: Math.round(Number(data.daily.weather_code?.[index]) || 0),
+    temp_max_f: Math.round(Number(data.daily.temperature_2m_max?.[index]) || 0),
+    temp_min_f: Math.round(Number(data.daily.temperature_2m_min?.[index]) || 0),
+    precip_prob_pct: Math.round(Number(data.daily.precipitation_probability_max?.[index]) || 0),
+    wind_max_mph: Math.round(Number(data.daily.wind_speed_10m_max?.[index]) || 0),
+    shortForecast: "Worldwide forecast",
+  };
+  return { source: "open-meteo", label: geo.label, day };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -132,25 +164,23 @@ export async function POST(request: NextRequest) {
     const activity = String(body.activity || "event");
     const space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
-    const geo = await resolveLocation(location);
-    const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, cache: "no-store" });
-    if (!pointResponse.ok) throw new Error("NWS does not cover that location");
-    const point = await pointResponse.json();
-    const forecastUrl = point?.properties?.forecast;
-    if (!forecastUrl) throw new Error("Official forecast unavailable");
-
-    const forecastResponse = await fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store" });
-    if (!forecastResponse.ok) throw new Error("Forecast lookup failed");
-    const forecast = await forecastResponse.json();
-    const days = buildDays(forecast?.properties?.periods || []);
-    const day = days.find((item) => item.date === date);
-    if (!day) throw new Error("That date is outside the live NWS forecast window");
-
-    const place = point?.properties?.relativeLocation?.properties;
-    const resolvedLabel = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
-    const recommendation = buildRecommendation(day, space, activity);
-    return NextResponse.json({ ok: true, source: "nws", location: resolvedLabel, day, space, activity, ...recommendation });
+    const geo = await resolveLocation(location, body.resolvedLocation);
+    const forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await globalForecast(geo, date);
+    const recommendation = buildRecommendation(forecast.day, space, activity);
+    return NextResponse.json({
+      ok: true,
+      source: forecast.source,
+      location: forecast.label,
+      resolvedLocation: geo,
+      day: forecast.day,
+      space,
+      activity,
+      ...recommendation,
+    });
   } catch (error) {
+    if (error instanceof AmbiguousLocationError) {
+      return NextResponse.json({ ok: false, error: error.message, suggestions: error.suggestions }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Weather service unavailable" }, { status: 502 });
   }
 }

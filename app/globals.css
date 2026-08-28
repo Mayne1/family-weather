@@ -70,6 +70,14 @@ button,input{font:inherit}
 .inputShell>span{color:#5793a0}
 .inputShell input{flex:1;min-width:0;border:0;outline:0;padding:0 .7rem;color:var(--ink);background:transparent}
 .inputShell button{border:0;background:transparent;color:#5793a0;cursor:pointer}
+.locationSearch{position:relative;width:100%;min-width:0}
+.inputShell>.locationSearch{flex:1}
+.locationSuggestions{position:absolute;z-index:40;top:calc(100% + 7px);left:0;right:0;overflow:hidden;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 18px 42px rgba(7,27,37,.2)}
+.locationSuggestions button{display:block;width:100%;padding:.7rem .8rem;border:0;border-bottom:1px solid #edf0ee;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
+.locationSuggestions button:hover,.locationSuggestions button:focus{background:#f1f8f7;outline:0}
+.locationSuggestions strong,.locationSuggestions span{display:block}
+.locationSuggestions strong{font-size:.78rem}.locationSuggestions span{margin-top:.12rem;color:var(--muted);font-size:.66rem;line-height:1.35}
+.locationSuggestions>small{display:block;padding:.4rem .8rem;color:#718087;font-size:.52rem;text-align:right}
 .dateRow{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}
 .dateOption{min-width:0;padding:.65rem .2rem;border:1px solid var(--line);border-radius:12px;background:white;color:var(--ink);cursor:pointer}
 .dateOption small,.dateOption span{display:block}
@@ -245,7 +253,7 @@ to{opacity:1;transform:none}
 .inviteResults small{margin-top:.2rem;color:var(--muted)}
 .inviteResults button,.inviteResults a{border:0;background:white;border-radius:999px;padding:.5rem .7rem;color:#286e7e;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer}
 
-.digitalInvitation{--invitation-art:none;position:relative;isolation:isolate;overflow:hidden;width:100%;aspect-ratio:4/5;border-radius:18px;background:#ede8dc var(--invitation-art) center/cover no-repeat;color:#18292d;box-shadow:0 18px 45px rgba(7,27,37,.18)}
+.digitalInvitation{--invitation-art:none;--invitation-aspect:4/5;position:relative;isolation:isolate;overflow:hidden;width:100%;aspect-ratio:var(--invitation-aspect);border-radius:18px;background:#ede8dc var(--invitation-art) center/cover no-repeat;color:#18292d;box-shadow:0 18px 45px rgba(7,27,37,.18)}
 .digitalInvitationShade{position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.94) 33% 76%,rgba(255,255,255,.12))}
 .digitalInvitationContent{height:100%;padding:19% 9% 9%;display:flex;flex-direction:column;align-items:center;text-align:center}
 .digitalInvitationCategory{margin:0 0 .65rem!important;font-size:.61rem!important;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:inherit!important}
@@ -261,6 +269,9 @@ to{opacity:1;transform:none}
 .invitationDesign-graduation-ascent,.invitationDesign-birthday-after-dark{color:#fff}.invitationDesign-graduation-ascent .digitalInvitationShade,.invitationDesign-birthday-after-dark .digitalInvitationShade{background:linear-gradient(180deg,rgba(2,10,22,.15),rgba(4,12,24,.9) 31% 82%,rgba(4,12,24,.35))}
 .invitationDesign-cookout-table .digitalInvitationShade{background:linear-gradient(180deg,rgba(255,252,234,.1),rgba(255,249,226,.93) 34% 77%,rgba(255,249,226,.28))}
 .invitationDesign-park-paper .digitalInvitationShade{background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(248,252,245,.9) 32% 78%,rgba(248,252,245,.2))}
+.invitationDesign-wedding-midnight-crest,.invitationDesign-wedding-candlelit-wood,.invitationDesign-wedding-burgundy-bloom,.invitationDesign-wedding-sunset-vows,.invitationDesign-wedding-deco-noir{color:#fff}
+.invitationDesign-wedding-midnight-crest .digitalInvitationShade,.invitationDesign-wedding-candlelit-wood .digitalInvitationShade,.invitationDesign-wedding-burgundy-bloom .digitalInvitationShade,.invitationDesign-wedding-sunset-vows .digitalInvitationShade,.invitationDesign-wedding-deco-noir .digitalInvitationShade{background:linear-gradient(180deg,rgba(4,7,10,.08),rgba(4,7,10,.75) 25% 84%,rgba(4,7,10,.18))}
+.invitationDesign-wedding-blush-cascade .digitalInvitationShade,.invitationDesign-wedding-white-garden .digitalInvitationShade,.invitationDesign-wedding-marble-rose .digitalInvitationShade,.invitationDesign-wedding-torn-paper .digitalInvitationShade,.invitationDesign-wedding-ink-marble .digitalInvitationShade{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.82) 24% 84%,rgba(255,255,255,.12))}
 .guestInvitationPage{min-height:100vh;padding:clamp(1rem,4vw,3rem);display:grid;justify-items:center;gap:1rem;background:linear-gradient(145deg,#071b25,#0e5366 60%,#82d2da)}
 .guestInvitationBrand{width:min(680px,100%);color:white;font-weight:900;text-decoration:none;letter-spacing:.02em}
 .guestInvitationPage>.digitalInvitation{width:min(680px,100%)}

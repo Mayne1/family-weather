@@ -5,8 +5,10 @@ import type { FormEvent } from "react";
 import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
+import LocationSearchInput from "./components/LocationSearchInput";
 import { invitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
+import type { LocationCandidate } from "./lib/location";
 
 const activities = [
   ["cookout", "♨", "Cookout"],
@@ -27,7 +29,7 @@ const fallbackForecast = [
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
 type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number } | null; days: WeatherDay[] };
 type PlanAdvice = { tone: string; title: string; copy: string };
-type PlanResult = { source: string; location: string; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
+type PlanResult = { source: string; location: string; resolvedLocation: LocationCandidate; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
 type CreatedInvite = { id: string; link: string; delivery: string; design?: InvitationDesignId; recipient_email?: string; recipient_phone?: string; sms?: { ok?: boolean; skipped?: boolean; reason?: string } };
 
@@ -63,6 +65,11 @@ export default function Home() {
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
   const [homeLocation, setHomeLocation] = useState("Stockton, California");
   const [plannerLocation, setPlannerLocation] = useState("Stockton, CA 95206");
+  const [plannerResolved, setPlannerResolved] = useState<LocationCandidate | null>(null);
+  const [plannerSuggestions, setPlannerSuggestions] = useState<LocationCandidate[]>([]);
+  const [eventLocation, setEventLocation] = useState("Stockton, CA 95206");
+  const [eventResolved, setEventResolved] = useState<LocationCandidate | null>(null);
+  const [eventSuggestions, setEventSuggestions] = useState<LocationCandidate[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
@@ -175,6 +182,7 @@ export default function Home() {
           setHomeWeather(data);
           setHomeLocation(data.label);
           setPlannerLocation(data.label);
+          setPlannerResolved(null);
         })
         .catch(() => localStorage.removeItem("family-weather-home-location"))
         .finally(() => setLocationLoading(false));
@@ -203,10 +211,16 @@ export default function Home() {
       const response = await fetch("/api/weather/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: plannerLocation, date: selectedDate, activity, space: "outdoor" }),
+        body: JSON.stringify({ location: plannerLocation, resolvedLocation: plannerResolved, date: selectedDate, activity, space: "outdoor" }),
       });
       const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "Weather check failed");
+      if (!response.ok || !data.ok) {
+        if (response.status === 409) setPlannerSuggestions(data.suggestions || []);
+        throw new Error(data.error || "Weather check failed");
+      }
+      setPlannerResolved(data.resolvedLocation);
+      setPlannerLocation(data.resolvedLocation?.label || plannerLocation);
+      setPlannerSuggestions([]);
       setPlan(data);
       setShowResult(true);
     } catch (error) {
@@ -219,6 +233,9 @@ export default function Home() {
   const openEvent = () => {
     setShowResult(false);
     setEventStep("details");
+    setEventLocation(plannerResolved?.label || plannerLocation);
+    setEventResolved(plannerResolved);
+    setEventSuggestions([]);
     setShowEvent(true);
   };
 
@@ -231,7 +248,7 @@ export default function Home() {
       name: String(values.name || "Family event"),
       activity: String(values.activity || "event"),
       guests: String(values.guests || ""),
-      location: String(values.location || ""),
+      location: eventLocation,
       date: String(values.date || ""),
       time: String(values.time || ""),
     };
@@ -239,11 +256,18 @@ export default function Home() {
       const response = await fetch("/api/weather/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, space: eventSpace }),
+        body: JSON.stringify({ ...values, location: eventLocation, resolvedLocation: eventResolved, space: eventSpace }),
       });
       const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "Weather check failed");
-      setEventDetails(details);
+      if (!response.ok || !data.ok) {
+        if (response.status === 409) setEventSuggestions(data.suggestions || []);
+        throw new Error(data.error || "Weather check failed");
+      }
+      const resolved = data.resolvedLocation as LocationCandidate;
+      setEventResolved(resolved);
+      setEventLocation(resolved.label);
+      setEventSuggestions([]);
+      setEventDetails({ ...details, location: resolved.label });
       setPlan(data);
       setEventStep("review");
     } catch (error) {
@@ -307,6 +331,17 @@ export default function Home() {
         throw new Error(data.error || "Event could not be saved");
       }
       setSavedEvent(data.event);
+      if (eventResolved) {
+        const locationResponse = await fetch(`/api/events/${encodeURIComponent(data.event.id)}/location`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
+          body: JSON.stringify(eventResolved),
+        });
+        const locationData = await locationResponse.json();
+        if (!locationResponse.ok || !locationData.ok) {
+          throw new Error(locationData.error || "Event saved, but its coordinates could not be stored");
+        }
+      }
       setInvitationHeadline(data.event.title);
       setInviteDesign(suggestedInvitationDesign(eventDetails.activity));
       setInvitationSaved(false);
@@ -474,7 +509,7 @@ export default function Home() {
               ))}
             </div>
             <label className="fieldLabel" htmlFor="location">Where?</label>
-            <div className="inputShell"><span aria-hidden="true">⌖</span><input id="location" value={plannerLocation} onChange={(event) => setPlannerLocation(event.target.value)} autoComplete="off" /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
+            <div className="inputShell"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <span className="fieldLabel">When?</span>
             <div className="dateRow">
               {(dateChoices.length ? dateChoices : Array.from({ length: 4 }, (_, index) => ({ date: (() => { const value = new Date(); value.setDate(value.getDate() + index); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; })() }))).map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
@@ -508,7 +543,7 @@ export default function Home() {
 
       <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p>Privacy · Terms · SMS consent</p></footer>
 
-      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">Your {activity} has a weather window.</h2><p className="resultLocation">Official NWS forecast for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>BEST TIME</span><strong>{selectedBestWindow}</strong></div><p>{`${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">Your {activity} has a weather window.</h2><p className="resultLocation">{plan.source === "nws" ? "Official NWS" : "Worldwide"} forecast for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>BEST TIME</span><strong>{selectedBestWindow}</strong></div><p>{`${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 
       {showEvent && (
         <div className="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="event-title" onMouseDown={(event) => event.target === event.currentTarget && setShowEvent(false)}>
@@ -528,7 +563,7 @@ export default function Home() {
                   <label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label>
                   <label className="formField"><span>Activity</span><select name="activity" defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
                   <label className="formField"><span>Guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label>
-                  <label className="formField full"><span>Venue, address, city, or ZIP code</span><input name="location" required defaultValue={plannerLocation} /></label>
+                  <label className="formField full"><span>Venue, landmark, address, city, or postal code</span><LocationSearchInput id="event-location" name="location" required value={eventLocation} forcedSuggestions={eventSuggestions} onChange={(value) => { setEventLocation(value); setEventResolved(null); setEventSuggestions([]); }} onSelect={(candidate) => { setEventLocation(candidate.label); setEventResolved(candidate); setEventSuggestions([]); }} /></label>
                   <label className="formField"><span>Date</span><input name="date" type="date" defaultValue={selectedDate} /></label>
                   <label className="formField"><span>Start time</span><input name="time" type="time" defaultValue="16:00" /></label>
                 </div>

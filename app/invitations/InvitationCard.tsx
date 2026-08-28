@@ -24,7 +24,10 @@ export default function InvitationCard({ invitation, event, compact = false }: P
   return (
     <article
       className={`digitalInvitation invitationDesign-${design.id}${compact ? " compact" : ""}`}
-      style={{ "--invitation-art": `url('${design.artwork}')` } as CSSProperties}
+      style={{
+        "--invitation-art": `url('${design.artwork}')`,
+        "--invitation-aspect": "aspectRatio" in design ? design.aspectRatio : "4 / 5",
+      } as CSSProperties}
     >
       <div className="digitalInvitationShade" />
       <div className="digitalInvitationContent">

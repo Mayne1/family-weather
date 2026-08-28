@@ -9,6 +9,16 @@ const DESIGN_IDS = new Set([
   "birthday-after-dark",
   "cookout-table",
   "park-paper",
+  "wedding-blush-cascade",
+  "wedding-white-garden",
+  "wedding-midnight-crest",
+  "wedding-candlelit-wood",
+  "wedding-marble-rose",
+  "wedding-burgundy-bloom",
+  "wedding-torn-paper",
+  "wedding-sunset-vows",
+  "wedding-ink-marble",
+  "wedding-deco-noir",
 ]);
 
 function optionalText(value, limit) {
