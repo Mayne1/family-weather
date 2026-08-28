@@ -27,7 +27,7 @@ const fallbackForecast = [
 ];
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { label?: string; lat?: number; lon?: number; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number } | null; days: WeatherDay[] };
+type HomeWeather = { label?: string; lat?: number; lon?: number; timezone?: string | null; current_source?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number; observed_at?: string; source?: string } | null; days: WeatherDay[] };
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; resolvedLocation: LocationCandidate; day: WeatherDay; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
@@ -53,6 +53,17 @@ function weatherDescription(code: number) {
 
 function hasResolvedLocation(label?: string) {
   return Boolean(label && label !== "Your location");
+}
+
+function dateInTimezone(timeZone?: string | null) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timeZone || undefined,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 export default function Home() {
@@ -459,6 +470,7 @@ export default function Home() {
   };
 
   const today = homeWeather?.days?.[0];
+  const forecastIsToday = Boolean(today && today.date === dateInTimezone(homeWeather?.timezone));
   const liveForecast = homeWeather?.days?.length
     ? homeWeather.days.map((item, index) => [index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), weatherSymbol(item.weather_code), `${item.temp_max_f}°`, item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : ""])
     : fallbackForecast;
@@ -495,9 +507,9 @@ export default function Home() {
               <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now</span><strong>LIVE</strong></div>
               <div className="decisionMain">
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
-                <div className="score" aria-label="Today’s forecast high"><span>{today?.temp_max_f ?? "—"}°</span><small>HIGH</small></div>
+                <div className="score" aria-label={forecastIsToday ? "Today’s forecast high" : "Next daytime forecast high"}><span>{today?.temp_max_f ?? "—"}°</span><small>{forecastIsToday ? "HIGH" : "NEXT HIGH"}</small></div>
               </div>
-              <p><strong>{today ? (today.shortForecast || weatherDescription(today.weather_code)) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
+              <p><strong>{today ? `${forecastIsToday ? "" : "Tomorrow: "}${today.shortForecast || weatherDescription(today.weather_code)}` : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
             </div>
           </div>
 

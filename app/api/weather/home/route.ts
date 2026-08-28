@@ -15,6 +15,24 @@ type NwsPeriod = {
   shortForecast?: string;
 };
 
+type NwsObservation = {
+  properties?: {
+    temperature?: { value?: number | null };
+    heatIndex?: { value?: number | null };
+    windChill?: { value?: number | null };
+    windSpeed?: { value?: number | null };
+    relativeHumidity?: { value?: number | null };
+    timestamp?: string;
+    textDescription?: string;
+  };
+};
+
+type NwsPoint = {
+  properties?: {
+    observationStations?: string;
+  };
+};
+
 type WeatherDay = {
   date: string;
   weather_code: number;
@@ -39,6 +57,40 @@ function weatherCode(summary = "") {
   if (/mostly sunny|few clouds/.test(text)) return 801;
   if (/sunny|clear/.test(text)) return 800;
   return 802;
+}
+
+function officialCurrentConditions(observation: NwsObservation | null) {
+  const properties = observation?.properties;
+  const tempC = Number(properties?.temperature?.value);
+  if (!Number.isFinite(tempC)) return null;
+
+  const observedAt = String(properties?.timestamp || "");
+  const observedTime = Date.parse(observedAt);
+  if (!Number.isFinite(observedTime) || Date.now() - observedTime > 2 * 60 * 60 * 1000) return null;
+
+  const heatIndexC = Number(properties?.heatIndex?.value);
+  const windChillC = Number(properties?.windChill?.value);
+  const feelsC = Number.isFinite(heatIndexC) ? heatIndexC : Number.isFinite(windChillC) ? windChillC : tempC;
+  const windKph = Number(properties?.windSpeed?.value);
+  return {
+    temp_f: Math.round((tempC * 9 / 5 + 32) * 10) / 10,
+    feels_like_f: Math.round((feelsC * 9 / 5 + 32) * 10) / 10,
+    wind_mph: Number.isFinite(windKph) ? Math.round((windKph / 1.609344) * 10) / 10 : 0,
+    weather_code: weatherCode(String(properties?.textDescription || "")),
+    humidity_pct: Math.round(Number(properties?.relativeHumidity?.value) || 0),
+    observed_at: observedAt,
+    source: "nws-observation",
+  };
+}
+
+async function nwsCurrent(point: NwsPoint | null) {
+  const stationsUrl = point?.properties?.observationStations;
+  if (!stationsUrl) return null;
+  const stations = await jsonOrNull(stationsUrl, NWS_HEADERS);
+  const stationUrl = stations?.features?.[0]?.id;
+  if (!stationUrl) return null;
+  const observation = await jsonOrNull(`${stationUrl}/observations/latest`, NWS_HEADERS);
+  return officialCurrentConditions(observation);
 }
 
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
@@ -112,8 +164,11 @@ export async function GET(request: NextRequest) {
   let source = "family-weather-nws";
 
   const forecastUrl = point?.properties?.forecast;
-  if (forecastUrl) {
-    const officialForecast = await jsonOrNull(forecastUrl, NWS_HEADERS);
+  const [officialCurrent, officialForecast] = await Promise.all([
+    nwsCurrent(point),
+    forecastUrl ? jsonOrNull(forecastUrl, NWS_HEADERS) : Promise.resolve(null),
+  ]);
+  if (officialForecast) {
     days = buildDays(officialForecast?.properties?.periods || []);
     if (days.length) source = "nws";
   }
@@ -122,7 +177,7 @@ export async function GET(request: NextRequest) {
     days = normalizeFallbackDays(fallbackForecast?.days);
   }
 
-  const current = currentPayload?.current || currentPayload?.rightNow || null;
+  const current = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
   if (!current && !days.length) {
     return NextResponse.json(
       { ok: false, error: "Weather service unavailable" },
@@ -145,6 +200,8 @@ export async function GET(request: NextRequest) {
     current,
     days,
     source,
+    timezone: point?.properties?.timeZone || null,
+    current_source: officialCurrent ? "nws-observation" : "family-weather",
     partial: !current || !days.length,
   });
 }
