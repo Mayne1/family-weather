@@ -68,25 +68,32 @@ function weatherCode(summary = "") {
   return 802;
 }
 
+function finiteNumberOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 function officialCurrentConditions(observation: NwsObservation | null) {
   const properties = observation?.properties;
-  const tempC = Number(properties?.temperature?.value);
-  if (!Number.isFinite(tempC)) return null;
+  const tempC = finiteNumberOrNull(properties?.temperature?.value);
+  if (tempC === null) return null;
 
   const observedAt = String(properties?.timestamp || "");
   const observedTime = Date.parse(observedAt);
   if (!Number.isFinite(observedTime) || Date.now() - observedTime > 2 * 60 * 60 * 1000) return null;
 
-  const heatIndexC = Number(properties?.heatIndex?.value);
-  const windChillC = Number(properties?.windChill?.value);
-  const feelsC = Number.isFinite(heatIndexC) ? heatIndexC : Number.isFinite(windChillC) ? windChillC : tempC;
-  const windKph = Number(properties?.windSpeed?.value);
+  const heatIndexC = finiteNumberOrNull(properties?.heatIndex?.value);
+  const windChillC = finiteNumberOrNull(properties?.windChill?.value);
+  const feelsC = heatIndexC ?? windChillC ?? tempC;
+  const windKph = finiteNumberOrNull(properties?.windSpeed?.value);
+  const humidity = finiteNumberOrNull(properties?.relativeHumidity?.value);
   return {
     temp_f: Math.round((tempC * 9 / 5 + 32) * 10) / 10,
     feels_like_f: Math.round((feelsC * 9 / 5 + 32) * 10) / 10,
-    wind_mph: Number.isFinite(windKph) ? Math.round((windKph / 1.609344) * 10) / 10 : 0,
+    wind_mph: windKph !== null ? Math.round((windKph / 1.609344) * 10) / 10 : null,
     weather_code: weatherCode(String(properties?.textDescription || "")),
-    humidity_pct: Math.round(Number(properties?.relativeHumidity?.value) || 0),
+    humidity_pct: humidity !== null ? Math.round(humidity) : null,
     observed_at: observedAt,
     source: "nws-observation",
   };
@@ -236,9 +243,16 @@ async function jsonOrNull(url: string, headers?: HeadersInit) {
 }
 
 export async function GET(request: NextRequest) {
-  const requestedLat = Number(request.nextUrl.searchParams.get("lat"));
-  const requestedLon = Number(request.nextUrl.searchParams.get("lon"));
-  const hasCoordinates = Number.isFinite(requestedLat) && Number.isFinite(requestedLon);
+  const rawLat = request.nextUrl.searchParams.get("lat");
+  const rawLon = request.nextUrl.searchParams.get("lon");
+  const requestedLat = finiteNumberOrNull(rawLat);
+  const requestedLon = finiteNumberOrNull(rawLon);
+  const hasCoordinates = requestedLat !== null
+    && requestedLon !== null
+    && requestedLat >= -90
+    && requestedLat <= 90
+    && requestedLon >= -180
+    && requestedLon <= 180;
   const lat = hasCoordinates ? requestedLat : 37.9177;
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
