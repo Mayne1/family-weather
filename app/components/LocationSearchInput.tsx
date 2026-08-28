@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LocationCandidate } from "../lib/location";
 
 type Props = {
@@ -18,10 +18,11 @@ export default function LocationSearchInput({ id, name, value, required, classNa
   const listId = useId();
   const [suggestions, setSuggestions] = useState<LocationCandidate[]>([]);
   const [open, setOpen] = useState(false);
+  const selectedValue = useRef("");
 
   useEffect(() => {
     const query = value.trim();
-    if (query.length < 2 || forcedSuggestions.length) {
+    if (query.length < 2 || forcedSuggestions.length || query === selectedValue.current) {
       return;
     }
     const controller = new AbortController();
@@ -45,9 +46,12 @@ export default function LocationSearchInput({ id, name, value, required, classNa
 
   const choices = forcedSuggestions.length ? forcedSuggestions : suggestions;
   const choose = (candidate: LocationCandidate) => {
+    selectedValue.current = candidate.label;
     onSelect(candidate);
+    setSuggestions([]);
     setOpen(false);
   };
+  const showChoices = choices.length > 0 && (open || forcedSuggestions.length > 0);
 
   return (
     <div className={`locationSearch ${className}`}>
@@ -60,12 +64,12 @@ export default function LocationSearchInput({ id, name, value, required, classNa
         role="combobox"
         aria-autocomplete="list"
         aria-controls={listId}
-        aria-expanded={open && choices.length > 0}
-        onChange={(event) => { setSuggestions([]); onChange(event.target.value); setOpen(true); }}
+        aria-expanded={showChoices}
+        onChange={(event) => { selectedValue.current = ""; setSuggestions([]); onChange(event.target.value); setOpen(true); }}
         onFocus={() => choices.length && setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 150)}
       />
-      {open && choices.length > 0 && (
+      {showChoices && (
         <div className="locationSuggestions" id={listId} role="listbox">
           {choices.map((candidate) => (
             <button type="button" role="option" aria-selected="false" key={candidate.id} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(candidate)}>

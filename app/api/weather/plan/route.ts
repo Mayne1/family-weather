@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAmbiguousLocation, isValidLocationCandidate, searchLocations } from "../../../lib/location";
+import { lookupAlmanac } from "../../../lib/almanac";
+import type { AlmanacResult } from "../../../lib/almanac";
+import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
@@ -49,28 +51,6 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
   });
 }
 
-class AmbiguousLocationError extends Error {
-  suggestions: LocationCandidate[];
-
-  constructor(query: string, suggestions: LocationCandidate[]) {
-    super(`We found several places named "${query}". Choose the one you mean.`);
-    this.suggestions = suggestions;
-  }
-}
-
-async function resolveLocation(query: string, supplied?: unknown) {
-  if (isValidLocationCandidate(supplied)) {
-    return { ...supplied, lat: Number(supplied.lat), lon: Number(supplied.lon), input: supplied.input || query };
-  }
-  const suggestions = await searchLocations(query, 6);
-  if (!suggestions.length) {
-    throw new Error(`We couldn't find "${query}". Try a venue, landmark, address, city, or postal code.`);
-  }
-  if (isAmbiguousLocation(query, suggestions)) throw new AmbiguousLocationError(query, suggestions);
-  return suggestions[0];
-}
-
-
 type ForecastDay = {
   date: string;
   weather_code: number;
@@ -85,7 +65,7 @@ function clamp(value: number, low = 0, high = 100) {
   return Math.max(low, Math.min(high, Math.round(value)));
 }
 
-function buildRecommendation(day: ForecastDay, space: string, activity: string) {
+function buildRecommendation(day: ForecastDay, space: string, activity: string, historical?: AlmanacResult | null) {
   const exposure = space === "indoor" ? 0.2 : space === "both" ? 0.6 : 1;
   const heatPenalty = Math.max(0, day.temp_max_f - 84) * 1.7 * exposure;
   const coldPenalty = Math.max(0, 58 - day.temp_max_f) * 1.2 * exposure;
@@ -99,6 +79,15 @@ function buildRecommendation(day: ForecastDay, space: string, activity: string) 
   else if (day.temp_max_f >= 82) bestWindow = "4–7 PM";
   else if (day.temp_max_f < 65) bestWindow = "1–4 PM";
   if (space === "indoor") bestWindow = "Your planned time";
+
+  if (historical) {
+    const advice = [
+      { tone: historical.rainFrequencyPct >= 40 ? "warn" : "good", title: "Five-year rain pattern", copy: `${historical.rainYears} of ${historical.years.length} matching dates recorded rain. This is history, not a forecast.` },
+      { tone: historical.averageHighF >= 90 && space !== "indoor" ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
+      { tone: historical.averageWindMph > 12 ? "warn" : "good", title: "Typical peak wind", copy: `Matching dates averaged about ${historical.averageWindMph} mph for peak wind.` },
+    ];
+    return { score, bestWindow: "Historical pattern", advice };
+  }
 
   const advice = [];
   if (day.precip_prob_pct < 20) advice.push({ tone: "good", title: "Rain is unlikely", copy: `Only a ${day.precip_prob_pct}% chance is currently forecast.` });
@@ -143,7 +132,7 @@ async function globalForecast(geo: LocationCandidate, date: string) {
   if (!response.ok) throw new Error("Worldwide forecast lookup failed");
   const data = await response.json();
   const index = Array.isArray(data?.daily?.time) ? data.daily.time.indexOf(date) : -1;
-  if (index < 0) throw new Error("That date is outside the live forecast window");
+  if (index < 0) return null;
   const day: ForecastDay = {
     date,
     weather_code: Math.round(Number(data.daily.weather_code?.[index]) || 0),
@@ -166,13 +155,24 @@ export async function POST(request: NextRequest) {
 
     const geo = await resolveLocation(location, body.resolvedLocation);
     const forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await globalForecast(geo, date);
-    const recommendation = buildRecommendation(forecast.day, space, activity);
+    const almanac = forecast ? null : await lookupAlmanac(geo, date);
+    const day: ForecastDay = forecast?.day || {
+      date,
+      weather_code: almanac!.typicalWeatherCode,
+      temp_max_f: almanac!.averageHighF,
+      temp_min_f: almanac!.averageLowF,
+      precip_prob_pct: almanac!.rainFrequencyPct,
+      wind_max_mph: almanac!.averageWindMph,
+      shortForecast: almanac!.summary,
+    };
+    const recommendation = buildRecommendation(day, space, activity, almanac);
     return NextResponse.json({
       ok: true,
-      source: forecast.source,
-      location: forecast.label,
+      source: forecast?.source || "almanac",
+      location: forecast?.label || geo.label,
       resolvedLocation: geo,
-      day: forecast.day,
+      day,
+      almanac,
       space,
       activity,
       ...recommendation,

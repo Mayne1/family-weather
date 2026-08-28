@@ -71,13 +71,14 @@ button,input{font:inherit}
 .activity:hover,.activity.active{border-color:var(--blue);background:var(--ink);color:white;transform:translateY(-1px)}
 .activity.active span{color:var(--sun)}
 .fieldLabel{display:block;margin:1.3rem 0 .48rem;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#52656c}
-.inputShell{height:52px;border:1px solid var(--line);border-radius:13px;display:flex;align-items:center;padding:0 .9rem;background:white}
-.inputShell>span{color:#5793a0}
+.inputShell{min-height:52px;border:1px solid var(--line);border-radius:13px;display:flex;align-items:flex-start;padding:0 .9rem;background:white}
+.inputShell>span{margin-top:17px;color:#5793a0}
 .inputShell input{flex:1;min-width:0;border:0;outline:0;padding:0 .7rem;color:var(--ink);background:transparent}
-.inputShell button{border:0;background:transparent;color:#5793a0;cursor:pointer}
+.inputShell>button{margin-top:14px;border:0;background:transparent;color:#5793a0;cursor:pointer}
 .locationSearch{position:relative;width:100%;min-width:0}
 .inputShell>.locationSearch{flex:1}
-.locationSuggestions{position:absolute;z-index:40;top:calc(100% + 7px);left:0;right:0;overflow:hidden;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 18px 42px rgba(7,27,37,.2)}
+.inputShell>.locationSearch>input{width:100%;height:50px}
+.locationSuggestions{position:static;overflow:auto;max-height:245px;margin:0 0 .7rem;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 8px 20px rgba(7,27,37,.08)}
 .locationSuggestions button{display:block;width:100%;padding:.7rem .8rem;border:0;border-bottom:1px solid #edf0ee;background:#fff;color:var(--ink);text-align:left;cursor:pointer}
 .locationSuggestions button:hover,.locationSuggestions button:focus{background:#f1f8f7;outline:0}
 .locationSuggestions strong,.locationSuggestions span{display:block}
@@ -122,6 +123,31 @@ button,input{font:inherit}
 .outlookFacts small,.outlookFacts strong{display:block}
 .outlookFacts small{font-size:.58rem;font-weight:800;letter-spacing:.12em;color:#557179}
 .outlookFacts strong{margin-top:.35rem;font-size:1.25rem}
+
+.almanacSection{padding:100px max(4vw,calc((100vw - 1220px)/2));display:grid;grid-template-columns:minmax(260px,.72fr) minmax(0,1.28fr);gap:5vw;align-items:start;background:#eaf3f1}
+.almanacIntro h2{margin:0;font-size:clamp(2.3rem,4vw,4rem);line-height:1;letter-spacing:-.05em}
+.almanacIntro>p:last-child{max-width:510px;color:var(--muted);line-height:1.65}
+.almanacCard{padding:1.5rem;border:1px solid rgba(7,27,37,.1);border-radius:24px;background:rgba(255,255,255,.82);box-shadow:0 22px 60px rgba(7,27,37,.08)}
+.almanacCard form{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:.8rem;align-items:start}
+.almanacCard form label{display:grid;gap:.45rem;color:#52656c;font-size:.66rem;font-weight:800;letter-spacing:.1em}
+.almanacCard form input{width:100%;height:50px;padding:0 .85rem;border:1px solid var(--line);border-radius:12px;background:white;color:var(--ink);outline:none}
+.almanacCard form input:focus{border-color:#4f8997;box-shadow:0 0 0 3px rgba(79,137,151,.12)}
+.almanacCard form .primaryCta{grid-column:1/-1;margin-top:0}
+.almanacEmpty{margin-top:1rem;padding:1rem;border-radius:14px;background:#f4f8f7}
+.almanacEmpty p,.almanacResults>p{margin:.35rem 0 0;color:var(--muted);font-size:.8rem;line-height:1.5}
+.almanacPlace{font-weight:800;color:var(--ink)!important}
+.almanacSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-top:1rem}
+.almanacSummary div{padding:1rem;border-radius:14px;background:var(--ink);color:white;text-align:center}
+.almanacSummary small,.almanacSummary strong{display:block}
+.almanacSummary small{font-size:.55rem;letter-spacing:.12em;color:rgba(255,255,255,.6)}
+.almanacSummary strong{margin-top:.35rem;font-size:1.65rem}
+.almanacYears{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin-top:1rem}
+.almanacYears article{min-width:0;padding:.75rem;border:1px solid var(--line);border-radius:12px;background:white}
+.almanacYears article>*{display:block}
+.almanacYears article>strong{font-size:.72rem;color:#3d7f8e}
+.almanacYears article>span{min-height:2.2em;margin:.35rem 0;font-size:.66rem;color:var(--muted)}
+.almanacYears article>b{font-size:.8rem}
+.almanacYears article>small{margin-top:.35rem;font-size:.58rem;color:#65777e}
 
 .how{padding:100px max(4vw,calc((100vw - 1220px)/2));background:#eaf3f1}
 .how h2{max-width:680px}
@@ -191,8 +217,9 @@ footer a{color:inherit}
 .plannerCard{max-width:650px}
 .forecastGrid{grid-template-columns:repeat(2,1fr)}
 .sectionHeading{display:block}
+.almanacSection{grid-template-columns:1fr}
 .steps{grid-template-columns:1fr}
-.outlook,.how{padding-top:75px;padding-bottom:75px}
+.outlook,.almanacSection,.how{padding-top:75px;padding-bottom:75px}
 }
 
 @media(max-width:600px){.siteHeader{height:76px}
@@ -205,10 +232,19 @@ footer a{color:inherit}
 .plannerCard{padding:1.2rem;border-radius:20px}
 .activityGrid{grid-template-columns:repeat(3,1fr)}
 .dateOption span{display:none}
-.outlook,.how{padding:65px 1rem}
+.outlook,.almanacSection,.how{padding:65px 1rem}
 .forecastGrid{grid-template-columns:1fr}
 .forecastDay{min-height:210px}
 .outlookFacts{grid-template-columns:repeat(2,1fr)}
+.almanacCard{padding:1rem}
+.almanacCard form{grid-template-columns:1fr}
+.almanacCard form .primaryCta{grid-column:auto}
+.almanacSummary{grid-template-columns:repeat(3,1fr)}
+.almanacSummary div{padding:.8rem .35rem}
+.almanacYears{grid-template-columns:1fr}
+.almanacYears article{display:grid;grid-template-columns:52px 1fr auto;gap:.6rem;align-items:center}
+.almanacYears article>span{min-height:0;margin:0}
+.almanacYears article>small{grid-column:2/-1;margin-top:0}
 .sectionHeading>p{font-size:.9rem}
 .how h2,.sectionHeading h2{font-size:2.45rem}
 footer{align-items:flex-start;flex-direction:column}

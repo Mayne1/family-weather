@@ -270,3 +270,24 @@ export function isAmbiguousLocation(input: string, candidates: LocationCandidate
   if (exact.length < 2) return false;
   return exact[0].score - exact[1].score < 0.15;
 }
+
+export class AmbiguousLocationError extends Error {
+  suggestions: LocationCandidate[];
+
+  constructor(query: string, suggestions: LocationCandidate[]) {
+    super(`We found several places named "${query}". Choose the one you mean.`);
+    this.suggestions = suggestions;
+  }
+}
+
+export async function resolveLocation(query: string, supplied?: unknown) {
+  if (isValidLocationCandidate(supplied)) {
+    return { ...supplied, lat: Number(supplied.lat), lon: Number(supplied.lon), input: supplied.input || query };
+  }
+  const suggestions = await searchLocations(query, 6);
+  if (!suggestions.length) {
+    throw new Error(`We couldn't find "${query}". Try a venue, landmark, address, city, or postal code.`);
+  }
+  if (isAmbiguousLocation(query, suggestions)) throw new AmbiguousLocationError(query, suggestions);
+  return suggestions[0];
+}
