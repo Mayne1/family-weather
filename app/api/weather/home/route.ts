@@ -30,7 +30,16 @@ type NwsObservation = {
 type NwsPoint = {
   properties?: {
     observationStations?: string;
+    forecast?: string;
+    timeZone?: string;
+    relativeLocation?: { properties?: { city?: string; state?: string } };
   };
+};
+
+type NwsStationWeather = {
+  current: ReturnType<typeof officialCurrentConditions>;
+  high_f: number | null;
+  low_f: number | null;
 };
 
 type WeatherDay = {
@@ -83,14 +92,96 @@ function officialCurrentConditions(observation: NwsObservation | null) {
   };
 }
 
-async function nwsCurrent(point: NwsPoint | null) {
+function dateInTimezone(timeZone: string, value: Date | string = new Date()) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const fields = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${fields.year}-${fields.month}-${fields.day}`;
+}
+
+async function nwsStationWeather(point: NwsPoint | null, timeZone: string): Promise<NwsStationWeather | null> {
   const stationsUrl = point?.properties?.observationStations;
   if (!stationsUrl) return null;
   const stations = await jsonOrNull(stationsUrl, NWS_HEADERS);
   const stationUrl = stations?.features?.[0]?.id;
   if (!stationUrl) return null;
-  const observation = await jsonOrNull(`${stationUrl}/observations/latest`, NWS_HEADERS);
-  return officialCurrentConditions(observation);
+
+  const localDate = dateInTimezone(timeZone);
+  const [latest, observations] = await Promise.all([
+    jsonOrNull(`${stationUrl}/observations/latest`, NWS_HEADERS),
+    jsonOrNull(`${stationUrl}/observations?start=${localDate}T00:00:00Z&limit=500`, NWS_HEADERS),
+  ]);
+  const temperatures = (observations?.features || [])
+    .filter((item: NwsObservation) => {
+      const timestamp = item?.properties?.timestamp;
+      return timestamp && dateInTimezone(timeZone, timestamp) === localDate;
+    })
+    .map((item: NwsObservation) => Number(item?.properties?.temperature?.value))
+    .filter((value: number) => Number.isFinite(value))
+    .map((value: number) => value * 9 / 5 + 32);
+
+  return {
+    current: officialCurrentConditions(latest),
+    high_f: temperatures.length ? Math.round(Math.max(...temperatures)) : null,
+    low_f: temperatures.length ? Math.round(Math.min(...temperatures)) : null,
+  };
+}
+
+function openMeteoCode(code: number) {
+  if (code === 0) return 800;
+  if (code === 1) return 801;
+  if (code === 2) return 802;
+  if (code === 3) return 803;
+  if (code === 45 || code === 48) return 741;
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 500;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 601;
+  if (code >= 95) return 211;
+  return 802;
+}
+
+function openMeteoDescription(code: number) {
+  if (code === 0) return "Clear and sunny";
+  if (code === 1) return "Mostly sunny";
+  if (code === 2) return "Partly cloudy";
+  if (code === 3) return "Mostly cloudy";
+  if (code === 45 || code === 48) return "Foggy";
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "Rain or showers possible";
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return "Snow possible";
+  if (code >= 95) return "Thunderstorms possible";
+  return "Forecast available";
+}
+
+async function calendarForecast(lat: number, lon: number, requestedTimeZone?: string | null) {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max",
+    temperature_unit: "fahrenheit",
+    wind_speed_unit: "mph",
+    timezone: requestedTimeZone || "auto",
+    forecast_days: "8",
+  });
+  const payload = await jsonOrNull(`https://api.open-meteo.com/v1/forecast?${params}`);
+  const daily = payload?.daily;
+  const dates: unknown[] = daily?.time || [];
+  const days = dates.map((date, index): WeatherDay => {
+    const rawCode = Number(daily?.weather_code?.[index]) || 0;
+    return {
+      date: String(date),
+      weather_code: openMeteoCode(rawCode),
+      temp_max_f: Math.round(Number(daily?.temperature_2m_max?.[index]) || 0),
+      temp_min_f: Math.round(Number(daily?.temperature_2m_min?.[index]) || 0),
+      precip_prob_pct: Math.round(Number(daily?.precipitation_probability_max?.[index]) || 0),
+      wind_max_mph: Math.round(Number(daily?.wind_speed_10m_max?.[index]) || 0),
+      shortForecast: openMeteoDescription(rawCode),
+    };
+  });
+  return { days, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
 }
 
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
@@ -164,17 +255,35 @@ export async function GET(request: NextRequest) {
   let source = "family-weather-nws";
 
   const forecastUrl = point?.properties?.forecast;
-  const [officialCurrent, officialForecast] = await Promise.all([
-    nwsCurrent(point),
+  const [officialForecast, calendar] = await Promise.all([
     forecastUrl ? jsonOrNull(forecastUrl, NWS_HEADERS) : Promise.resolve(null),
+    calendarForecast(lat, lon, point?.properties?.timeZone),
   ]);
-  if (officialForecast) {
-    days = buildDays(officialForecast?.properties?.periods || []);
-    if (days.length) source = "nws";
+  const timeZone = calendar.timeZone || point?.properties?.timeZone || "UTC";
+  const localDate = dateInTimezone(timeZone);
+  const stationWeather = await nwsStationWeather(point, timeZone);
+  const officialCurrent = stationWeather?.current || null;
+  const officialDays = officialForecast ? buildDays(officialForecast?.properties?.periods || []) : [];
+
+  const daysByDate = new Map(calendar.days.map((day) => [day.date, day]));
+  for (const day of officialDays) daysByDate.set(day.date, day);
+
+  const currentDay = daysByDate.get(localDate);
+  if (currentDay && stationWeather) {
+    if (stationWeather.high_f !== null) currentDay.temp_max_f = Math.max(currentDay.temp_max_f, stationWeather.high_f);
+    if (stationWeather.low_f !== null) currentDay.temp_min_f = Math.min(currentDay.temp_min_f, stationWeather.low_f);
   }
 
+  days = [...daysByDate.values()]
+    .filter((day) => day.date >= localDate)
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .slice(0, 5);
+  if (officialDays.length) source = "nws";
+
   if (!days.length) {
-    days = normalizeFallbackDays(fallbackForecast?.days);
+    days = normalizeFallbackDays(fallbackForecast?.days)
+      .filter((day) => day.date >= localDate)
+      .slice(0, 5);
   }
 
   const current = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
@@ -200,7 +309,7 @@ export async function GET(request: NextRequest) {
     current,
     days,
     source,
-    timezone: point?.properties?.timeZone || null,
+    timezone: timeZone,
     current_source: officialCurrent ? "nws-observation" : "family-weather",
     partial: !current || !days.length,
   });

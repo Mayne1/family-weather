@@ -55,15 +55,16 @@ function hasResolvedLocation(label?: string) {
   return Boolean(label && label !== "Your location");
 }
 
-function dateInTimezone(timeZone?: string | null) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timeZone || undefined,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
+function locationDateTime(timeZone: string | null | undefined, value: Date, mode: "date" | "time") {
+  try {
+    return value.toLocaleString("en-US", mode === "date"
+      ? { timeZone: timeZone || undefined, weekday: "long", month: "long", day: "numeric" }
+      : { timeZone: timeZone || undefined, hour: "numeric", minute: "2-digit" });
+  } catch {
+    return value.toLocaleString("en-US", mode === "date"
+      ? { weekday: "long", month: "long", day: "numeric" }
+      : { hour: "numeric", minute: "2-digit" });
+  }
 }
 
 export default function Home() {
@@ -74,6 +75,8 @@ export default function Home() {
   const [eventStep, setEventStep] = useState<"details" | "review">("details");
   const [eventSpace, setEventSpace] = useState("outdoor");
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
+  const [clock, setClock] = useState(() => new Date());
+  const [selectedOutlookDay, setSelectedOutlookDay] = useState<WeatherDay | null>(null);
   const [homeLocation, setHomeLocation] = useState("Stockton, California");
   const [plannerLocation, setPlannerLocation] = useState("Stockton, CA 95206");
   const [plannerResolved, setPlannerResolved] = useState<LocationCandidate | null>(null);
@@ -173,6 +176,11 @@ export default function Home() {
         maximumAge: 0,
       });
     }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(new Date()), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const useCurrentLocation = () => {
@@ -470,10 +478,9 @@ export default function Home() {
   };
 
   const today = homeWeather?.days?.[0];
-  const forecastIsToday = Boolean(today && today.date === dateInTimezone(homeWeather?.timezone));
   const liveForecast = homeWeather?.days?.length
-    ? homeWeather.days.map((item, index) => [index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), weatherSymbol(item.weather_code), `${item.temp_max_f}°`, item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : ""])
-    : fallbackForecast;
+    ? homeWeather.days.map((item, index) => ({ label: index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), day: new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }))
+    : fallbackForecast.map(([label, day, icon, temp, lead, copy, style]) => ({ label, day, icon, temp, lead, copy, style, weather: null }));
 
   return (
     <>
@@ -500,16 +507,16 @@ export default function Home() {
       <main id="top">
         <section className="hero">
           <div className="heroCopy">
-            <p className="eyebrow"><span /> {homeLocation} · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+            <p className="eyebrow"><span /> {homeLocation} · {locationDateTime(homeWeather?.timezone, clock, "date")}</p>
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
             <p className="intro">Family Weather turns the forecast into a simple decision—when to go, what to expect, and what your people need to know.</p>
             <div className="decisionCard">
-              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now</span><strong>LIVE</strong></div>
+              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>LIVE</strong></div>
               <div className="decisionMain">
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
-                <div className="score" aria-label={forecastIsToday ? "Today’s forecast high" : "Next daytime forecast high"}><span>{today?.temp_max_f ?? "—"}°</span><small>{forecastIsToday ? "HIGH" : "NEXT HIGH"}</small></div>
+                <div className="todayRange" aria-label="Today’s high and low"><span><b>{today?.temp_max_f ?? "—"}°</b><small>HIGH</small></span><span><b>{today?.temp_min_f ?? "—"}°</b><small>LOW</small></span></div>
               </div>
-              <p><strong>{today ? `${forecastIsToday ? "" : "Tomorrow: "}${today.shortForecast || weatherDescription(today.weather_code)}` : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
+              <p><strong>{today ? today.shortForecast || weatherDescription(today.weather_code) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
             </div>
           </div>
 
@@ -537,8 +544,8 @@ export default function Home() {
         <section className="outlook" id="outlook">
           <div className="sectionHeading"><div><p className="eyebrow dark"><span /> The next few days</p><h2>Weather you can use.</h2></div><p>Not just numbers. Each day comes with a plain-language recommendation for your plans.</p></div>
           <div className="forecastGrid">
-            {liveForecast.map(([label, day, icon, temp, lead, copy, style]) => (
-              <article className={`forecastDay ${style}`} key={day}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p></article>
+            {liveForecast.map(({ label, day, icon, temp, lead, copy, style, weather }) => (
+              <button className={`forecastDay ${style}`} key={`${label}-${day}`} type="button" onClick={() => weather && setSelectedOutlookDay(weather)} aria-label={`View detailed weather for ${day}`}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p><span className="forecastMore">View details</span></button>
             ))}
           </div>
         </section>
@@ -556,6 +563,8 @@ export default function Home() {
       <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p>Privacy · Terms · SMS consent</p></footer>
 
       {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">Your {activity} has a weather window.</h2><p className="resultLocation">{plan.source === "nws" ? "Official NWS" : "Worldwide"} forecast for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>BEST TIME</span><strong>{selectedBestWindow}</strong></div><p>{`${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+
+      {selectedOutlookDay && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="outlook-detail-title" onMouseDown={(event) => event.target === event.currentTarget && setSelectedOutlookDay(null)}><div className="modalCard outlookDetail"><button className="close" type="button" onClick={() => setSelectedOutlookDay(null)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Daily details</p><h2 id="outlook-detail-title">{new Date(`${selectedOutlookDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h2><p>{selectedOutlookDay.shortForecast || weatherDescription(selectedOutlookDay.weather_code)}</p><div className="outlookFacts"><div><small>HIGH</small><strong>{selectedOutlookDay.temp_max_f}°</strong></div><div><small>LOW</small><strong>{selectedOutlookDay.temp_min_f}°</strong></div><div><small>RAIN</small><strong>{selectedOutlookDay.precip_prob_pct}%</strong></div><div><small>WIND</small><strong>{selectedOutlookDay.wind_max_mph} mph</strong></div></div></div></div>}
 
       {showEvent && (
         <div className="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="event-title" onMouseDown={(event) => event.target === event.currentTarget && setShowEvent(false)}>
