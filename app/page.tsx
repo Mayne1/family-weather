@@ -69,9 +69,14 @@ function locationDateTime(timeZone: string | null | undefined, value: Date, mode
   }
 }
 
+function localDateValue(value = new Date()) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
 export default function Home() {
   const [activity, setActivity] = useState("cookout");
   const [date, setDate] = useState(0);
+  const [customDate, setCustomDate] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [showEvent, setShowEvent] = useState(false);
   const [eventStep, setEventStep] = useState<"details" | "review">("details");
@@ -223,10 +228,10 @@ export default function Home() {
 
   const dateChoices = (homeWeather?.days || []).slice(0, 4);
   const chosenDay = dateChoices[date] || homeWeather?.days?.[0] || null;
-  const selectedDate = chosenDay?.date || (() => {
+  const selectedDate = customDate || chosenDay?.date || (() => {
     const value = new Date();
     value.setDate(value.getDate() + date);
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+    return localDateValue(value);
   })();
   const selectedDay = plan?.day || chosenDay;
   const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
@@ -568,9 +573,14 @@ export default function Home() {
             <span className="fieldLabel">When?</span>
             <div className="dateRow">
               {(dateChoices.length ? dateChoices : Array.from({ length: 4 }, (_, index) => ({ date: (() => { const value = new Date(); value.setDate(value.getDate() + index); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; })() }))).map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
-                <button key={choice.date} className={`dateOption ${date === index ? "active" : ""}`} onClick={() => setDate(index)} type="button"><small>{value.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}</small><strong>{value.getDate()}</strong><span>{index === 0 ? "Today" : index === 1 ? "Tomorrow" : value.toLocaleDateString("en-US", { weekday: "long" })}</span></button>
+                <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{value.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}</small><strong>{value.getDate()}</strong><span>{index === 0 ? "Today" : index === 1 ? "Tomorrow" : value.toLocaleDateString("en-US", { weekday: "long" })}</span></button>
               ); })}
             </div>
+            <label className={`otherDateOption ${customDate ? "active" : ""}`}>
+              <span className="calendarMark" aria-hidden="true">▦</span>
+              <span className="otherDateCopy"><strong>Choose another date</strong><small>Any future day</small></span>
+              <input type="date" min={localDateValue()} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
+            </label>
             <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
             {planError && <p className="formError" role="alert">{planError}</p>}
             <p className="quietNote">No account needed to check the weather.</p>
@@ -596,7 +606,7 @@ export default function Home() {
             </form>
             {almanacError && <p className="formError" role="alert">{almanacError}</p>}
             {!almanacResult && !almanacError && <div className="almanacEmpty"><strong>A weather time machine, minus the questionable wiring.</strong><p>This reports recorded historical patterns. It does not pretend five old Tuesdays can guarantee the next one.</p></div>}
-            {almanacResult && <div className="almanacResults"><p className="almanacPlace">{almanacResult.location}</p><div className="almanacSummary"><div><small>AVG HIGH</small><strong>{almanacResult.averageHighF}°</strong></div><div><small>AVG LOW</small><strong>{almanacResult.averageLowF}°</strong></div><div><small>RAIN HISTORY</small><strong>{almanacResult.rainYears}/{almanacResult.years.length}</strong></div></div><p>{almanacResult.summary} Historical pattern only—not a forecast.</p><div className="almanacYears">{almanacResult.years.map((year) => <article key={year.date}><strong>{year.year}</strong><span>{year.condition}</span><b>{year.high_f}° / {year.low_f}°</b><small>{year.rain ? `${year.precipitation_in.toFixed(2)} in rain` : "No rain recorded"}</small></article>)}</div></div>}
+            {almanacResult && <div className="almanacResults"><p className="almanacPlace">{almanacResult.location}</p><div className="almanacSummary"><div><small>AVG HIGH</small><strong>{almanacResult.averageHighF}°</strong></div><div><small>AVG LOW</small><strong>{almanacResult.averageLowF}°</strong></div><div><small>RAIN HISTORY</small><strong>{almanacResult.rainYears}/{almanacResult.years.length}</strong></div></div><p>{almanacResult.summary}</p><p className="almanacDisclaimer" role="note"><strong>Historical pattern only — not a forecast.</strong></p><div className="almanacYears">{almanacResult.years.map((year) => <article key={year.date}><strong>{year.year}</strong><span>{year.condition}</span><b>{year.high_f}° / {year.low_f}°</b><small>{year.rain ? `${year.precipitation_in.toFixed(2)} in rain` : "No rain recorded"}</small></article>)}</div></div>}
           </div>
         </section>
 

@@ -91,6 +91,15 @@ button,input{font:inherit}
 .dateOption strong{display:block;margin:.16rem 0;font-weight:800;font-size:1.2rem}
 .dateOption span{font-size:.58rem;color:#728188}
 .dateOption.active{background:#edf7f6;border-color:#6bacb5}
+.dateOption{transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.dateOption:hover{border-color:#6bacb5;transform:translateY(-1px)}
+.dateOption:focus-visible{outline:3px solid rgba(94,166,180,.42);outline-offset:2px}
+.otherDateOption{min-height:48px;margin-top:.55rem;padding:.45rem .55rem .45rem .75rem;display:grid;grid-template-columns:auto 1fr minmax(132px,160px);align-items:center;gap:.65rem;border:1px dashed rgba(61,127,142,.48);border-radius:12px;background:rgba(237,247,246,.58);cursor:pointer;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease}
+.otherDateOption:hover,.otherDateOption:focus-within,.otherDateOption.active{border-color:#4f8997;background:#edf7f6;box-shadow:0 8px 22px rgba(7,27,37,.07)}
+.calendarMark{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#dcefed;color:#397b8a;font-size:1.05rem}
+.otherDateCopy strong,.otherDateCopy small{display:block}.otherDateCopy strong{font-size:.72rem}.otherDateCopy small{margin-top:.15rem;color:#718087;font-size:.58rem}
+.otherDateOption input{width:100%;height:34px;padding:0 .45rem;border:1px solid var(--line);border-radius:9px;background:white;color:var(--ink);font-size:.68rem;outline:0}
+.otherDateOption input:focus{border-color:#4f8997;box-shadow:0 0 0 3px rgba(79,137,151,.12)}
 .primaryCta{width:100%;height:56px;margin-top:1.4rem;border:0;border-radius:14px;padding:0 1.2rem;display:flex;justify-content:space-between;align-items:center;background:var(--sun);color:var(--ink);font-weight:800;cursor:pointer;box-shadow:0 14px 34px rgba(205,153,42,.22)}
 .primaryCta:hover{filter:brightness(1.03);transform:translateY(-1px)}
 .primaryCta span{font-size:1.4rem}
@@ -136,6 +145,7 @@ button,input{font:inherit}
 .almanacEmpty{margin-top:1rem;padding:1rem;border-radius:14px;background:#f4f8f7}
 .almanacEmpty p,.almanacResults>p{margin:.35rem 0 0;color:var(--muted);font-size:.8rem;line-height:1.5}
 .almanacPlace{font-weight:800;color:var(--ink)!important}
+.almanacResults>.almanacDisclaimer{margin-top:.75rem;padding:.68rem .8rem;border:1px solid rgba(171,48,48,.24);border-left:4px solid #b33232;border-radius:10px;background:#fff1f0;color:#a52d2d;font-size:.78rem;line-height:1.35}
 .almanacSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-top:1rem}
 .almanacSummary div{padding:1rem;border-radius:14px;background:var(--ink);color:white;text-align:center}
 .almanacSummary small,.almanacSummary strong{display:block}
@@ -156,6 +166,16 @@ button,input{font:inherit}
 .steps article>span{color:#568994;font-weight:800;font-size:.75rem}
 .steps h3{margin:1.4rem 0 .6rem;font-weight:800;font-size:1.25rem}
 .steps p{margin:0;color:var(--muted);line-height:1.65;font-size:.9rem}
+
+.decisionCard,.plannerCard,.almanacCard,.steps article,.almanacSummary div,.almanacYears article,.outlookFacts div,.resultAnswer,.reviewScore>div,.adviceList article{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background-color .22s ease}
+@media(hover:hover){
+.decisionCard:hover{transform:translateY(-2px);box-shadow:0 28px 86px rgba(0,0,0,.28)}
+.plannerCard:hover,.almanacCard:hover{transform:translateY(-2px);box-shadow:0 34px 94px rgba(2,24,33,.2)}
+.steps article:hover,.almanacYears article:hover,.outlookFacts div:hover,.reviewScore>div:hover,.adviceList article:hover{transform:translateY(-3px);border-color:rgba(79,137,151,.42);box-shadow:0 16px 36px rgba(7,27,37,.09)}
+.almanacSummary div:hover,.resultAnswer:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(7,27,37,.14)}
+.forecastDay:hover .weatherIcon,.forecastDay:focus-visible .weatherIcon{transform:translateY(-2px) rotate(-4deg) scale(1.06)}
+}
+.weatherIcon{transition:transform .22s ease}
 
 footer{padding:2.2rem 4vw;background:var(--ink);color:white;display:flex;align-items:center;justify-content:space-between;gap:1.5rem}
 footer p{font-size:.75rem;color:rgba(255,255,255,.55)}
@@ -232,6 +252,8 @@ footer a{color:inherit}
 .plannerCard{padding:1.2rem;border-radius:20px}
 .activityGrid{grid-template-columns:repeat(3,1fr)}
 .dateOption span{display:none}
+.otherDateOption{grid-template-columns:auto 1fr;gap:.5rem;padding:.55rem .65rem}
+.otherDateOption input{grid-column:1/-1;height:38px}
 .outlook,.almanacSection,.how{padding:65px 1rem}
 .forecastGrid{grid-template-columns:1fr}
 .forecastDay{min-height:210px}
@@ -259,12 +281,23 @@ footer{align-items:flex-start;flex-direction:column}
 .concerns label{font-size:.72rem}
 }
 
-@media(prefers-reduced-motion:no-preference){.heroCopy,.plannerCard{animation:rise .7s ease both}
+@media(prefers-reduced-motion:no-preference){.heroCopy,.plannerCard{animation:rise .7s ease backwards}
 .plannerCard{animation-delay:.12s}
+.forecastDay,.almanacCard,.steps article{animation:cardReveal .52s ease backwards}
+.forecastDay:nth-child(2),.steps article:nth-child(2){animation-delay:.06s}
+.forecastDay:nth-child(3),.steps article:nth-child(3){animation-delay:.12s}
+.forecastDay:nth-child(4){animation-delay:.18s}
+.forecastDay:nth-child(5){animation-delay:.24s}
+.almanacResults,.modalCard,.eventPanel{animation:cardReveal .28s ease backwards}
 @keyframes rise{from{opacity:0;transform:translateY(18px)}
 to{opacity:1;transform:none}
 }
+@keyframes cardReveal{from{opacity:0;transform:translateY(10px)}
+to{opacity:1;transform:none}
 }
+}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 .primaryCta:disabled{cursor:wait;opacity:.72;transform:none}
 .formError{margin:1rem 0 0;padding:.8rem 1rem;border-radius:12px;background:#fff0e8;color:#9a4528;font-size:.82rem;font-weight:700}
