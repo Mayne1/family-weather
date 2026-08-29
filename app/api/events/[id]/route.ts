@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API = "http://127.0.0.1:3000";
+import { backendUrl } from "../../../lib/serverConfig";
 
 async function forward(request: NextRequest, id: string, method: "GET" | "DELETE") {
   const authorization = request.headers.get("authorization") || "";
@@ -8,7 +7,7 @@ async function forward(request: NextRequest, id: string, method: "GET" | "DELETE
     return NextResponse.json({ ok: false, error: "missing_bearer_token" }, { status: 401 });
   }
 
-  const response = await fetch(`${API}/events/${encodeURIComponent(id)}/manage`, {
+  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/manage`), {
     method,
     headers: { Authorization: authorization },
     cache: "no-store",

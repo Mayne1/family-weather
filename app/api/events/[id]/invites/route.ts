@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invitationDesigns } from "../../../../invitations/catalog";
+import { backendUrl, firebaseApiKey, publicOrigin } from "../../../../lib/serverConfig";
 
-const API = "http://127.0.0.1:3000";
-const FIREBASE_API_KEY = "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const INVITATION_DESIGNS = new Set([
-  "baby", "birthday", "graduation", "reunion", "cookout", "basic",
-  // Keep older invitation links valid while the visual library grows.
-  "classic", "garden", "family", "night",
-]);
+const INVITATION_DESIGNS = new Set<string>(invitationDesigns.map((design) => design.id));
 
 function parseEmails(value: unknown) {
   const raw = Array.isArray(value) ? value.map(String) : [String(value || "")];
@@ -27,7 +23,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ ok: false, error: "Sign in before creating invitations." }, { status: 401 });
     }
 
-    const identityResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+    const identityResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken: authorization.slice(7) }),
@@ -39,7 +35,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ ok: false, error: "Your sign-in expired. Please sign in again." }, { status: 401 });
     }
 
-    const eventResponse = await fetch(`${API}/events/${encodeURIComponent(id)}`, { cache: "no-store" });
+    const eventResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}`), { cache: "no-store" });
     const eventData = await eventResponse.json();
     if (!eventResponse.ok || !eventData.ok) {
       return NextResponse.json(eventData, { status: eventResponse.status });
@@ -49,8 +45,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     const body = await request.json();
-    const requestedDesign = String(body.design || "classic").trim().toLowerCase();
-    const design = INVITATION_DESIGNS.has(requestedDesign) ? requestedDesign : "classic";
+    const defaultDesign = invitationDesigns[0].id;
+    const requestedDesign = String(body.design || defaultDesign).trim().toLowerCase();
+    const design = INVITATION_DESIGNS.has(requestedDesign) ? requestedDesign : defaultDesign;
     const shareable = body.shareable === true;
     const emails = parseEmails(body.recipient_emails ?? body.recipient_email);
     if (!shareable && !emails.length) {
@@ -70,22 +67,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const invites = [];
     const failures: { recipient_email: string; error: string }[] = [];
-    const forwardedHost = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "")
-      .split(",")[0]
-      .trim();
-    const forwardedProto = (request.headers.get("x-forwarded-proto") || "https")
-      .split(",")[0]
-      .trim()
-      .toLowerCase();
-    const publicHost = /^(?:[a-z0-9-]+\.)?thefamilyweather\.com(?::\d+)?$/i.test(forwardedHost)
-      ? forwardedHost
-      : "staging.thefamilyweather.com";
-    const origin = `${forwardedProto === "http" ? "http" : "https"}://${publicHost}`;
+    const origin = publicOrigin(request);
 
     const recipients: Array<string | null> = shareable ? [null] : emails;
     for (const recipientEmail of recipients) {
       try {
-        const response = await fetch(`${API}/invites/create`, {
+        const response = await fetch(backendUrl("/invites/create"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -137,9 +124,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       failures,
     });
   } catch (error) {
+    console.error("Invitation creation failed", error);
     return NextResponse.json({
       ok: false,
-      error: error instanceof Error ? error.message : "Invitation service unavailable",
+      error: "Invitation service unavailable",
     }, { status: 502 });
   }
 }

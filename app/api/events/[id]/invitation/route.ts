@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API = "http://127.0.0.1:3000";
+import { backendUrl } from "../../../../lib/serverConfig";
 
 async function forward(request: NextRequest, id: string, method: "GET" | "PUT") {
   const authorization = request.headers.get("authorization") || "";
@@ -8,7 +7,7 @@ async function forward(request: NextRequest, id: string, method: "GET" | "PUT") 
     return NextResponse.json({ ok: false, error: "Sign in to manage this invitation." }, { status: 401 });
   }
 
-  const response = await fetch(`${API}/events/${encodeURIComponent(id)}/invitation`, {
+  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation`), {
     method,
     headers: {
       Authorization: authorization,

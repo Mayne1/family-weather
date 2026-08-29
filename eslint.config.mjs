@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Legacy static-site and CommonJS backend sources are deployed separately
+    // and are not part of the Next.js TypeScript application.
+    "*.js",
+    "backend/**/*.js",
+    "ecosystem.config.cjs",
   ]),
 ]);
 

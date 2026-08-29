@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import InvitationCard from "../../invitations/InvitationCard";
 import { suggestedInvitationDesign } from "../../invitations/catalog";
 import type { InvitationRecord } from "../../invitations/catalog";
@@ -40,11 +41,11 @@ export default function GuestInvitationPage({ params }: { params: Promise<{ toke
 
   return (
     <main className="guestInvitationPage">
-      <a className="guestInvitationBrand" href="/">Family Weather</a>
+      <Link className="guestInvitationBrand" href="/">Family Weather</Link>
       <InvitationCard invitation={invitation} event={data.event} />
       <section className="guestInvitationActions">
         <div><small>You’re invited</small><h2>Let the host know if you’ll be there.</h2><p>The RSVP page holds the current event details and records your answer.</p></div>
-        <a href={`/rsvp.html?token=${encodeURIComponent(token)}&design=basic`}>View details &amp; RSVP <span>→</span></a>
+        <a href={`/rsvp.html?token=${encodeURIComponent(token)}&design=${encodeURIComponent(invitation.design_id)}`}>View details &amp; RSVP <span>→</span></a>
       </section>
     </main>
   );

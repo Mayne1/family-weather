@@ -8,18 +8,21 @@ const number = (value) => Number(value);
 module.exports = function makeEventLocationsRouter(pool, requireFirebaseUser) {
   const router = express.Router();
 
-  router.get("/events/:id/location", async (req, res) => {
+  router.get("/events/:id/location", requireFirebaseUser, async (req, res) => {
     try {
       const result = await pool.query(
         `SELECT event_id, input_text, normalized_label, latitude, longitude,
                 country_code, country, admin1, locality, postal_code,
                 place_type, provider, provider_place_id, created_at, updated_at
-         FROM event_locations WHERE event_id = $1`,
-        [text(req.params.id, 40)]
+         FROM event_locations
+         WHERE event_id = $1
+           AND EXISTS (SELECT 1 FROM events WHERE id = $1 AND owner_uid = $2)`,
+        [text(req.params.id, 40), req.uid]
       );
       return res.json({ ok: true, location: result.rows[0] || null });
     } catch (error) {
-      return res.status(500).json({ ok: false, error: "event_location_fetch_failed", detail: error.message });
+      console.error("event_location_fetch_failed", error);
+      return res.status(500).json({ ok: false, error: "event_location_fetch_failed" });
     }
   });
 
@@ -80,7 +83,8 @@ module.exports = function makeEventLocationsRouter(pool, requireFirebaseUser) {
       );
       return res.json({ ok: true, location: result.rows[0] });
     } catch (error) {
-      return res.status(500).json({ ok: false, error: "event_location_save_failed", detail: error.message });
+      console.error("event_location_save_failed", error);
+      return res.status(500).json({ ok: false, error: "event_location_save_failed" });
     }
   });
 

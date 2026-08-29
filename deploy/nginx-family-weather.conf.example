@@ -1,0 +1,25 @@
+# Merge this into the existing TLS server block; do not replace certificate settings.
+# The legacy root preserves live pages that have not yet moved into Next.js.
+server {
+    listen 443 ssl http2;
+    server_name thefamilyweather.com www.thefamilyweather.com;
+
+    root /var/www/family-weather-static/public-site;
+
+    location ~ ^/(profile|settings|my-events|create-event|invite|auth|privacy|terms|sms-consent|feeds)\.html$ {
+        try_files $uri =404;
+    }
+
+    location ^~ /weather-intel/ { try_files $uri $uri/ =404; }
+    location ^~ /weather-iq/ { try_files $uri $uri/ =404; }
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}

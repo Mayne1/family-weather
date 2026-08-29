@@ -26,4 +26,5 @@ backups/
 
 # accidental weird files
 "\n> \n"
-
+.next/
+next-env.d.ts

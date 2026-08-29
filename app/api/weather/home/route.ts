@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { backendUrl } from "../../../lib/serverConfig";
 
-const API = "http://127.0.0.1:3000/weather";
 const NWS_HEADERS = {
   "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)",
   Accept: "application/geo+json",
@@ -257,8 +257,8 @@ export async function GET(request: NextRequest) {
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
   const [currentPayload, fallbackForecast, point] = await Promise.all([
-    jsonOrNull(`${API}/current?lat=${lat}&lon=${lon}`),
-    jsonOrNull(`${API}/forecast10?lat=${lat}&lon=${lon}`),
+    jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`)),
+    jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`)),
     jsonOrNull(
       `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
       NWS_HEADERS,
@@ -324,7 +324,7 @@ export async function GET(request: NextRequest) {
     days,
     source,
     timezone: timeZone,
-    current_source: officialCurrent ? "nws-observation" : "family-weather",
+    current_source: officialCurrent ? "nws-observation" : current ? "family-weather" : "unavailable",
     partial: !current || !days.length,
   });
 }

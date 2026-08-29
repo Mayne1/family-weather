@@ -5,7 +5,7 @@ This folder contains deliberately small backend additions for durable digital in
 - `event-invitations.sql` adds one invitation record per event. Existing events, invite tokens, and RSVP responses remain unchanged.
 - `event-invitations-router.js` adds a public read endpoint and an owner-only save endpoint.
 - `event-locations.sql` stores the resolved WGS84 latitude/longitude and normalized international place metadata once per event.
-- `event-locations-router.js` adds a public read endpoint and an owner-only save endpoint without changing the existing event table.
+- `event-locations-router.js` adds owner-only read and save endpoints without changing the existing event table.
 
 Mount the router in the existing Express server after `pool` and `requireFirebaseUser` exist:
 
@@ -20,7 +20,7 @@ The existing API-key middleware must allow:
 
 - `GET /events/:id/invitation`
 - authenticated `PUT /events/:id/invitation`
-- `GET /events/:id/location`
+- authenticated `GET /events/:id/location`
 - authenticated `PUT /events/:id/location`
 
 No existing table or endpoint is replaced.

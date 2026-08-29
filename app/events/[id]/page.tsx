@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { getValidSession } from "../../lib/firebaseAuth";
 
 type EventDetail = {
@@ -70,14 +71,14 @@ export default function EventDetailPage() {
   }
 
   if (loading) return <main className="eventManagePage"><section className="eventsEmpty"><h2>Loading event…</h2></section></main>;
-  if (error || !event) return <main className="eventManagePage"><a className="backToEvents" href="/events">← My events</a><section className="eventsEmpty"><h2>We couldn’t open this event.</h2><p>{error}</p></section></main>;
+  if (error || !event) return <main className="eventManagePage"><Link className="backToEvents" href="/events">← My events</Link><section className="eventsEmpty"><h2>We couldn’t open this event.</h2><p>{error}</p></section></main>;
 
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   return <main className="eventManagePage">
-    <header className="manageHeader"><a className="eventsBrand" href="/">Family Weather</a><a className="backToEvents" href="/events">← My events</a></header>
+    <header className="manageHeader"><Link className="eventsBrand" href="/">Family Weather</Link><Link className="backToEvents" href="/events">← My events</Link></header>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>
     <section className="responseSummary"><article><strong>{counts.yes}</strong><span>Going</span></article><article><strong>{counts.maybe}</strong><span>Maybe</span></article><article><strong>{counts.no}</strong><span>Can’t go</span></article><article><strong>{counts.waiting}</strong><span>Waiting</span></article></section>
     <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>Who answered?</h2></div>{responses.length === 0 ? <p className="noResponses">No invitations have been created for this event yet.</p> : <div className="guestList">{responses.map((row) => <article key={row.token}><div><strong>{row.invited_email || "Shareable invitation"}</strong><small>{row.responded_at ? `Answered ${new Date(row.responded_at).toLocaleString()}` : row.opened_at ? "Opened—waiting for an answer" : "Not opened yet"}</small></div><span className={`responseBadge ${row.response || "waiting"}`}>{row.response === "yes" ? "Going" : row.response === "maybe" ? "Maybe" : row.response === "no" ? "Can’t go" : "Waiting"}</span></article>)}</div>}</section>
-    <section className="dangerZone"><div><h2>Delete this test event</h2><p>Removes the event, its private links and all RSVP answers.</p></div><button type="button" onClick={deleteEvent} disabled={deleting}>{deleting ? "Deleting…" : "Delete event"}</button></section>
+    <section className="dangerZone"><div><h2>Delete this event</h2><p>Removes the event, its private links and all RSVP answers.</p></div><button type="button" onClick={deleteEvent} disabled={deleting}>{deleting ? "Deleting…" : "Delete event"}</button></section>
   </main>;
 }

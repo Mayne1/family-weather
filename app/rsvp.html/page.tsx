@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import Link from "next/link";
 
 type InviteData = {
   valid: boolean;
   accepted: boolean;
   invite: { status: string };
-  event: { title: string; description: string; location: string; starts_at: string; ends_at: string; owner_email: string };
+  event: { title: string; description: string; location: string; starts_at: string; ends_at: string };
+  invitation?: { design_id?: string } | null;
 };
 
 const invitationThemes = {
@@ -26,7 +28,14 @@ const invitationThemes = {
 type InvitationDesign = keyof typeof invitationThemes;
 
 function validDesign(value: string | null): InvitationDesign {
-  return value && value in invitationThemes ? value as InvitationDesign : "basic";
+  if (value && value in invitationThemes) return value as InvitationDesign;
+  if (value?.startsWith("wedding-")) return value.includes("midnight") || value.includes("noir") ? "night" : "garden";
+  if (value === "graduation-ascent") return "graduation";
+  if (value === "baby-botanical") return "baby";
+  if (value === "cookout-table") return "cookout";
+  if (value === "park-paper") return "garden";
+  if (value === "birthday-after-dark") return "birthday";
+  return "basic";
 }
 
 export default function RsvpPage() {
@@ -52,6 +61,7 @@ export default function RsvpPage() {
         const reply = await response.json();
         if (!response.ok || !reply.ok) throw new Error(reply.error || "Invitation not found");
         setData(reply);
+        if (!query.get("design")) setDesign(validDesign(reply.invitation?.design_id || null));
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "Invitation unavailable"));
   }, []);
@@ -85,7 +95,7 @@ export default function RsvpPage() {
   return (
     <main className={`rsvpPage rsvpTheme-${design}`}>
       <section className="rsvpCard rsvpInvitationCard">
-        <a className="rsvpBrand" href="/">Family Weather</a>
+        <Link className="rsvpBrand" href="/">Family Weather</Link>
         {error ? (
           <div className="rsvpState"><span>!</span><h1>We couldn’t open this invitation.</h1><p>{error}</p></div>
         ) : !data ? (

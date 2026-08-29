@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import Link from "next/link";
 import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
@@ -17,13 +18,6 @@ const activities = [
   ["game", "◉", "Game"],
   ["concert", "♫", "Concert"],
   ["plan", "＋", "Something else"],
-];
-
-const fallbackForecast = [
-  ["TODAY", "Saturday", "☀", "86°", "Best bet", "after 4 PM", "featured"],
-  ["TOMORROW", "Sunday", "◒", "83°", "Easy day", "for outdoor plans", ""],
-  ["MON", "Monday", "☁", "78°", "Comfortable", "most of the day", ""],
-  ["TUE", "Tuesday", "☂", "72°", "Have cover", "ready after 2 PM", "caution"],
 ];
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
@@ -53,11 +47,12 @@ function weatherDescription(code: number) {
   return "Forecast loaded.";
 }
 
-function hasResolvedLocation(label?: string) {
-  return Boolean(label && label !== "Your location");
+function hasResolvedLocation(label?: string, lat?: number, lon?: number) {
+  return Boolean(label && label !== "Your location") || (Number.isFinite(lat) && Number.isFinite(lon));
 }
 
-function locationDateTime(timeZone: string | null | undefined, value: Date, mode: "date" | "time") {
+function locationDateTime(timeZone: string | null | undefined, value: Date | null, mode: "date" | "time") {
+  if (!value) return mode === "date" ? "Loading local date…" : "Loading…";
   try {
     return value.toLocaleString("en-US", mode === "date"
       ? { timeZone: timeZone || undefined, weekday: "long", month: "long", day: "numeric" }
@@ -82,12 +77,12 @@ export default function Home() {
   const [eventStep, setEventStep] = useState<"details" | "review">("details");
   const [eventSpace, setEventSpace] = useState("outdoor");
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
-  const [clock, setClock] = useState(() => new Date());
+  const [clock, setClock] = useState<Date | null>(null);
   const [selectedOutlookDay, setSelectedOutlookDay] = useState<WeatherDay | null>(null);
   const [almanacLocation, setAlmanacLocation] = useState("Stockton, CA");
   const [almanacResolved, setAlmanacResolved] = useState<LocationCandidate | null>(null);
   const [almanacSuggestions, setAlmanacSuggestions] = useState<LocationCandidate[]>([]);
-  const [almanacDate, setAlmanacDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [almanacDate, setAlmanacDate] = useState("");
   const [almanacResult, setAlmanacResult] = useState<AlmanacResult | null>(null);
   const [almanacLoading, setAlmanacLoading] = useState(false);
   const [almanacError, setAlmanacError] = useState("");
@@ -124,10 +119,13 @@ export default function Home() {
 
   useEffect(() => {
     getValidSession().then(setSession);
+    const now = new Date();
+    setClock(now);
+    setAlmanacDate(localDateValue(now));
 
     const applyWeather = (data: HomeWeather, updatePlanner = false) => {
       setHomeWeather(data);
-      if (hasResolvedLocation(data.label)) {
+      if (hasResolvedLocation(data.label, data.lat, data.lon)) {
         setHomeLocation(data.label!);
         if (updatePlanner) setPlannerLocation(data.label!);
         return true;
@@ -145,7 +143,7 @@ export default function Home() {
       fetch(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject())
         .then((data) => {
-          if (!data.ok || !hasResolvedLocation(data.label)) {
+          if (!data.ok || !hasResolvedLocation(data.label, data.lat, data.lon)) {
             localStorage.removeItem("family-weather-home-location");
             return false;
           }
@@ -163,16 +161,15 @@ export default function Home() {
           return false;
         });
 
-    // Do not overwrite a detected or saved location with the Stockton fallback.
-    // loadDefault();
-
     const saved = localStorage.getItem("family-weather-home-location");
     if (saved) {
       try {
         const coordinates = JSON.parse(saved);
         const fresh = Number(coordinates.savedAt || 0) > Date.now() - 6 * 60 * 60 * 1000;
         if (fresh && Number.isFinite(coordinates.lat) && Number.isFinite(coordinates.lon)) {
-          loadCoordinates(coordinates, false);
+          loadCoordinates(coordinates, false).then((loaded) => {
+            if (!loaded) loadDefault();
+          });
           return;
         }
         localStorage.removeItem("family-weather-home-location");
@@ -183,12 +180,16 @@ export default function Home() {
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(({ coords }) => {
-        loadCoordinates({ lat: coords.latitude, lon: coords.longitude }, true);
-      }, () => undefined, {
+        loadCoordinates({ lat: coords.latitude, lon: coords.longitude }, true).then((loaded) => {
+          if (!loaded) loadDefault();
+        });
+      }, loadDefault, {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
       });
+    } else {
+      loadDefault();
     }
   }, []);
 
@@ -205,7 +206,7 @@ export default function Home() {
       fetch(`/api/weather/home?lat=${coordinates.lat}&lon=${coordinates.lon}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject())
         .then((data) => {
-          if (!data.ok || !hasResolvedLocation(data.label)) {
+          if (!data.ok || !hasResolvedLocation(data.label, data.lat, data.lon)) {
             throw new Error("We could not verify that location.");
           }
           localStorage.setItem("family-weather-home-location", JSON.stringify({
@@ -228,11 +229,7 @@ export default function Home() {
 
   const dateChoices = (homeWeather?.days || []).slice(0, 4);
   const chosenDay = dateChoices[date] || homeWeather?.days?.[0] || null;
-  const selectedDate = customDate || chosenDay?.date || (() => {
-    const value = new Date();
-    value.setDate(value.getDate() + date);
-    return localDateValue(value);
-  })();
+  const selectedDate = customDate || chosenDay?.date || almanacDate;
   const selectedDay = plan?.day || chosenDay;
   const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
 
@@ -521,7 +518,7 @@ export default function Home() {
   const today = homeWeather?.days?.[0];
   const liveForecast = homeWeather?.days?.length
     ? homeWeather.days.map((item, index) => ({ label: index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), day: new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }))
-    : fallbackForecast.map(([label, day, icon, temp, lead, copy, style]) => ({ label, day, icon, temp, lead, copy, style, weather: null }));
+    : [];
 
   return (
     <>
@@ -537,7 +534,7 @@ export default function Home() {
           <span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><a href="/events">My events</a>
+          <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link>
         </nav>
         <div className="headerActions">
           {session ? <button className="textButton" type="button" onClick={() => { signOut(); setSession(null); }}>{session.email} · Sign out</button> : <button className="textButton" type="button" onClick={() => setShowAuth(true)}>Sign in</button>}
@@ -552,12 +549,12 @@ export default function Home() {
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
             <p className="intro">Family Weather turns the forecast into a simple decision—when to go, what to expect, and what your people need to know.</p>
             <div className="decisionCard">
-              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>LIVE</strong></div>
+              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>{homeWeather?.current ? "LIVE" : homeWeather ? "UNAVAILABLE" : "LOADING"}</strong></div>
               <div className="decisionMain">
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
                 <div className="todayRange" aria-label="Today’s high and low"><span><b>{today?.temp_max_f ?? "—"}°</b><small>HIGH</small></span><span><b>{today?.temp_min_f ?? "—"}°</b><small>LOW</small></span></div>
               </div>
-              <p><strong>{today ? today.shortForecast || weatherDescription(today.weather_code) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.` : "Real weather is being requested from the Family Weather engine."}</p>
+              <p><strong>{today ? today.shortForecast || weatherDescription(today.weather_code) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.${homeWeather?.current ? "" : " The current observation is temporarily unavailable."}` : "Real weather is being requested from the Family Weather engine."}</p>
             </div>
           </div>
 
@@ -572,16 +569,17 @@ export default function Home() {
             <div className="inputShell"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <span className="fieldLabel">When?</span>
             <div className="dateRow">
-              {(dateChoices.length ? dateChoices : Array.from({ length: 4 }, (_, index) => ({ date: (() => { const value = new Date(); value.setDate(value.getDate() + index); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; })() }))).map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
+              {dateChoices.map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
                 <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{value.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}</small><strong>{value.getDate()}</strong><span>{index === 0 ? "Today" : index === 1 ? "Tomorrow" : value.toLocaleDateString("en-US", { weekday: "long" })}</span></button>
               ); })}
+              {!dateChoices.length && Array.from({ length: 4 }, (_, index) => <span className="dateOption dateOptionLoading" aria-hidden="true" key={index}><small>···</small><strong>—</strong><span>Loading</span></span>)}
             </div>
             <label className={`otherDateOption ${customDate ? "active" : ""}`}>
               <span className="calendarMark" aria-hidden="true">▦</span>
               <span className="otherDateCopy"><strong>Choose another date</strong><small>Any future day</small></span>
-              <input type="date" min={localDateValue()} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
+              <input type="date" min={almanacDate || undefined} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
             </label>
-            <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
+            <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
             {planError && <p className="formError" role="alert">{planError}</p>}
             <p className="quietNote">No account needed to check the weather.</p>
           </div>
@@ -593,6 +591,7 @@ export default function Home() {
             {liveForecast.map(({ label, day, icon, temp, lead, copy, style, weather }) => (
               <button className={`forecastDay ${style}`} key={`${label}-${day}`} type="button" onClick={() => weather && setSelectedOutlookDay(weather)} aria-label={`View detailed weather for ${day}`}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p><span className="forecastMore">View details</span></button>
             ))}
+            {!liveForecast.length && <p className="forecastLoading" role="status">Loading the real forecast…</p>}
           </div>
         </section>
 
@@ -620,7 +619,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p>Privacy · Terms · SMS consent</p></footer>
+      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><a href="https://thefamilyweather.com/privacy.html">Privacy</a> · <a href="https://thefamilyweather.com/terms.html">Terms</a> · <a href="https://thefamilyweather.com/sms-consent.html">SMS consent</a></p></footer>
 
       {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${activity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 

@@ -50,7 +50,7 @@ if "Invitation design endpoints" not in text:
         raise SystemExit("Could not find the API-key allowlist insertion point.")
     text = text.replace(marker, marker + "\n\n" + allow_block, 1)
 
-location_allow_block = '''// Normalized event-location endpoints. The PUT route verifies the Firebase owner itself.
+location_allow_block = '''// Normalized event-location endpoints. Both routes verify the Firebase owner.
 if (
   (req.method === "GET" || req.method === "PUT") &&
   /^\/events\/[^/]+\/location(?:\?|$)/.test(url)

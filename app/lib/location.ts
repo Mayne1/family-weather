@@ -1,3 +1,5 @@
+import { backendUrl } from "./serverConfig";
+
 export type LocationCandidate = {
   id: string;
   input: string;
@@ -161,7 +163,7 @@ function providerQuery(input: string) {
 async function zipCandidate(input: string, zip: string): Promise<LocationCandidate | null> {
   try {
     const response = await fetch(
-      `http://127.0.0.1:3000/weather/geocode?zip=${encodeURIComponent(zip)}`,
+      backendUrl(`/weather/geocode?zip=${encodeURIComponent(zip)}`),
       { cache: "no-store", signal: AbortSignal.timeout(5000) },
     );
     const data = await response.json();

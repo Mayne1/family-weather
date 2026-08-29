@@ -1,6 +1,6 @@
 "use client";
 
-const API_KEY = "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
+const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDCZpxyyGJeoIcutk8o_h-96Syo3h8gsv8";
 const SESSION_KEY = "family-weather-session";
 
 export type AuthSession = {

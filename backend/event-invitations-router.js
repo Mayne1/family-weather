@@ -42,7 +42,8 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
       );
       return res.json({ ok: true, invitation: result.rows[0] || null });
     } catch (error) {
-      return res.status(500).json({ ok: false, error: "invitation_fetch_failed", detail: error.message });
+      console.error("invitation_fetch_failed", error);
+      return res.status(500).json({ ok: false, error: "invitation_fetch_failed" });
     }
   });
 
@@ -89,7 +90,8 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
       );
       return res.json({ ok: true, invitation: result.rows[0] });
     } catch (error) {
-      return res.status(500).json({ ok: false, error: "invitation_save_failed", detail: error.message });
+      console.error("invitation_save_failed", error);
+      return res.status(500).json({ ok: false, error: "invitation_save_failed" });
     }
   });
 
