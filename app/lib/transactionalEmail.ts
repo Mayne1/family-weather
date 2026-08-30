@@ -14,6 +14,7 @@ type TransactionalInvitation = {
   headline?: string | null;
   message?: string | null;
   invitationUrl: string;
+  keepsakeUrl?: string | null;
 };
 
 export type EmailDeliveryResult =
@@ -50,6 +51,7 @@ export async function sendTransactionalInvitationEmail(
   const location = invitation.location?.trim() || "Location to be announced";
   const message = invitation.message?.trim() || "";
   const invitationUrl = invitation.invitationUrl;
+  const keepsakeUrl = invitation.keepsakeUrl?.trim() || "";
 
   const safeHeadline = escapeHtml(headline);
   const safeEventTitle = escapeHtml(eventTitle);
@@ -57,6 +59,7 @@ export async function sendTransactionalInvitationEmail(
   const safeLocation = escapeHtml(location);
   const safeMessage = escapeHtml(message);
   const safeInvitationUrl = escapeHtml(invitationUrl);
+  const safeKeepsakeUrl = escapeHtml(keepsakeUrl);
 
   const htmlContent = `<!doctype html>
 <html lang="en">
@@ -74,6 +77,12 @@ export async function sendTransactionalInvitationEmail(
         <p style="margin:0 0 24px;">
           <a href="${safeInvitationUrl}" style="display:inline-block;background:#efb638;color:#172f37;text-decoration:none;font-size:16px;font-weight:700;padding:14px 22px;border-radius:10px;">Open invitation</a>
         </p>
+        ${safeKeepsakeUrl ? `<div style="margin:28px 0 0;padding-top:26px;border-top:1px solid #ded9cd;">
+          <p style="margin:0 0 12px;color:#435b62;font-size:14px;line-height:1.5;"><strong>Your keepsake invitation</strong><br>Press and hold the picture to save it to your device.</p>
+          <a href="${safeInvitationUrl}" style="display:block;text-decoration:none;">
+            <img src="${safeKeepsakeUrl}" width="544" alt="${safeEventTitle} invitation keepsake" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:14px;">
+          </a>
+        </div>` : ""}
         <p style="margin:0;color:#687b80;font-size:13px;line-height:1.5;">If the button does not work, open this link:<br><a href="${safeInvitationUrl}" style="color:#245f70;word-break:break-all;">${safeInvitationUrl}</a></p>
       </div>
     </div>

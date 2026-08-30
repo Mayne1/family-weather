@@ -117,6 +117,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
             headline: savedInvitation?.headline,
             message: savedInvitation?.message,
             invitationUrl: link,
+            keepsakeUrl: `${origin}/api/invites/${encodeURIComponent(data.token)}/keepsake`,
           })
           : undefined;
 
