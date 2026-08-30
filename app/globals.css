@@ -329,6 +329,8 @@ to{opacity:1;transform:none}
 /* First-visit guided walkthrough */
 .tourDateBlock{display:contents}
 .tourWelcome,.tourPanel{position:fixed;z-index:100;right:clamp(1rem,3vw,2rem);bottom:clamp(1rem,3vw,2rem);width:min(390px,calc(100vw - 2rem));padding:1.45rem;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:#071b25;color:white;box-shadow:0 26px 80px rgba(2,15,21,.38)}
+.tourPanel.bottom-left{left:clamp(1rem,3vw,2rem);right:auto;top:auto;bottom:clamp(1rem,3vw,2rem)}
+.tourPanel.top-left{left:clamp(1rem,3vw,2rem);right:auto;top:clamp(6.5rem,10vh,8rem);bottom:auto}
 .tourWelcome h2,.tourPanel h2{margin:.35rem 2rem .55rem 0;font-size:1.65rem;line-height:1;letter-spacing:-.035em}
 .tourWelcome>p:not(.tourLabel),.tourPanel>p:not(.tourLabel){margin:0;color:rgba(255,255,255,.76);font-size:.86rem;line-height:1.55}
 .tourLabel{margin:0;color:#f5c451;font-size:.62rem;font-weight:900;letter-spacing:.16em}
@@ -339,10 +341,10 @@ to{opacity:1;transform:none}
 .tourPrimary{border:0;background:#f5c451;color:#071b25}.tourPrimary span{margin-left:.35rem}
 .tourProgress{display:grid;grid-template-columns:repeat(5,1fr);gap:.32rem;margin:0 2.5rem .9rem 0}
 .tourProgress i{height:4px;border-radius:999px;background:rgba(255,255,255,.18)}.tourProgress i.active{background:#f5c451}
-.tourTarget{position:relative!important;z-index:80!important;outline:4px solid #f5c451!important;outline-offset:7px!important;box-shadow:0 0 0 9999px rgba(2,15,21,.58),0 12px 38px rgba(2,15,21,.28)!important;scroll-margin:120px}
+.tourTarget{position:relative!important;z-index:80!important;outline:4px solid #f5c451!important;outline-offset:7px!important;box-shadow:0 0 0 9999px rgba(2,15,21,.18),0 12px 38px rgba(2,15,21,.22)!important;scroll-margin:120px}
 .tourReplay{display:block;margin:2rem auto 0;padding:.78rem 1.05rem;border:1px solid #397b8a;border-radius:999px;background:transparent;color:#286e7e;font-weight:900;cursor:pointer}.tourReplay:hover{background:#eaf3f1}
 
-@media(max-width:600px){.tourWelcome,.tourPanel{left:.75rem;right:.75rem;bottom:.75rem;width:auto;padding:1.15rem;border-radius:18px}.tourWelcome h2,.tourPanel h2{font-size:1.4rem}.tourTarget{outline-width:3px!important;outline-offset:4px!important;scroll-margin:90px}.tourDateBlock{display:block}}
+@media(max-width:600px){.tourWelcome,.tourPanel,.tourPanel.bottom-left{left:.75rem;right:.75rem;top:auto;bottom:.75rem;width:auto;padding:1.15rem;border-radius:18px}.tourPanel.top-left{left:.75rem;right:.75rem;top:.75rem;bottom:auto}.tourWelcome h2,.tourPanel h2{font-size:1.4rem}.tourTarget{outline-width:3px!important;outline-offset:4px!important;scroll-margin:90px}.tourDateBlock{display:block}}
 
 .authModal .modalCard{display:grid;gap:1rem}
 .authModal .modalCard h2,.authModal .modalCard>p{margin:0}

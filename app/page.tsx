@@ -22,11 +22,11 @@ const activities = [
 
 const TOUR_STORAGE_KEY = "family-weather-walkthrough-v1";
 const tourSteps = [
-  { target: "activity", label: "Step 1 of 5", title: "Start with the plan", copy: "Choose the kind of event you have in mind. This helps Family Weather give advice that fits what people will actually be doing." },
-  { target: "location", label: "Step 2 of 5", title: "Tell us where", copy: "Enter a venue, street address, city, landmark, resort, park, or destination. Choose a match if the name could mean more than one place." },
-  { target: "date", label: "Step 3 of 5", title: "Choose the day", copy: "Pick a forecast day or any future date, then check the plan. Dates beyond the forecast window use the five-year Almanac instead." },
-  { target: "create", label: "Step 4 of 5", title: "Turn the plan into an event", copy: "When the weather looks right, create the event, save it, choose an invitation design, and invite your people. You only need an account when you save." },
-  { target: "almanac", label: "Step 5 of 5", title: "Explore a special date", copy: "The Almanac compares the same calendar day across five prior years for the selected location. It is useful historical guidance, not a promise about the future." },
+  { target: "activity", placement: "bottom-left", label: "Step 1 of 5", title: "Start with the plan", copy: "Choose the kind of event you have in mind. This helps Family Weather give advice that fits what people will actually be doing." },
+  { target: "location", placement: "bottom-left", label: "Step 2 of 5", title: "Tell us where", copy: "Enter a venue, street address, city, landmark, resort, park, or destination. Choose a match if the name could mean more than one place." },
+  { target: "date", placement: "top-left", label: "Step 3 of 5", title: "Choose the day", copy: "Pick a forecast day or any future date, then check the plan. Dates beyond the forecast window use the five-year Almanac instead." },
+  { target: "create", placement: "bottom-left", label: "Step 4 of 5", title: "Turn the plan into an event", copy: "When the weather looks right, create the event, save it, choose an invitation design, and invite your people. You only need an account when you save." },
+  { target: "almanac", placement: "bottom-left", label: "Step 5 of 5", title: "Explore a special date", copy: "The Almanac compares the same calendar day across five prior years for the selected location. It is useful historical guidance, not a promise about the future." },
 ] as const;
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
@@ -116,7 +116,7 @@ export default function Home() {
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
   const [clock, setClock] = useState<Date | null>(null);
   const [selectedOutlookDay, setSelectedOutlookDay] = useState<WeatherDay | null>(null);
-  const [almanacLocation, setAlmanacLocation] = useState("Stockton, CA");
+  const [almanacLocation, setAlmanacLocation] = useState("");
   const [almanacResolved, setAlmanacResolved] = useState<LocationCandidate | null>(null);
   const [almanacSuggestions, setAlmanacSuggestions] = useState<LocationCandidate[]>([]);
   const [almanacDate, setAlmanacDate] = useState("");
@@ -124,10 +124,10 @@ export default function Home() {
   const [almanacLoading, setAlmanacLoading] = useState(false);
   const [almanacError, setAlmanacError] = useState("");
   const [homeLocation, setHomeLocation] = useState("Stockton, California");
-  const [plannerLocation, setPlannerLocation] = useState("Stockton, CA 95206");
+  const [plannerLocation, setPlannerLocation] = useState("");
   const [plannerResolved, setPlannerResolved] = useState<LocationCandidate | null>(null);
   const [plannerSuggestions, setPlannerSuggestions] = useState<LocationCandidate[]>([]);
-  const [eventLocation, setEventLocation] = useState("Stockton, CA 95206");
+  const [eventLocation, setEventLocation] = useState("");
   const [eventResolved, setEventResolved] = useState<LocationCandidate | null>(null);
   const [eventSuggestions, setEventSuggestions] = useState<LocationCandidate[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -196,11 +196,10 @@ export default function Home() {
     setClock(now);
     setAlmanacDate(localDateValue(now));
 
-    const applyWeather = (data: HomeWeather, updatePlanner = false) => {
+    const applyWeather = (data: HomeWeather) => {
       setHomeWeather(data);
       if (hasResolvedLocation(data.label, data.lat, data.lon)) {
         setHomeLocation(data.label!);
-        if (updatePlanner) setPlannerLocation(data.label!);
         return true;
       }
       return false;
@@ -226,7 +225,7 @@ export default function Home() {
               savedAt: Date.now(),
             }));
           }
-          applyWeather(data, true);
+          applyWeather(data);
           return true;
         })
         .catch(() => {
@@ -641,7 +640,7 @@ export default function Home() {
               ))}
             </div>
             <label className="fieldLabel" htmlFor="location">Where?</label>
-            <div className="inputShell" data-tour="location"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
+            <div className="inputShell" data-tour="location"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} placeholder="Venue, address, city, landmark, or destination" forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <div className="tourDateBlock" data-tour="date">
               <span className="fieldLabel">When?</span>
               <div className="dateRow">
@@ -672,9 +671,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="almanacSection" id="almanac" data-tour="almanac">
+        <section className="almanacSection" id="almanac">
           <div className="almanacIntro"><p className="eyebrow dark"><span /> Five-year weather history</p><h2>What has this date done before?</h2><p>Choose a destination and calendar day. Family Weather will compare that same date across five prior years—anywhere our worldwide history covers.</p></div>
-          <div className="almanacCard">
+          <div className="almanacCard" data-tour="almanac">
             <form onSubmit={checkAlmanac}>
               <label><span>LOCATION</span><LocationSearchInput id="almanac-location" value={almanacLocation} forcedSuggestions={almanacSuggestions} onChange={(value) => { setAlmanacLocation(value); setAlmanacResolved(null); setAlmanacSuggestions([]); }} onSelect={(candidate) => { setAlmanacLocation(candidate.label); setAlmanacResolved(candidate); setAlmanacSuggestions([]); }} /></label>
               <label><span>SPECIAL DATE</span><input type="date" value={almanacDate} onChange={(event) => setAlmanacDate(event.target.value)} required /></label>
@@ -701,7 +700,7 @@ export default function Home() {
 
       {tourMode === "welcome" && <section className="tourWelcome" role="dialog" aria-modal="false" aria-labelledby="tour-welcome-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><p className="tourLabel">NEW TO FAMILY WEATHER?</p><h2 id="tour-welcome-title">Let us show you around.</h2><p>Take a quick walk through planning the weather, creating an event, and inviting your people.</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={closeTour}>Skip</button><button className="tourPrimary" type="button" onClick={startTour}>Start tour <span>→</span></button></div></section>}
 
-      {tourMode === "active" && <section className="tourPanel" role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="tour-step-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><div className="tourProgress" aria-hidden="true">{tourSteps.map((_, index) => <i className={index <= tourStep ? "active" : ""} key={index} />)}</div><p className="tourLabel">{tourSteps[tourStep].label}</p><h2 id="tour-step-title">{tourSteps[tourStep].title}</h2><p>{tourSteps[tourStep].copy}</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={() => tourStep === 0 ? closeTour() : setTourStep((current) => current - 1)}>{tourStep === 0 ? "Skip" : "Back"}</button><button className="tourPrimary" type="button" onClick={advanceTour}>{tourStep === tourSteps.length - 1 ? "Finish" : "Next"} <span>→</span></button></div></section>}
+      {tourMode === "active" && <section className={`tourPanel ${tourSteps[tourStep].placement}`} role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="tour-step-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><div className="tourProgress" aria-hidden="true">{tourSteps.map((_, index) => <i className={index <= tourStep ? "active" : ""} key={index} />)}</div><p className="tourLabel">{tourSteps[tourStep].label}</p><h2 id="tour-step-title">{tourSteps[tourStep].title}</h2><p>{tourSteps[tourStep].copy}</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={() => tourStep === 0 ? closeTour() : setTourStep((current) => current - 1)}>{tourStep === 0 ? "Skip" : "Back"}</button><button className="tourPrimary" type="button" onClick={advanceTour}>{tourStep === tourSteps.length - 1 ? "Finish" : "Next"} <span>→</span></button></div></section>}
 
       {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${activity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 

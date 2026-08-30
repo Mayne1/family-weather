@@ -8,21 +8,23 @@ type Props = {
   name?: string;
   value: string;
   required?: boolean;
+  placeholder?: string;
   className?: string;
   forcedSuggestions?: LocationCandidate[];
   onChange: (value: string) => void;
   onSelect: (candidate: LocationCandidate) => void;
 };
 
-export default function LocationSearchInput({ id, name, value, required, className = "", forcedSuggestions = [], onChange, onSelect }: Props) {
+export default function LocationSearchInput({ id, name, value, required, placeholder, className = "", forcedSuggestions = [], onChange, onSelect }: Props) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<LocationCandidate[]>([]);
   const [open, setOpen] = useState(false);
   const selectedValue = useRef("");
+  const typedValue = useRef("");
 
   useEffect(() => {
     const query = value.trim();
-    if (query.length < 2 || forcedSuggestions.length || query === selectedValue.current) {
+    if (query.length < 2 || forcedSuggestions.length || query === selectedValue.current || query !== typedValue.current) {
       return;
     }
     const controller = new AbortController();
@@ -47,6 +49,7 @@ export default function LocationSearchInput({ id, name, value, required, classNa
   const choices = forcedSuggestions.length ? forcedSuggestions : suggestions;
   const choose = (candidate: LocationCandidate) => {
     selectedValue.current = candidate.label;
+    typedValue.current = "";
     onSelect(candidate);
     setSuggestions([]);
     setOpen(false);
@@ -60,12 +63,13 @@ export default function LocationSearchInput({ id, name, value, required, classNa
         name={name}
         value={value}
         required={required}
+        placeholder={placeholder}
         autoComplete="off"
         role="combobox"
         aria-autocomplete="list"
         aria-controls={listId}
         aria-expanded={showChoices}
-        onChange={(event) => { selectedValue.current = ""; setSuggestions([]); onChange(event.target.value); setOpen(true); }}
+        onChange={(event) => { selectedValue.current = ""; typedValue.current = event.target.value.trim(); setSuggestions([]); onChange(event.target.value); setOpen(true); }}
         onFocus={() => choices.length && setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 150)}
       />
