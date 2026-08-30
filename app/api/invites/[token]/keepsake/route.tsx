@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { getInvitationDesign, suggestedInvitationDesign } from "../../../../invitations/catalog";
 import type { InvitationRecord } from "../../../../invitations/catalog";
 
@@ -33,21 +35,27 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const panel = dark ? "rgba(4,12,24,.84)" : "rgba(255,253,247,.9)";
   const accent = dark ? "#efc55a" : "#9a6b16";
   const { date, time } = formatDate(event.starts_at);
-  const artworkUrl = new URL(design.artwork, request.url).toString();
+  const artwork = await readFile(join(process.cwd(), "public", design.artwork.replace(/^\//, "")));
+  const artworkData = `data:image/webp;base64,${artwork.toString("base64")}`;
 
   return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 70, backgroundImage: `url(${artworkUrl})`, backgroundSize: "cover", backgroundPosition: "center", color: ink }}>
-      <div style={{ width: "100%", minHeight: 1040, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 72px", border: `2px solid ${dark ? "rgba(239,197,90,.7)" : "rgba(154,107,22,.38)"}`, borderRadius: 28, background: panel, textAlign: "center" }}>
-        <div style={{ display: "flex", marginBottom: 26, color: accent, fontSize: 25, fontWeight: 800, letterSpacing: 6, textTransform: "uppercase" }}>{design.category}</div>
-        {invitation.honoree_names ? <div style={{ display: "flex", marginBottom: 20, fontSize: 34, fontStyle: "italic" }}>{invitation.honoree_names}</div> : null}
-        <div style={{ display: "flex", maxWidth: 920, marginBottom: 32, fontFamily: "Georgia", fontSize: 70, lineHeight: 1.02, fontWeight: 600 }}>{invitation.headline || event.title || "You’re invited"}</div>
-        {invitation.message ? <div style={{ display: "flex", maxWidth: 820, marginBottom: 38, fontSize: 30, lineHeight: 1.45, fontStyle: "italic" }}>{invitation.message}</div> : null}
-        <div style={{ width: "100%", display: "flex", padding: "28px 0", borderTop: `2px solid ${accent}`, borderBottom: `2px solid ${accent}` }}>
-          <div style={{ width: "50%", display: "flex", flexDirection: "column", padding: "0 22px", borderRight: `1px solid ${accent}` }}><span style={{ marginBottom: 10, color: accent, fontSize: 20, fontWeight: 800, letterSpacing: 4 }}>WHEN</span><span style={{ fontSize: 28, lineHeight: 1.35 }}>{date}<br />{time}</span></div>
-          <div style={{ width: "50%", display: "flex", flexDirection: "column", padding: "0 22px" }}><span style={{ marginBottom: 10, color: accent, fontSize: 20, fontWeight: 800, letterSpacing: 4 }}>WHERE</span><span style={{ fontSize: 28, lineHeight: 1.35 }}>{event.location || "Location to be announced"}</span></div>
+    <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: ink, overflow: "hidden" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires a plain image element. */}
+      <img src={artworkData} alt="" width="1200" height="1500" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      <div style={{ position: "absolute", inset: 46, display: "flex", border: `2px solid ${dark ? "rgba(239,197,90,.72)" : "rgba(154,107,22,.45)"}`, borderRadius: 28 }} />
+      <div style={{ position: "relative", width: "1020px", display: "flex", flexDirection: "column", alignItems: "center", padding: "58px 68px", borderTop: `2px solid ${accent}`, borderBottom: `2px solid ${accent}`, background: panel, textAlign: "center" }}>
+        <div style={{ display: "flex", marginBottom: 20, color: accent, fontSize: 23, fontWeight: 800, letterSpacing: 6, textTransform: "uppercase" }}>{design.category}</div>
+        {invitation.honoree_names ? <div style={{ display: "flex", marginBottom: 16, fontFamily: "Georgia", fontSize: 34, fontStyle: "italic" }}>{invitation.honoree_names}</div> : null}
+        <div style={{ display: "flex", maxWidth: 900, marginBottom: 24, fontFamily: "Georgia", fontSize: 66, lineHeight: 1.04, fontWeight: 600 }}>{invitation.headline || event.title || "You’re invited"}</div>
+        {invitation.message ? <div style={{ display: "flex", maxWidth: 820, marginBottom: 28, fontFamily: "Georgia", fontSize: 29, lineHeight: 1.4, fontStyle: "italic" }}>{invitation.message}</div> : null}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 25, borderTop: `1px solid ${accent}` }}>
+          <div style={{ display: "flex", marginBottom: 8, color: accent, fontSize: 19, fontWeight: 800, letterSpacing: 4 }}>WHEN</div>
+          <div style={{ display: "flex", marginBottom: 24, fontSize: 27, lineHeight: 1.35 }}>{date} · {time}</div>
+          <div style={{ display: "flex", marginBottom: 8, color: accent, fontSize: 19, fontWeight: 800, letterSpacing: 4 }}>WHERE</div>
+          <div style={{ display: "flex", maxWidth: 850, fontSize: 27, lineHeight: 1.35 }}>{event.location || "Location to be announced"}</div>
         </div>
-        {invitation.special_instructions ? <div style={{ display: "flex", maxWidth: 820, marginTop: 32, fontSize: 25, lineHeight: 1.4 }}>{invitation.special_instructions}</div> : null}
-        <div style={{ display: "flex", marginTop: 50, color: accent, fontSize: 18, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase" }}>Family Weather</div>
+        {invitation.special_instructions ? <div style={{ display: "flex", maxWidth: 820, marginTop: 25, paddingTop: 22, borderTop: `1px solid ${accent}`, fontSize: 24, lineHeight: 1.4 }}>{invitation.special_instructions}</div> : null}
+        <div style={{ display: "flex", marginTop: 34, color: accent, fontSize: 17, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase" }}>Family Weather</div>
       </div>
     </div>,
     { width: 1200, height: 1500, headers: { "Cache-Control": "private, max-age=3600" } },
