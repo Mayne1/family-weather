@@ -68,6 +68,34 @@ function localDateValue(value = new Date()) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
 }
 
+function dateValueInTimeZone(timeZone: string | null | undefined, value: Date) {
+  if (!timeZone) return localDateValue(value);
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(value);
+    const fields = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${fields.year}-${fields.month}-${fields.day}`;
+  } catch {
+    return localDateValue(value);
+  }
+}
+
+function calendarDate(value: string) {
+  return new Date(`${value}T12:00:00Z`);
+}
+
+function calendarDayOffset(value: string, base: string) {
+  return Math.round((calendarDate(value).getTime() - calendarDate(base).getTime()) / 86_400_000);
+}
+
+function calendarDateText(value: string, options: Intl.DateTimeFormatOptions) {
+  return calendarDate(value).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
+}
+
 export default function Home() {
   const [activity, setActivity] = useState("cookout");
   const [date, setDate] = useState(0);
@@ -227,9 +255,11 @@ export default function Home() {
     });
   };
 
-  const dateChoices = (homeWeather?.days || []).slice(0, 4);
-  const chosenDay = dateChoices[date] || homeWeather?.days?.[0] || null;
-  const selectedDate = customDate || chosenDay?.date || almanacDate;
+  const homeLocalDate = clock ? dateValueInTimeZone(homeWeather?.timezone, clock) : almanacDate;
+  const availableDays = (homeWeather?.days || []).filter((day) => !homeLocalDate || day.date >= homeLocalDate);
+  const dateChoices = availableDays.slice(0, 4);
+  const chosenDay = dateChoices[date] || availableDays[0] || null;
+  const selectedDate = customDate || chosenDay?.date || homeLocalDate;
   const selectedDay = plan?.day || chosenDay;
   const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
 
@@ -515,9 +545,9 @@ export default function Home() {
     }
   };
 
-  const today = homeWeather?.days?.[0];
-  const liveForecast = homeWeather?.days?.length
-    ? homeWeather.days.map((item, index) => ({ label: index === 0 ? "TODAY" : index === 1 ? "TOMORROW" : new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(), day: new Date(`${item.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: index === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }))
+  const today = availableDays.find((item) => item.date === homeLocalDate) || availableDays[0];
+  const liveForecast = availableDays.length
+    ? availableDays.map((item) => { const offset = calendarDayOffset(item.date, homeLocalDate); return ({ label: offset === 0 ? "TODAY" : offset === 1 ? "TOMORROW" : calendarDateText(item.date, { weekday: "short" }).toUpperCase(), day: calendarDateText(item.date, { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: offset === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }); })
     : [];
 
   return (
@@ -569,15 +599,15 @@ export default function Home() {
             <div className="inputShell"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <span className="fieldLabel">When?</span>
             <div className="dateRow">
-              {dateChoices.map((choice, index) => { const value = new Date(`${choice.date}T12:00:00`); return (
-                <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{value.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}</small><strong>{value.getDate()}</strong><span>{index === 0 ? "Today" : index === 1 ? "Tomorrow" : value.toLocaleDateString("en-US", { weekday: "long" })}</span></button>
+              {dateChoices.map((choice, index) => { const offset = calendarDayOffset(choice.date, homeLocalDate); return (
+                <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{calendarDateText(choice.date, { weekday: "short" }).toUpperCase()}</small><strong>{calendarDate(choice.date).getUTCDate()}</strong><span>{offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : calendarDateText(choice.date, { weekday: "long" })}</span></button>
               ); })}
               {!dateChoices.length && Array.from({ length: 4 }, (_, index) => <span className="dateOption dateOptionLoading" aria-hidden="true" key={index}><small>···</small><strong>—</strong><span>Loading</span></span>)}
             </div>
             <label className={`otherDateOption ${customDate ? "active" : ""}`}>
               <span className="calendarMark" aria-hidden="true">▦</span>
               <span className="otherDateCopy"><strong>Choose another date</strong><small>Any future day</small></span>
-              <input type="date" min={almanacDate || undefined} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
+              <input type="date" min={homeLocalDate || undefined} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
             </label>
             <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
             {planError && <p className="formError" role="alert">{planError}</p>}
@@ -619,7 +649,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><a href="https://thefamilyweather.com/privacy.html">Privacy</a> · <a href="https://thefamilyweather.com/terms.html">Terms</a> · <a href="https://thefamilyweather.com/sms-consent.html">SMS consent</a></p></footer>
+      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/sms-consent">SMS consent</Link></p></footer>
 
       {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${activity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 

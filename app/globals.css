@@ -183,6 +183,26 @@ footer{padding:2.2rem 4vw;background:var(--ink);color:white;display:flex;align-i
 footer p{font-size:.75rem;color:rgba(255,255,255,.55)}
 footer a{color:inherit}
 
+.legalPage{min-height:100vh;background:linear-gradient(180deg,#071b25 0 300px,var(--paper) 300px)}
+.legalHeader{max-width:1120px;height:96px;margin:auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;color:white}
+.legalHome{padding:.72rem 1rem;border:1px solid rgba(255,255,255,.32);border-radius:999px;color:white;font-size:.78rem;font-weight:800;text-decoration:none}
+.legalHome:hover{border-color:var(--sun);background:var(--sun);color:var(--ink)}
+.legalDocument{width:min(940px,calc(100% - 2rem));margin:55px auto 80px;padding:clamp(1.4rem,5vw,4.5rem);border:1px solid var(--line);border-radius:30px;background:white;box-shadow:var(--shadow)}
+.legalDocument h1{max-width:760px;margin:.4rem 0 1rem;font-size:clamp(2.8rem,7vw,5.2rem);line-height:.95;letter-spacing:-.06em}
+.legalSummary{max-width:760px;margin:0;color:var(--muted);font-size:1.05rem;line-height:1.7}
+.legalEffective{margin:1.5rem 0 0;padding:.8rem 1rem;border-radius:12px;background:#eaf3f1;color:#365760;font-size:.8rem}
+.legalContent{margin-top:2.4rem}
+.legalContent section{padding:1.6rem 0;border-top:1px solid var(--line)}
+.legalContent h2{margin:0 0 .8rem;font-size:1.35rem;letter-spacing:-.02em}
+.legalContent p,.legalContent li{color:#455b63;font-size:.93rem;line-height:1.72}
+.legalContent p{margin:.65rem 0}
+.legalContent ul{margin:.7rem 0;padding-left:1.35rem}
+.legalContent li+li{margin-top:.45rem}
+.legalContent a{color:#26758a;font-weight:700}
+.legalFooter{padding:2rem max(1rem,calc((100vw - 940px)/2));display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--ink);color:white}
+.legalFooter nav{display:flex;gap:1rem}
+.legalFooter a{font-size:.75rem}
+
 .modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:1rem;background:rgba(3,18,24,.7);backdrop-filter:blur(6px)}
 .modalCard{position:relative;width:min(520px,100%);border-radius:24px;padding:2rem;background:white;color:var(--ink);box-shadow:0 40px 120px rgba(0,0,0,.35)}
 .close{position:absolute;right:1rem;top:1rem;border:0;background:#eef3f2;border-radius:50%;width:34px;height:34px;cursor:pointer}
@@ -272,6 +292,7 @@ footer a{color:inherit}
 .sectionHeading>p{font-size:.9rem}
 .how h2,.sectionHeading h2{font-size:2.45rem}
 footer{align-items:flex-start;flex-direction:column}
+.legalHeader{height:80px;padding:0 1rem}.legalHeader .brand small{display:none}.legalHome{padding:.6rem .75rem;font-size:.68rem}.legalDocument{margin-top:35px;border-radius:20px}.legalFooter{align-items:flex-start;flex-direction:column}.legalFooter nav{flex-wrap:wrap}
 .eventOverlay{padding:.5rem}
 .eventPanel{padding:1.2rem;border-radius:20px}
 .eventHeader{padding-right:2rem}

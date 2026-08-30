@@ -1,17 +1,19 @@
 # Merge this into the existing TLS server block; do not replace certificate settings.
-# The legacy root preserves live pages that have not yet moved into Next.js.
+# The old static root remains available only for deliberately preserved server assets.
 server {
     listen 443 ssl http2;
     server_name thefamilyweather.com www.thefamilyweather.com;
 
     root /var/www/family-weather-static/public-site;
 
-    location ~ ^/(profile|settings|my-events|create-event|invite|auth|privacy|terms|sms-consent|feeds)\.html$ {
-        try_files $uri =404;
-    }
+    location = /index.html { return 301 /; }
+    location = /privacy.html { return 301 /privacy; }
+    location = /terms.html { return 301 /terms; }
+    location = /sms-consent.html { return 301 /sms-consent; }
 
-    location ^~ /weather-intel/ { try_files $uri $uri/ =404; }
-    location ^~ /weather-iq/ { try_files $uri $uri/ =404; }
+    location ~ ^/(profile|settings|my-events|create-event|invite|auth|login|feeds|groups|contacts|contact|rsvp-public)\.html$ { return 410; }
+    location ^~ /weather-intel/ { return 410; }
+    location ^~ /weather-iq/ { return 410; }
 
     location / {
         proxy_pass http://127.0.0.1:3001;
