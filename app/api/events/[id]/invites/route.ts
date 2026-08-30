@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invitationDesigns } from "../../../../invitations/catalog";
 import { backendUrl, firebaseApiKey, publicOrigin } from "../../../../lib/serverConfig";
+import { sendTransactionalInvitationEmail } from "../../../../lib/transactionalEmail";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITATION_DESIGNS = new Set<string>(invitationDesigns.map((design) => design.id));
@@ -68,6 +69,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const invites = [];
     const failures: { recipient_email: string; error: string }[] = [];
     const origin = publicOrigin(request);
+    let savedInvitation: { headline?: string | null; message?: string | null } | null = null;
+
+    if (!shareable) {
+      try {
+        const invitationResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation`), {
+          cache: "no-store",
+        });
+        const invitationData = await invitationResponse.json();
+        if (invitationResponse.ok && invitationData.ok) {
+          savedInvitation = invitationData.invitation || null;
+        }
+      } catch {
+        // The event record still contains everything required for a basic email.
+      }
+    }
 
     const recipients: Array<string | null> = shareable ? [null] : emails;
     for (const recipientEmail of recipients) {
@@ -91,6 +107,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           });
           continue;
         }
+        const link = `${origin}/invitation/${encodeURIComponent(data.token)}`;
+        const emailDelivery = recipientEmail
+          ? await sendTransactionalInvitationEmail({
+            recipientEmail,
+            eventTitle: String(eventData.event?.title || "Family event"),
+            startsAt: eventData.event?.starts_at,
+            location: eventData.event?.location,
+            headline: savedInvitation?.headline,
+            message: savedInvitation?.message,
+            invitationUrl: link,
+          })
+          : undefined;
+
         invites.push({
           id: data.token,
           token: data.token,
@@ -99,7 +128,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           recipient_email: recipientEmail || undefined,
           expires_at: data.expiresAt,
           design,
-          link: `${origin}/invitation/${encodeURIComponent(data.token)}`,
+          link,
+          ...(emailDelivery ? { email_delivery: emailDelivery } : {}),
         });
       } catch (error) {
         failures.push({
