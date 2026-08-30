@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getValidSession } from "../../lib/firebaseAuth";
@@ -34,6 +35,9 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteError, setInviteError] = useState("");
 
   useEffect(() => {
     getValidSession().then((session) => {
@@ -79,6 +83,40 @@ export default function EventDetailPage() {
     router.refresh();
   }
 
+  async function inviteMorePeople(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    const form = formEvent.currentTarget;
+    const recipients = String(new FormData(form).get("recipients") || "").trim();
+    if (!recipients) return;
+    const session = await getValidSession();
+    if (!session) return setInviteError("Sign in again before sending invitations.");
+    setInviteLoading(true);
+    setInviteError("");
+    setInviteMessage("");
+    try {
+      const response = await fetch(`/api/events/${id}/invites`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.idToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ recipient_emails: recipients }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Invitations could not be created.");
+      const newRows: ResponseRow[] = (data.invites || []).map((invite: { token?: string; id?: string; recipient_email?: string }) => ({
+        token: String(invite.token || invite.id),
+        invited_email: invite.recipient_email,
+        created_at: new Date().toISOString(),
+      }));
+      setResponses((current) => [...newRows, ...current]);
+      const failedCount = Array.isArray(data.failures) ? data.failures.length : 0;
+      setInviteMessage(`${newRows.length} invitation${newRows.length === 1 ? "" : "s"} created and sent${failedCount ? ` · ${failedCount} could not be sent` : ""}.`);
+      form.reset();
+    } catch (reason) {
+      setInviteError(reason instanceof Error ? reason.message : "Invitations could not be created.");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
   if (loading) return <main className="eventManagePage"><section className="eventsEmpty"><h2>Loading event…</h2></section></main>;
   if (error || !event) return <main className="eventManagePage"><Link className="backToEvents" href="/events">← My events</Link><section className="eventsEmpty"><h2>We couldn’t open this event.</h2><p>{error}</p></section></main>;
 
@@ -87,7 +125,7 @@ export default function EventDetailPage() {
     <header className="manageHeader"><Link className="eventsBrand" href="/">Family Weather</Link><Link className="backToEvents" href="/events">← My events</Link></header>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>
     <section className="responseSummary"><article><strong>{counts.yes}</strong><span>Going</span></article><article><strong>{counts.maybe}</strong><span>Maybe</span></article><article><strong>{counts.no}</strong><span>Can’t go</span></article><article><strong>{counts.waiting}</strong><span>Waiting</span></article></section>
-    <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>Who answered?</h2></div>{responses.length === 0 ? <p className="noResponses">No invitations have been created for this event yet.</p> : <div className="guestList">{responses.map((row) => <article key={row.token}><div><strong>{row.responder_name || row.invited_email || "Shareable invitation"}</strong><small>{row.responded_at ? `Answered ${new Date(row.responded_at).toLocaleString()}${row.guests_count ? ` · ${row.guests_count} additional guest${row.guests_count === 1 ? "" : "s"}` : ""}` : row.opened_at ? "Opened—waiting for an answer" : "Not opened yet"}</small>{row.message ? <small className="guestMessage">“{row.message}”</small> : null}</div><span className={`responseBadge ${row.response || "waiting"}`}>{row.response === "yes" ? "Going" : row.response === "maybe" ? "Maybe" : row.response === "no" ? "Can’t go" : "Waiting"}</span></article>)}</div>}</section>
+    <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>Invite more people.</h2><p className="panelIntro">Add recipients whenever the guest list grows. They will receive the invitation already saved for this event.</p></div><form className="inviteMoreForm" onSubmit={inviteMorePeople}><label className="formField"><span>Email addresses</span><textarea name="recipients" required rows={4} placeholder={"maya@example.com, jordan@example.com\nterry@example.com"} /></label><button className="primaryCta" type="submit" disabled={inviteLoading}>{inviteLoading ? "Sending invitations…" : "Send more invitations"}<span>→</span></button></form>{inviteMessage ? <p className="inviteSuccess" role="status">{inviteMessage}</p> : null}{inviteError ? <p className="formError" role="alert">{inviteError}</p> : null}<div className="guestResponsesHeading"><h3>Guest responses</h3><span>{responses.length} invitation{responses.length === 1 ? "" : "s"}</span></div>{responses.length === 0 ? <p className="noResponses">No invitations have been created for this event yet.</p> : <div className="guestList">{responses.map((row) => <article key={row.token}><div><strong>{row.responder_name || row.invited_email || "Shareable invitation"}</strong><small>{row.responded_at ? `Answered ${new Date(row.responded_at).toLocaleString()}${row.guests_count ? ` · ${row.guests_count} additional guest${row.guests_count === 1 ? "" : "s"}` : ""}` : row.opened_at ? "Opened—waiting for an answer" : "Not opened yet"}</small>{row.message ? <small className="guestMessage">“{row.message}”</small> : null}</div><span className={`responseBadge ${row.response || "waiting"}`}>{row.response === "yes" ? "Going" : row.response === "maybe" ? "Maybe" : row.response === "no" ? "Can’t go" : "Waiting"}</span></article>)}</div>}</section>
     <section className="dangerZone"><div><h2>Delete this event</h2><p>Removes the event, its private links and all RSVP answers.</p></div><button type="button" onClick={deleteEvent} disabled={deleting}>{deleting ? "Deleting…" : "Delete event"}</button></section>
   </main>;
 }
