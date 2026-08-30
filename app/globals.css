@@ -326,6 +326,24 @@ to{opacity:1;transform:none}
 .formError{margin:1rem 0 0;padding:.8rem 1rem;border-radius:12px;background:#fff0e8;color:#9a4528;font-size:.82rem;font-weight:700}
 .adviceList article.warning>span{background:#fff0ce;color:#a66319}
 
+/* First-visit guided walkthrough */
+.tourDateBlock{display:contents}
+.tourWelcome,.tourPanel{position:fixed;z-index:100;right:clamp(1rem,3vw,2rem);bottom:clamp(1rem,3vw,2rem);width:min(390px,calc(100vw - 2rem));padding:1.45rem;border:1px solid rgba(255,255,255,.18);border-radius:22px;background:#071b25;color:white;box-shadow:0 26px 80px rgba(2,15,21,.38)}
+.tourWelcome h2,.tourPanel h2{margin:.35rem 2rem .55rem 0;font-size:1.65rem;line-height:1;letter-spacing:-.035em}
+.tourWelcome>p:not(.tourLabel),.tourPanel>p:not(.tourLabel){margin:0;color:rgba(255,255,255,.76);font-size:.86rem;line-height:1.55}
+.tourLabel{margin:0;color:#f5c451;font-size:.62rem;font-weight:900;letter-spacing:.16em}
+.tourClose{position:absolute;right:.8rem;top:.72rem;width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:white;font-size:1.25rem;cursor:pointer}
+.tourActions{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;margin-top:1.15rem}
+.tourActions button{min-height:42px;padding:.65rem .9rem;border-radius:999px;font-weight:900;cursor:pointer}
+.tourSecondary{border:1px solid rgba(255,255,255,.3);background:transparent;color:white}
+.tourPrimary{border:0;background:#f5c451;color:#071b25}.tourPrimary span{margin-left:.35rem}
+.tourProgress{display:grid;grid-template-columns:repeat(5,1fr);gap:.32rem;margin:0 2.5rem .9rem 0}
+.tourProgress i{height:4px;border-radius:999px;background:rgba(255,255,255,.18)}.tourProgress i.active{background:#f5c451}
+.tourTarget{position:relative!important;z-index:80!important;outline:4px solid #f5c451!important;outline-offset:7px!important;box-shadow:0 0 0 9999px rgba(2,15,21,.58),0 12px 38px rgba(2,15,21,.28)!important;scroll-margin:120px}
+.tourReplay{display:block;margin:2rem auto 0;padding:.78rem 1.05rem;border:1px solid #397b8a;border-radius:999px;background:transparent;color:#286e7e;font-weight:900;cursor:pointer}.tourReplay:hover{background:#eaf3f1}
+
+@media(max-width:600px){.tourWelcome,.tourPanel{left:.75rem;right:.75rem;bottom:.75rem;width:auto;padding:1.15rem;border-radius:18px}.tourWelcome h2,.tourPanel h2{font-size:1.4rem}.tourTarget{outline-width:3px!important;outline-offset:4px!important;scroll-margin:90px}.tourDateBlock{display:block}}
+
 .authModal .modalCard{display:grid;gap:1rem}
 .authModal .modalCard h2,.authModal .modalCard>p{margin:0}
 .authSwitch{border:0;background:transparent;color:#397b8a;font-weight:700;cursor:pointer}

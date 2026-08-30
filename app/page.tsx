@@ -20,6 +20,15 @@ const activities = [
   ["plan", "＋", "Something else"],
 ];
 
+const TOUR_STORAGE_KEY = "family-weather-walkthrough-v1";
+const tourSteps = [
+  { target: "activity", label: "Step 1 of 5", title: "Start with the plan", copy: "Choose the kind of event you have in mind. This helps Family Weather give advice that fits what people will actually be doing." },
+  { target: "location", label: "Step 2 of 5", title: "Tell us where", copy: "Enter a venue, street address, city, landmark, resort, park, or destination. Choose a match if the name could mean more than one place." },
+  { target: "date", label: "Step 3 of 5", title: "Choose the day", copy: "Pick a forecast day or any future date, then check the plan. Dates beyond the forecast window use the five-year Almanac instead." },
+  { target: "create", label: "Step 4 of 5", title: "Turn the plan into an event", copy: "When the weather looks right, create the event, save it, choose an invitation design, and invite your people. You only need an account when you save." },
+  { target: "almanac", label: "Step 5 of 5", title: "Explore a special date", copy: "The Almanac compares the same calendar day across five prior years for the selected location. It is useful historical guidance, not a promise about the future." },
+] as const;
+
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
 type HomeWeather = { label?: string; lat?: number; lon?: number; timezone?: string | null; current_source?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number; observed_at?: string; source?: string } | null; days: WeatherDay[] };
 type AlmanacYear = { year: number; date: string; high_f: number; low_f: number; precipitation_in: number; rain: boolean; weather_code: number; condition: string };
@@ -144,6 +153,42 @@ export default function Home() {
   const [invitationInstructions, setInvitationInstructions] = useState("");
   const [invitationSaved, setInvitationSaved] = useState(false);
   const [invitationLoading, setInvitationLoading] = useState(false);
+  const [tourMode, setTourMode] = useState<"closed" | "welcome" | "active">("closed");
+  const [tourStep, setTourStep] = useState(0);
+
+  const closeTour = () => {
+    localStorage.setItem(TOUR_STORAGE_KEY, "complete");
+    setTourMode("closed");
+  };
+
+  const startTour = () => {
+    setTourStep(0);
+    setTourMode("active");
+  };
+
+  const advanceTour = () => {
+    if (tourStep >= tourSteps.length - 1) closeTour();
+    else setTourStep((current) => current + 1);
+  };
+
+  useEffect(() => {
+    if (localStorage.getItem(TOUR_STORAGE_KEY)) return;
+    const timer = window.setTimeout(() => setTourMode("welcome"), 700);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (tourMode !== "active") return;
+    const target = document.querySelector<HTMLElement>(`[data-tour="${tourSteps[tourStep].target}"]`);
+    target?.classList.add("tourTarget");
+    target?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    const handleKeyDown = (event: KeyboardEvent) => event.key === "Escape" && closeTour();
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      target?.classList.remove("tourTarget");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [tourMode, tourStep]);
 
   useEffect(() => {
     getValidSession().then(setSession);
@@ -568,7 +613,7 @@ export default function Home() {
         </nav>
         <div className="headerActions">
           {session ? <button className="textButton" type="button" onClick={() => { signOut(); setSession(null); }}>{session.email} · Sign out</button> : <button className="textButton" type="button" onClick={() => setShowAuth(true)}>Sign in</button>}
-          <button className="pillButton" type="button" onClick={openEvent}>Create event</button>
+          <button className="pillButton" type="button" onClick={openEvent} data-tour="create">Create event</button>
         </div>
       </header>
 
@@ -590,28 +635,30 @@ export default function Home() {
 
           <div className="plannerCard" id="planner">
             <p className="stepLabel">Plan something</p><h2>What are we doing?</h2>
-            <div className="activityGrid" role="group" aria-label="Choose an activity">
+            <div className="activityGrid" role="group" aria-label="Choose an activity" data-tour="activity">
               {activities.map(([value, icon, label]) => (
                 <button key={value} className={`activity ${activity === value ? "active" : ""}`} onClick={() => setActivity(value)} type="button"><span>{icon}</span>{label}</button>
               ))}
             </div>
             <label className="fieldLabel" htmlFor="location">Where?</label>
-            <div className="inputShell"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
-            <span className="fieldLabel">When?</span>
-            <div className="dateRow">
+            <div className="inputShell" data-tour="location"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
+            <div className="tourDateBlock" data-tour="date">
+              <span className="fieldLabel">When?</span>
+              <div className="dateRow">
               {dateChoices.map((choice, index) => { const offset = calendarDayOffset(choice.date, homeLocalDate); return (
                 <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{calendarDateText(choice.date, { weekday: "short" }).toUpperCase()}</small><strong>{calendarDate(choice.date).getUTCDate()}</strong><span>{offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : calendarDateText(choice.date, { weekday: "long" })}</span></button>
               ); })}
               {!dateChoices.length && Array.from({ length: 4 }, (_, index) => <span className="dateOption dateOptionLoading" aria-hidden="true" key={index}><small>···</small><strong>—</strong><span>Loading</span></span>)}
-            </div>
-            <label className={`otherDateOption ${customDate ? "active" : ""}`}>
+              </div>
+              <label className={`otherDateOption ${customDate ? "active" : ""}`}>
               <span className="calendarMark" aria-hidden="true">▦</span>
               <span className="otherDateCopy"><strong>Choose another date</strong><small>Any future day</small></span>
               <input type="date" min={homeLocalDate || undefined} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
-            </label>
-            <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
-            {planError && <p className="formError" role="alert">{planError}</p>}
-            <p className="quietNote">No account needed to check the weather.</p>
+              </label>
+              <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
+              {planError && <p className="formError" role="alert">{planError}</p>}
+              <p className="quietNote">No account needed to check the weather.</p>
+            </div>
           </div>
         </section>
 
@@ -625,7 +672,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="almanacSection" id="almanac">
+        <section className="almanacSection" id="almanac" data-tour="almanac">
           <div className="almanacIntro"><p className="eyebrow dark"><span /> Five-year weather history</p><h2>What has this date done before?</h2><p>Choose a destination and calendar day. Family Weather will compare that same date across five prior years—anywhere our worldwide history covers.</p></div>
           <div className="almanacCard">
             <form onSubmit={checkAlmanac}>
@@ -646,10 +693,15 @@ export default function Home() {
             <article><span>02</span><h3>Get a real answer</h3><p>See the best time, the important risks and practical advice—not a wall of weather data.</p></article>
             <article><span>03</span><h3>Keep people together</h3><p>Create the event, invite your people and send updates if the weather changes.</p></article>
           </div>
+          <button className="tourReplay" type="button" onClick={startTour}>Show me around</button>
         </section>
       </main>
 
       <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/sms-consent">SMS consent</Link></p></footer>
+
+      {tourMode === "welcome" && <section className="tourWelcome" role="dialog" aria-modal="false" aria-labelledby="tour-welcome-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><p className="tourLabel">NEW TO FAMILY WEATHER?</p><h2 id="tour-welcome-title">Let us show you around.</h2><p>Take a quick walk through planning the weather, creating an event, and inviting your people.</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={closeTour}>Skip</button><button className="tourPrimary" type="button" onClick={startTour}>Start tour <span>→</span></button></div></section>}
+
+      {tourMode === "active" && <section className="tourPanel" role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="tour-step-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><div className="tourProgress" aria-hidden="true">{tourSteps.map((_, index) => <i className={index <= tourStep ? "active" : ""} key={index} />)}</div><p className="tourLabel">{tourSteps[tourStep].label}</p><h2 id="tour-step-title">{tourSteps[tourStep].title}</h2><p>{tourSteps[tourStep].copy}</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={() => tourStep === 0 ? closeTour() : setTourStep((current) => current - 1)}>{tourStep === 0 ? "Skip" : "Back"}</button><button className="tourPrimary" type="button" onClick={advanceTour}>{tourStep === tourSteps.length - 1 ? "Finish" : "Next"} <span>→</span></button></div></section>}
 
       {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${activity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 
