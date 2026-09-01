@@ -611,7 +611,7 @@ export default function Home() {
           <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link>
         </nav>
         <div className="headerActions">
-          {session ? <button className="textButton" type="button" onClick={() => { signOut(); setSession(null); }}>{session.email} · Sign out</button> : <button className="textButton" type="button" onClick={() => setShowAuth(true)}>Sign in</button>}
+          {session ? <button className="textButton accountButton" type="button" onClick={() => { signOut(); setSession(null); }}><span className="accountEmail">{session.email} · </span>Sign out</button> : <><button className="textButton accountButton" type="button" onClick={() => { setAuthMode("signin"); setAuthError(""); setShowAuth(true); }}>Sign in</button><button className="signupButton accountButton" type="button" onClick={() => { setAuthMode("signup"); setAuthError(""); setShowAuth(true); }}>Sign up</button></>}
           <button className="pillButton" type="button" onClick={openEvent} data-tour="create">Create event</button>
         </div>
       </header>
