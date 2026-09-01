@@ -153,7 +153,6 @@ export default function Home() {
   const [invitationInstructions, setInvitationInstructions] = useState("");
   const [invitationSaved, setInvitationSaved] = useState(false);
   const [invitationLoading, setInvitationLoading] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourMode, setTourMode] = useState<"closed" | "welcome" | "active">("closed");
   const [tourStep, setTourStep] = useState(0);
 
@@ -611,12 +610,11 @@ export default function Home() {
         <nav className="desktopNav" aria-label="Primary navigation">
           <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link>
         </nav>
-        <button className="mobileMenuButton" type="button" aria-label="Open navigation" aria-expanded={mobileMenuOpen} aria-controls="mobile-navigation" onClick={() => setMobileMenuOpen((open) => !open)}><span /><span /><span /></button>
         <div className="headerActions">
           {session ? <button className="textButton accountButton" type="button" onClick={() => { signOut(); setSession(null); }}><span className="accountEmail">{session.email} · </span>Sign out</button> : <><button className="textButton accountButton" type="button" onClick={() => { setAuthMode("signin"); setAuthError(""); setShowAuth(true); }}>Sign in</button><button className="signupButton accountButton" type="button" onClick={() => { setAuthMode("signup"); setAuthError(""); setShowAuth(true); }}>Sign up</button></>}
           <button className="pillButton" type="button" onClick={openEvent} data-tour="create">Create event</button>
         </div>
-        <nav className={`mobileNav ${mobileMenuOpen ? "open" : ""}`} id="mobile-navigation" aria-label="Mobile navigation"><a href="#top" onClick={() => setMobileMenuOpen(false)}>Home</a><a href="#planner" onClick={() => setMobileMenuOpen(false)}>Plan</a><a href="#outlook" onClick={() => setMobileMenuOpen(false)}>Outlook</a><a href="#almanac" onClick={() => setMobileMenuOpen(false)}>Almanac</a><a href="#how" onClick={() => setMobileMenuOpen(false)}>How it works</a><Link href="/events" onClick={() => setMobileMenuOpen(false)}>My events</Link></nav>
+        <nav className="mobileNav" aria-label="Mobile navigation"><a href="#top">Home</a><a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link></nav>
       </header>
 
       <main id="top">
