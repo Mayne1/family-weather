@@ -257,7 +257,7 @@ footer a{color:inherit}
 
 @media(max-width:900px){.siteHeader .desktopNav{display:none}
 .mobileMenuButton{width:40px;height:40px;padding:9px;border:1px solid rgba(255,255,255,.28);border-radius:50%;display:grid;align-content:center;gap:4px;background:rgba(255,255,255,.1);cursor:pointer}.mobileMenuButton span{display:block;width:20px;height:2px;border-radius:2px;background:white}
-.siteHeader .mobileNav{position:absolute;left:1rem;right:1rem;top:calc(100% - 4px);z-index:60;padding:.65rem;border:1px solid rgba(255,255,255,.18);border-radius:16px;grid-template-columns:repeat(2,1fr);gap:.35rem;background:#071b25;box-shadow:0 18px 45px rgba(0,0,0,.3)}.siteHeader .mobileNav.open{display:grid}.siteHeader .mobileNav a{padding:.8rem;border-radius:10px;background:rgba(255,255,255,.07);font-size:.78rem;font-weight:800;opacity:1}.siteHeader .mobileNav a:hover{background:rgba(255,255,255,.14)}
+.siteHeader .mobileNav{position:absolute;right:1rem;top:calc(100% - 4px);z-index:60;width:min(280px,calc(100vw - 2rem));padding:.35rem 1rem;border:1px solid rgba(255,255,255,.18);border-radius:16px;grid-template-columns:1fr;gap:0;background:#071b25;box-shadow:0 18px 45px rgba(0,0,0,.3)}.siteHeader .mobileNav.open{display:grid}.siteHeader .mobileNav a{padding:.85rem .25rem;border-bottom:1px solid rgba(255,255,255,.12);border-radius:0;background:transparent;font-size:.82rem;font-weight:800;white-space:nowrap;opacity:1}.siteHeader .mobileNav a:last-child{border-bottom:0}.siteHeader .mobileNav a:hover{color:var(--sun);background:transparent}
 .hero{grid-template-columns:1fr;gap:2rem;padding-top:30px}
 .weatherScene{height:1220px}
 .heroCopy{max-width:none}
