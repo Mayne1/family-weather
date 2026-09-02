@@ -7,6 +7,7 @@ import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
 import LocationSearchInput from "./components/LocationSearchInput";
+import EventPurchasePanel from "./components/EventPurchasePanel";
 import { invitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
 import type { LocationCandidate } from "./lib/location";
@@ -36,7 +37,6 @@ type AlmanacResult = { targetDate: string; location: string; years: AlmanacYear[
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; resolvedLocation: LocationCandidate; day: WeatherDay; almanac?: AlmanacResult | null; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
-type CreatedInvite = { id: string; link: string; delivery: string; design?: InvitationDesignId; recipient_email?: string; recipient_phone?: string; sms?: { ok?: boolean; skipped?: boolean; reason?: string } };
 
 function weatherSymbol(code: number) {
   if (code >= 200 && code < 700) return "☂";
@@ -143,9 +143,7 @@ export default function Home() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [savedEvent, setSavedEvent] = useState<{ id: string; title: string } | null>(null);
   const [saveError, setSaveError] = useState("");
-  const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
-  const [createdInvites, setCreatedInvites] = useState<CreatedInvite[]>([]);
   const [inviteDesign, setInviteDesign] = useState<InvitationDesignId>("birthday-after-dark");
   const [invitationHeadline, setInvitationHeadline] = useState("");
   const [invitationHonoree, setInvitationHonoree] = useState("");
@@ -514,81 +512,6 @@ export default function Home() {
     }
   };
 
-  const createInvite = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!savedEvent) return;
-    const values = new FormData(event.currentTarget);
-    const recipientText = String(values.get("recipients") || "").trim();
-    const recipients = [...new Set(
-      recipientText
-        .split(/[\s,;]+/)
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean),
-    )];
-    const invalid = recipients.filter((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-    if (!recipients.length) {
-      setInviteError("Enter at least one email address.");
-      return;
-    }
-    if (recipients.length > 100) {
-      setInviteError("Paste no more than 100 email addresses at a time.");
-      return;
-    }
-    if (invalid.length) {
-      setInviteError(`Fix these email addresses: ${invalid.slice(0, 5).join(", ")}${invalid.length > 5 ? "…" : ""}`);
-      return;
-    }
-    setInviteLoading(true);
-    setInviteError("");
-    try {
-      const activeSession = await getValidSession();
-      if (!activeSession) throw new Error("Your sign-in expired. Sign in again before creating an invitation.");
-      setSession(activeSession);
-      const response = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invites`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
-        body: JSON.stringify({
-          delivery: "email",
-          recipient_emails: recipients,
-          created_by_email: activeSession.email,
-          design: inviteDesign,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be created");
-      setCreatedInvites((current) => [...data.invites, ...current]);
-      form.reset();
-    } catch (error) {
-      setInviteError(error instanceof Error ? error.message : "Invitation could not be created");
-    } finally {
-      setInviteLoading(false);
-    }
-  };
-
-  const createShareableInvite = async () => {
-    if (!savedEvent) return;
-    setInviteLoading(true);
-    setInviteError("");
-    try {
-      const activeSession = await getValidSession();
-      if (!activeSession) throw new Error("Your sign-in expired. Sign in again before creating an invitation.");
-      setSession(activeSession);
-      const response = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invites`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
-        body: JSON.stringify({ shareable: true, design: inviteDesign }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "Shareable invitation could not be created");
-      setCreatedInvites((current) => [...data.invites, ...current]);
-    } catch (error) {
-      setInviteError(error instanceof Error ? error.message : "Shareable invitation could not be created");
-    } finally {
-      setInviteLoading(false);
-    }
-  };
-
   const today = availableDays.find((item) => item.date === homeLocalDate) || availableDays[0];
   const liveForecast = availableDays.length
     ? availableDays.map((item) => { const offset = calendarDayOffset(item.date, homeLocalDate); return ({ label: offset === 0 ? "TODAY" : offset === 1 ? "TOMORROW" : calendarDateText(item.date, { weekday: "short" }).toUpperCase(), day: calendarDateText(item.date, { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: offset === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }); })
@@ -774,17 +697,9 @@ export default function Home() {
                       </div>
                       <button className="primaryCta" disabled={invitationLoading}>{invitationLoading ? "Saving invitation…" : invitationSaved ? "Invitation saved" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
                     </form>
-                    {invitationSaved && <>
-                      <div className="shareLinkOption"><div><strong>Need one link for a family chat?</strong><small>Create one general invitation that everybody can open and identify themselves on.</small></div><button type="button" onClick={createShareableInvite} disabled={inviteLoading}>Create shareable link</button></div>
-                      <form className="invitePeopleForm" onSubmit={createInvite}>
-                        <div className="invitePeopleIntro"><small>04 · INVITE YOUR PEOPLE</small><h3>Create private invitation links.</h3><p>Paste up to 100 email addresses. Separate them with commas, semicolons, spaces, or new lines. Each person receives their own private invitation and response link.</p></div>
-                        <label className="formField"><span>Family members’ email addresses</span><textarea name="recipients" required rows={5} placeholder={"maya@example.com, jordan@example.com\\nterry@example.com"} /></label>
-                        <button className="primaryCta" disabled={inviteLoading}>{inviteLoading ? "Creating invitations…" : "Create invitations"}<span>→</span></button>
-                      </form>
-                    </>}
+                    {invitationSaved && session ? <EventPurchasePanel eventId={savedEvent.id} authorization={`Bearer ${session.idToken}`} /> : null}
                     {inviteError && <p className="formError">{inviteError}</p>}
                   </div>
-                  {createdInvites.length > 0 && <div className="inviteResults">{createdInvites.map((invite) => <article key={invite.id}><div><strong>{invite.recipient_email || "Shareable invitation"}</strong><small>{invitationDesigns.find((design) => design.id === invite.design)?.name || "Invitation"} · ready to share</small></div><button type="button" onClick={() => navigator.clipboard.writeText(invite.link)}>Copy link</button><a href={invite.link} target="_blank" rel="noreferrer">Open</a></article>)}</div>}
                 </> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}
                 {saveError && <p className="formError">{saveError}</p>}
                 <p className="quietNote">{savedEvent ? `Event ID: ${savedEvent.id}` : session ? `Saving as ${session.email}` : "Your plan stays on this screen while you sign in."}</p>

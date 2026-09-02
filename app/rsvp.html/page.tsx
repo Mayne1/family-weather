@@ -69,16 +69,19 @@ export default function RsvpPage() {
   const respond = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
+    const responseStorageKey = `family-weather-rsvp-${token}`;
+    const savedResponseKey = localStorage.getItem(responseStorageKey) || "";
     setSending(true);
     setError("");
     try {
       const response = await fetch(`/api/invites/${encodeURIComponent(token)}/rsvp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...values, response_key: savedResponseKey }),
       });
       const reply = await response.json();
       if (!response.ok || !reply.ok) throw new Error(reply.error || "RSVP could not be saved");
+      if (reply.responseKey) localStorage.setItem(responseStorageKey, String(reply.responseKey));
       setAnswer(String(values.response || "yes"));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "RSVP could not be saved");

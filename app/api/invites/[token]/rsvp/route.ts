@@ -22,10 +22,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ to
         responderName,
         guestsCount,
         message: String(body.message || "").trim().slice(0, 1000) || null,
+        responseKey: String(body.response_key || "").trim().slice(0, 100) || null,
       }),
       cache: "no-store",
     });
     const data = await response.json();
+    if (data?.error === "share_link_rsvp_limit_reached") return NextResponse.json({ ok: false, error: "This event’s shareable guest list has reached 50 responses." }, { status: 409 });
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error("RSVP submission failed", error);

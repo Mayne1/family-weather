@@ -14,6 +14,8 @@ test -f "$FRONTEND_DIR/backend/event-locations-router.js"
 test -f "$FRONTEND_DIR/backend/invites-rsvp.sql"
 test -f "$FRONTEND_DIR/backend/invites_pg.js"
 test -f "$FRONTEND_DIR/backend/rsvp-details-router.js"
+test -f "$FRONTEND_DIR/backend/event-entitlements.sql"
+test -f "$FRONTEND_DIR/backend/event-entitlements-router.js"
 test -f "$SERVER_FILE"
 
 cp "$SERVER_FILE" "$SERVER_FILE.before-invitation-designs.$STAMP"
@@ -28,6 +30,7 @@ install -m 0644 \
 install -m 0644 \
   "$FRONTEND_DIR/backend/rsvp-details-router.js" \
   "$ROUTES_DIR/rsvp-details-router.js"
+install -m 0644 "$FRONTEND_DIR/backend/event-entitlements-router.js" "$ROUTES_DIR/event-entitlements-router.js"
 
 SERVER_FILE="$SERVER_FILE" python3 - <<'PY'
 import os
@@ -50,6 +53,10 @@ if location_require_line not in text:
 rsvp_require_line = 'const makeRsvpDetailsRouter = require("./routes/rsvp-details-router");'
 if rsvp_require_line not in text:
     text = text.replace(location_require_line, location_require_line + "\n" + rsvp_require_line, 1)
+
+entitlement_require_line = 'const makeEventEntitlementsRouter = require("./routes/event-entitlements-router");'
+if entitlement_require_line not in text:
+    text = text.replace(rsvp_require_line, rsvp_require_line + "\n" + entitlement_require_line, 1)
 
 allow_block = '''// Invitation design endpoints. The PUT route verifies the Firebase owner itself.
 if (
@@ -81,26 +88,40 @@ if "Owner-only RSVP detail endpoint" not in text:
         raise SystemExit("Could not find the RSVP detail allowlist insertion point.")
     text = text.replace(marker, marker + "\n\n" + rsvp_allow_block, 1)
 
+entitlement_allow_block = '''// Event purchase and entitlement endpoints. Owner routes verify Firebase;
+// Stripe confirmation independently verifies Stripe's webhook signature.
+if (
+  ((req.method === "GET" || req.method === "POST") && /^\/events\/[^/]+\/entitlement(?:\/checkout)?(?:\?|$)/.test(url)) ||
+  (req.method === "POST" && /^\/billing\/stripe-webhook(?:\?|$)/.test(url))
+) return next();'''
+if "Event purchase and entitlement endpoints" not in text:
+    marker = 'if (req.method === "OPTIONS") return next();'
+    if marker not in text:
+        raise SystemExit("Could not find the entitlement allowlist insertion point.")
+    text = text.replace(marker, marker + "\n\n" + entitlement_allow_block, 1)
+
 mount_line = 'app.use(makeEventInvitationsRouter(pool, requireFirebaseUser));'
 location_mount_line = 'app.use(makeEventLocationsRouter(pool, requireFirebaseUser));'
 rsvp_mount_line = 'app.use(makeRsvpDetailsRouter(pool, requireFirebaseUser));'
+entitlement_mount_line = 'app.use(makeEventEntitlementsRouter(pool, requireFirebaseUser));'
 # The API-key middleware is declared before `pool` in this server. Always move
 # the router mount to the event-route section, where the database pool already
 # exists, instead of mounting it beside `app.use(requireApiKey)`.
 text = text.replace(mount_line + "\n", "")
 text = text.replace(location_mount_line + "\n", "")
 text = text.replace(rsvp_mount_line + "\n", "")
+text = text.replace(entitlement_mount_line + "\n", "")
 marker = '// 1) Create an event'
 if marker not in text:
     raise SystemExit("Could not find the event-route insertion point.")
-text = text.replace(marker, mount_line + "\n" + location_mount_line + "\n" + rsvp_mount_line + "\n\n" + marker, 1)
+text = text.replace(marker, mount_line + "\n" + location_mount_line + "\n" + rsvp_mount_line + "\n" + entitlement_mount_line + "\n\n" + marker, 1)
 
 path.write_text(text)
 print(f"Patched {path}")
 PY
 
 cd "$API_DIR"
-SQL_FILES="$FRONTEND_DIR/backend/event-invitations.sql:$FRONTEND_DIR/backend/event-locations.sql:$FRONTEND_DIR/backend/invites-rsvp.sql" node <<'NODE'
+SQL_FILES="$FRONTEND_DIR/backend/event-invitations.sql:$FRONTEND_DIR/backend/event-locations.sql:$FRONTEND_DIR/backend/invites-rsvp.sql:$FRONTEND_DIR/backend/event-entitlements.sql" node <<'NODE'
 "use strict";
 
 const fs = require("fs");
@@ -119,7 +140,7 @@ const pool = new Pool(config);
       const sql = fs.readFileSync(sqlFile, "utf8");
       await pool.query(sql);
     }
-    console.log("Invitation and normalized event-location tables are ready.");
+    console.log("Invitation, event-location, RSVP, and event-entitlement tables are ready.");
   } finally {
     await pool.end();
   }

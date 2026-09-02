@@ -54,10 +54,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!shareable && !emails.length) {
       return NextResponse.json({ ok: false, error: "Enter at least one email address." }, { status: 400 });
     }
-    if (emails.length > 100) {
-      return NextResponse.json({ ok: false, error: "Send no more than 100 invitations in one batch." }, { status: 400 });
-    }
-
     const invalid = emails.filter((email) => !EMAIL_PATTERN.test(email));
     if (invalid.length) {
       return NextResponse.json({
@@ -65,6 +61,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         error: `Fix these email addresses: ${invalid.slice(0, 5).join(", ")}${invalid.length > 5 ? "…" : ""}`,
       }, { status: 400 });
     }
+
+    const entitlementResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement`), { headers: { Authorization: authorization }, cache: "no-store" });
+    const entitlementData = await entitlementResponse.json();
+    if (!entitlementResponse.ok || !entitlementData.ok) return NextResponse.json({ ok: false, error: "Event purchase information is unavailable." }, { status: entitlementResponse.status });
+    const entitlement = entitlementData.entitlement;
+    if (!entitlement) return NextResponse.json({ ok: false, error: "Purchase this event before distributing invitations." }, { status: 402 });
+    const legacy = entitlement.status === "legacy";
+    const batchLimit = legacy ? 100 : 25;
+    if (!shareable && emails.length > batchLimit) return NextResponse.json({ ok: false, error: legacy ? "Paste no more than 100 email addresses at a time." : "Send no more than 25 email invitations for one event." }, { status: 400 });
+    if (!legacy && entitlement.status !== "paid") return NextResponse.json({ ok: false, error: "Payment confirmation is still pending." }, { status: 402 });
+    const requestedMethod = shareable ? "share_link" : "email";
+    if (!legacy && entitlement.distribution_method !== requestedMethod) return NextResponse.json({ ok: false, error: shareable ? "This event was purchased with Family Weather email delivery." : "This event was purchased with a self-distributed shareable link." }, { status: 403 });
+    if (!legacy && !shareable && emails.length > Number(entitlement.email_remaining || 0)) return NextResponse.json({ ok: false, error: `This event has ${Number(entitlement.email_remaining || 0)} Family Weather email invitation${Number(entitlement.email_remaining || 0) === 1 ? "" : "s"} remaining.` }, { status: 409 });
 
     const invites = [];
     const failures: { recipient_email: string; error: string }[] = [];
@@ -96,6 +105,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
             inviterEmail: signedInEmail,
             invitedEmail: recipientEmail || undefined,
             expiresHours: 168,
+            deliveryMethod: requestedMethod,
           }),
           cache: "no-store",
         });
@@ -125,7 +135,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           id: data.token,
           token: data.token,
           event_id: id,
-          delivery: "email",
+          delivery: requestedMethod,
           recipient_email: recipientEmail || undefined,
           expires_at: data.expiresAt,
           design,
