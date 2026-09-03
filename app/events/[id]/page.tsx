@@ -43,6 +43,12 @@ export default function EventDetailPage() {
   const [authorization, setAuthorization] = useState("");
   const [entitlement, setEntitlement] = useState<EventEntitlement | null>(null);
   const [shareLink, setShareLink] = useState("");
+  const [canvaNotice, setCanvaNotice] = useState<"complete" | "failed" | "">("");
+
+  useEffect(() => {
+    const result = new URLSearchParams(window.location.search).get("canva");
+    if (result === "complete" || result === "failed") setCanvaNotice(result);
+  }, []);
 
   useEffect(() => {
     getValidSession().then((session) => {
@@ -149,6 +155,7 @@ export default function EventDetailPage() {
   return <main className="eventManagePage">
     <header className="manageHeader"><Link className="eventsBrand" href="/">Family Weather</Link><Link className="backToEvents" href="/events">← My events</Link></header>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>
+    {canvaNotice ? <p className={canvaNotice === "complete" ? "canvaReturnNotice success" : "canvaReturnNotice error"}>{canvaNotice === "complete" ? "Your Canva invitation is saved to this event." : "The Canva invitation could not be saved. Your previous invitation artwork is still safe."}</p> : null}
     <section className="responseSummary"><article><strong>{counts.yes}</strong><span>Going</span></article><article><strong>{counts.maybe}</strong><span>Maybe</span></article><article><strong>{counts.no}</strong><span>Can’t go</span></article><article><strong>{counts.waiting}</strong><span>Waiting</span></article></section>
     {!entitlement || entitlement.status === "pending" ? <EventPurchasePanel eventId={id} authorization={authorization} entitlement={entitlement} /> : null}
     {entitlement && (entitlement.status === "paid" || entitlement.status === "legacy") ? <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>{entitlement.distribution_method === "share_link" ? "Share your invitation." : "Invite more people."}</h2><p className="panelIntro">{entitlement.distribution_method === "share_link" ? "Use your own email, Messages, social media, or other communication tools to distribute one Family Weather invitation link." : "Add recipients whenever the guest list grows. They will receive the invitation already saved for this event."}</p></div>

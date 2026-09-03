@@ -23,6 +23,7 @@ app.use(makeEventInvitationsRouter(pool, requireFirebaseUser));
 app.use(makeEventLocationsRouter(pool, requireFirebaseUser));
 app.use(makeRsvpDetailsRouter(pool, requireFirebaseUser));
 app.use(makeEventEntitlementsRouter(pool, requireFirebaseUser));
+app.use(makeCanvaJobsRouter(pool, requireFirebaseUser));
 ```
 
 The existing API-key middleware must allow:

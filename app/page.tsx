@@ -145,7 +145,7 @@ export default function Home() {
   const [saveError, setSaveError] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [inviteDesign, setInviteDesign] = useState<InvitationDesignId>("birthday-after-dark");
-  const [invitationSource, setInvitationSource] = useState<"family_weather" | "upload">("family_weather");
+  const [invitationSource, setInvitationSource] = useState<"family_weather" | "upload" | "canva">("family_weather");
   const [customArtwork, setCustomArtwork] = useState<File | null>(null);
   const [customArtworkPreview, setCustomArtworkPreview] = useState("");
   const [invitationHeadline, setInvitationHeadline] = useState("");
@@ -526,7 +526,18 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be saved");
-      if (invitationSource === "upload") {
+      if (invitationSource === "canva") {
+        const canvaResponse = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/canva/start`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${activeSession.idToken}` },
+        });
+        const canvaData = await canvaResponse.json();
+        if (!canvaResponse.ok || !canvaData.ok || !canvaData.authorization_url) {
+          throw new Error(canvaData.error || "Canva could not be opened.");
+        }
+        window.location.assign(canvaData.authorization_url);
+        return;
+      } else if (invitationSource === "upload") {
         if (!customArtwork) throw new Error("Choose your finished invitation image before saving.");
         const artworkResponse = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invitation/artwork`, {
           method: "PUT",
@@ -724,25 +735,28 @@ export default function Home() {
                       <div className="invitationSourceChooser" role="group" aria-label="Invitation artwork source">
                         <button className={invitationSource === "family_weather" ? "active" : ""} type="button" onClick={() => { setInvitationSource("family_weather"); setInvitationSaved(false); }} aria-pressed={invitationSource === "family_weather"}><strong>Use a Family Weather design</strong><small>Choose a design and fill in the details here.</small></button>
                         <button className={invitationSource === "upload" ? "active" : ""} type="button" onClick={() => { setInvitationSource("upload"); setInvitationSaved(false); }} aria-pressed={invitationSource === "upload"}><strong>Upload finished artwork</strong><small>Use a completed invitation saved on your device.</small></button>
+                        <button className={invitationSource === "canva" ? "active" : ""} type="button" onClick={() => { setInvitationSource("canva"); setInvitationSaved(false); }} aria-pressed={invitationSource === "canva"}><strong>Design in Canva</strong><small>Create something new, then bring the finished design back automatically.</small></button>
                       </div>
                       {invitationSource === "family_weather" ? <fieldset className="designChooser">
                         <legend>Choose a professional starting design</legend>
                         <div>{invitationDesigns.map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
-                      </fieldset> : <div className="customArtworkPicker">
+                      </fieldset> : invitationSource === "upload" ? <div className="customArtworkPicker">
                         <div><strong>Upload the finished invitation</strong><p>PNG, JPEG, or WebP · up to 8 MB. Family Weather will show the artwork exactly as uploaded, without placing text over it.</p></div>
                         <label className="uploadArtworkButton"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseCustomArtwork(event.target.files?.[0] || null)} /><span>{customArtwork ? "Choose a different image" : "Choose image"}</span></label>
                         {customArtwork ? <small className="customArtworkName">Selected: {customArtwork.name}</small> : null}
+                      </div> : <div className="canvaArtworkPicker">
+                        <div><small>CANVA CONNECT</small><strong>Start with a blank invitation canvas.</strong><p>Design it in Canva. When you choose Return to Family Weather, page one comes back as your finished invitation artwork.</p></div><span aria-hidden="true">C</span>
                       </div>}
                       <div className="invitationWorkArea">
-                        {invitationSource === "upload" && !customArtworkPreview ? <div className="customArtworkPlaceholder"><span>↑</span><strong>Your finished invitation will appear here.</strong></div> : <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />}
+                        {invitationSource === "canva" ? <div className="customArtworkPlaceholder canvaPlaceholder"><span>C</span><strong>Your Canva invitation will return here as finished artwork.</strong></div> : invitationSource === "upload" && !customArtworkPreview ? <div className="customArtworkPlaceholder"><span>↑</span><strong>Your finished invitation will appear here.</strong></div> : <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />}
                         {invitationSource === "family_weather" ? <div className="invitationFields">
                           <label className="formField"><span>Headline</span><input value={invitationHeadline} onChange={(event) => { setInvitationHeadline(event.target.value); setInvitationSaved(false); }} maxLength={120} placeholder={savedEvent.title} /></label>
                           <label className="formField"><span>Person, couple, or group being celebrated (optional)</span><input value={invitationHonoree} onChange={(event) => { setInvitationHonoree(event.target.value); setInvitationSaved(false); }} maxLength={160} placeholder="Maya & Jordan" /></label>
                           <label className="formField"><span>Invitation message</span><textarea value={invitationMessage} onChange={(event) => { setInvitationMessage(event.target.value); setInvitationSaved(false); }} rows={4} maxLength={500} placeholder="Please join us for a day worth remembering." /></label>
                           <label className="formField"><span>Dress code or special instructions (optional)</span><textarea value={invitationInstructions} onChange={(event) => { setInvitationInstructions(event.target.value); setInvitationSaved(false); }} rows={3} maxLength={300} placeholder="Dressy casual · Ceremony begins promptly" /></label>
-                        </div> : <div className="customArtworkExplanation"><small>FINISHED ARTWORK</small><h4>Nothing will be printed over your design.</h4><p>The event page and email will still provide the current date, time, location, invitation link, and RSVP controls around it.</p></div>}
+                        </div> : <div className="customArtworkExplanation"><small>{invitationSource === "canva" ? "DESIGN IN CANVA" : "FINISHED ARTWORK"}</small><h4>Nothing will be printed over your design.</h4><p>{invitationSource === "canva" ? "Canva opens in a new step. Finish the design there, then use Canva’s Return to Family Weather control to save it to this event." : "The event page and email will still provide the current date, time, location, invitation link, and RSVP controls around it."}</p></div>}
                       </div>
-                      <button className="primaryCta" disabled={invitationLoading || (invitationSource === "upload" && !customArtwork)}>{invitationLoading ? "Saving invitation…" : invitationSaved ? "Invitation saved" : invitationSource === "upload" ? "Save uploaded invitation" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
+                      <button className="primaryCta" disabled={invitationLoading || (invitationSource === "upload" && !customArtwork)}>{invitationLoading ? invitationSource === "canva" ? "Opening Canva…" : "Saving invitation…" : invitationSaved ? "Invitation saved" : invitationSource === "canva" ? "Design this invitation in Canva" : invitationSource === "upload" ? "Save uploaded invitation" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
                     </form>
                     {invitationSaved && session ? <EventPurchasePanel eventId={savedEvent.id} authorization={`Bearer ${session.idToken}`} /> : null}
                     {inviteError && <p className="formError">{inviteError}</p>}
