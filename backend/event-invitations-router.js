@@ -61,6 +61,28 @@ async function ownsEvent(pool, eventId, uid) {
 module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) {
   const router = express.Router();
 
+  router.get("/events/:id/invitation/manage", requireFirebaseUser, async (req, res) => {
+    const eventId = String(req.params.id || "").trim();
+    try {
+      if (!(await ownsEvent(pool, eventId, req.uid))) {
+        return res.status(404).json({ ok: false, error: "event_not_found_or_not_owner" });
+      }
+      const result = await pool.query(
+        `SELECT event_id, design_id, headline, honoree_names, message,
+                special_instructions, photo_url,
+                (artwork_data IS NOT NULL) AS has_custom_artwork,
+                artwork_mime, created_at, updated_at
+         FROM event_invitations
+         WHERE event_id = $1`,
+        [eventId]
+      );
+      return res.json({ ok: true, invitation: result.rows[0] || null });
+    } catch (error) {
+      console.error("invitation_manage_fetch_failed", error);
+      return res.status(500).json({ ok: false, error: "invitation_fetch_failed" });
+    }
+  });
+
   // Guest-facing invitation data. Event facts are already public through the
   // token resolver; this endpoint only supplies the selected presentation.
   router.get("/events/:id/invitation", async (req, res) => {
@@ -99,6 +121,26 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
       return res.send(result.rows[0].artwork_data);
     } catch (error) {
       console.error("invitation_artwork_fetch_failed", error);
+      return res.status(500).end();
+    }
+  });
+
+  router.get("/events/:id/invitation/artwork/manage", requireFirebaseUser, async (req, res) => {
+    const eventId = String(req.params.id || "").trim();
+    try {
+      if (!(await ownsEvent(pool, eventId, req.uid))) return res.status(404).end();
+      const result = await pool.query(
+        `SELECT artwork_data, artwork_mime
+         FROM event_invitations
+         WHERE event_id = $1 AND artwork_data IS NOT NULL`,
+        [eventId]
+      );
+      if (!result.rowCount) return res.status(404).end();
+      res.set("Content-Type", result.rows[0].artwork_mime);
+      res.set("Cache-Control", "private, no-store");
+      return res.send(result.rows[0].artwork_data);
+    } catch (error) {
+      console.error("invitation_artwork_manage_fetch_failed", error);
       return res.status(500).end();
     }
   });

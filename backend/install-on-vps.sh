@@ -70,13 +70,20 @@ if (
   (req.method === "GET" || req.method === "PUT") &&
   /^\\/events\\/[^/]+\\/invitation(?:\\?|$)/.test(url)
 ) return next();'''
-allow_block = '''// Invitation design endpoints. Owner-only write routes verify Firebase themselves.
+previous_allow_block = '''// Invitation design endpoints. Owner-only write routes verify Firebase themselves.
 if (
   (req.method === "GET" || req.method === "PUT" || req.method === "DELETE") &&
   /^\\/events\\/[^/]+\\/invitation(?:\\/artwork)?(?:\\?|$)/.test(url)
 ) return next();'''
+allow_block = '''// Invitation design endpoints. Owner-only write routes verify Firebase themselves.
+if (
+  (req.method === "GET" || req.method === "PUT" || req.method === "DELETE") &&
+  /^\\/events\\/[^/]+\\/invitation(?:\\/manage|\\/artwork(?:\\/manage)?)?(?:\\?|$)/.test(url)
+) return next();'''
 if legacy_allow_block in text:
     text = text.replace(legacy_allow_block, allow_block, 1)
+elif previous_allow_block in text:
+    text = text.replace(previous_allow_block, allow_block, 1)
 elif "Invitation design endpoints" not in text:
     marker = 'if (req.method === "OPTIONS") return next();'
     if marker not in text:

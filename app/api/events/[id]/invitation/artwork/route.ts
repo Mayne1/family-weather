@@ -9,6 +9,25 @@ function authorization(request: NextRequest) {
   return value.startsWith("Bearer ") ? value : null;
 }
 
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const auth = authorization(request);
+  if (!auth) return NextResponse.json({ ok: false, error: "Sign in to view artwork." }, { status: 401 });
+  const { id } = await context.params;
+  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation/artwork/manage`), {
+    headers: { Authorization: auth },
+    cache: "no-store",
+  });
+  if (!response.ok) return new NextResponse(null, { status: response.status });
+  const artwork = await response.arrayBuffer();
+  return new NextResponse(artwork, {
+    status: 200,
+    headers: {
+      "Content-Type": response.headers.get("content-type") || "image/png",
+      "Cache-Control": "private, no-store",
+    },
+  });
+}
+
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const auth = authorization(request);
   if (!auth) return NextResponse.json({ ok: false, error: "Sign in before uploading artwork." }, { status: 401 });

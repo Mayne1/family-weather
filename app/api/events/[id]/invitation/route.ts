@@ -7,7 +7,10 @@ async function forward(request: NextRequest, id: string, method: "GET" | "PUT") 
     return NextResponse.json({ ok: false, error: "Sign in to manage this invitation." }, { status: 401 });
   }
 
-  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation`), {
+  const backendPath = method === "GET"
+    ? `/events/${encodeURIComponent(id)}/invitation/manage`
+    : `/events/${encodeURIComponent(id)}/invitation`;
+  const response = await fetch(backendUrl(backendPath), {
     method,
     headers: {
       Authorization: authorization,
