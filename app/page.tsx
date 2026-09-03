@@ -145,6 +145,9 @@ export default function Home() {
   const [saveError, setSaveError] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [inviteDesign, setInviteDesign] = useState<InvitationDesignId>("birthday-after-dark");
+  const [invitationSource, setInvitationSource] = useState<"family_weather" | "upload">("family_weather");
+  const [customArtwork, setCustomArtwork] = useState<File | null>(null);
+  const [customArtworkPreview, setCustomArtworkPreview] = useState("");
   const [invitationHeadline, setInvitationHeadline] = useState("");
   const [invitationHonoree, setInvitationHonoree] = useState("");
   const [invitationMessage, setInvitationMessage] = useState("");
@@ -487,6 +490,25 @@ export default function Home() {
     honoree_names: invitationHonoree,
     message: invitationMessage,
     special_instructions: invitationInstructions,
+    photo_url: invitationSource === "upload" ? customArtworkPreview : null,
+  };
+
+  const chooseCustomArtwork = (file: File | null) => {
+    setInviteError("");
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setInviteError("Upload a PNG, JPEG, or WebP invitation image.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setInviteError("Invitation artwork must be 8 MB or smaller.");
+      return;
+    }
+    if (customArtworkPreview.startsWith("blob:")) URL.revokeObjectURL(customArtworkPreview);
+    setCustomArtwork(file);
+    setCustomArtworkPreview(URL.createObjectURL(file));
+    setInvitationSource("upload");
+    setInvitationSaved(false);
   };
 
   const saveInvitation = async (event: FormEvent<HTMLFormElement>) => {
@@ -504,6 +526,23 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be saved");
+      if (invitationSource === "upload") {
+        if (!customArtwork) throw new Error("Choose your finished invitation image before saving.");
+        const artworkResponse = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invitation/artwork`, {
+          method: "PUT",
+          headers: { "Content-Type": customArtwork.type, Authorization: `Bearer ${activeSession.idToken}` },
+          body: customArtwork,
+        });
+        const artworkData = await artworkResponse.json();
+        if (!artworkResponse.ok || !artworkData.ok) throw new Error(artworkData.error || "Invitation artwork could not be saved");
+      } else {
+        const artworkResponse = await fetch(`/api/events/${encodeURIComponent(savedEvent.id)}/invitation/artwork`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${activeSession.idToken}` },
+        });
+        const artworkData = await artworkResponse.json();
+        if (!artworkResponse.ok || !artworkData.ok) throw new Error(artworkData.error || "Invitation design could not be saved");
+      }
       setInvitationSaved(true);
     } catch (error) {
       setInviteError(error instanceof Error ? error.message : "Invitation could not be saved");
@@ -682,20 +721,28 @@ export default function Home() {
                   <div className="inviteBuilder">
                     <div><small>03 · DESIGN THE INVITATION</small><h3>Give people something worth keeping.</h3><p>This is the actual guest-facing invitation. The RSVP page remains a separate, temporary form for recording an answer.</p></div>
                     <form className="invitationCustomizer" onSubmit={saveInvitation}>
-                      <fieldset className="designChooser">
+                      <div className="invitationSourceChooser" role="group" aria-label="Invitation artwork source">
+                        <button className={invitationSource === "family_weather" ? "active" : ""} type="button" onClick={() => { setInvitationSource("family_weather"); setInvitationSaved(false); }} aria-pressed={invitationSource === "family_weather"}><strong>Use a Family Weather design</strong><small>Choose a design and fill in the details here.</small></button>
+                        <button className={invitationSource === "upload" ? "active" : ""} type="button" onClick={() => { setInvitationSource("upload"); setInvitationSaved(false); }} aria-pressed={invitationSource === "upload"}><strong>Upload finished artwork</strong><small>Use a completed invitation saved on your device.</small></button>
+                      </div>
+                      {invitationSource === "family_weather" ? <fieldset className="designChooser">
                         <legend>Choose a professional starting design</legend>
                         <div>{invitationDesigns.map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
-                      </fieldset>
+                      </fieldset> : <div className="customArtworkPicker">
+                        <div><strong>Upload the finished invitation</strong><p>PNG, JPEG, or WebP · up to 8 MB. Family Weather will show the artwork exactly as uploaded, without placing text over it.</p></div>
+                        <label className="uploadArtworkButton"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseCustomArtwork(event.target.files?.[0] || null)} /><span>{customArtwork ? "Choose a different image" : "Choose image"}</span></label>
+                        {customArtwork ? <small className="customArtworkName">Selected: {customArtwork.name}</small> : null}
+                      </div>}
                       <div className="invitationWorkArea">
-                        <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />
-                        <div className="invitationFields">
+                        {invitationSource === "upload" && !customArtworkPreview ? <div className="customArtworkPlaceholder"><span>↑</span><strong>Your finished invitation will appear here.</strong></div> : <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />}
+                        {invitationSource === "family_weather" ? <div className="invitationFields">
                           <label className="formField"><span>Headline</span><input value={invitationHeadline} onChange={(event) => { setInvitationHeadline(event.target.value); setInvitationSaved(false); }} maxLength={120} placeholder={savedEvent.title} /></label>
                           <label className="formField"><span>Person, couple, or group being celebrated (optional)</span><input value={invitationHonoree} onChange={(event) => { setInvitationHonoree(event.target.value); setInvitationSaved(false); }} maxLength={160} placeholder="Maya & Jordan" /></label>
                           <label className="formField"><span>Invitation message</span><textarea value={invitationMessage} onChange={(event) => { setInvitationMessage(event.target.value); setInvitationSaved(false); }} rows={4} maxLength={500} placeholder="Please join us for a day worth remembering." /></label>
                           <label className="formField"><span>Dress code or special instructions (optional)</span><textarea value={invitationInstructions} onChange={(event) => { setInvitationInstructions(event.target.value); setInvitationSaved(false); }} rows={3} maxLength={300} placeholder="Dressy casual · Ceremony begins promptly" /></label>
-                        </div>
+                        </div> : <div className="customArtworkExplanation"><small>FINISHED ARTWORK</small><h4>Nothing will be printed over your design.</h4><p>The event page and email will still provide the current date, time, location, invitation link, and RSVP controls around it.</p></div>}
                       </div>
-                      <button className="primaryCta" disabled={invitationLoading}>{invitationLoading ? "Saving invitation…" : invitationSaved ? "Invitation saved" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
+                      <button className="primaryCta" disabled={invitationLoading || (invitationSource === "upload" && !customArtwork)}>{invitationLoading ? "Saving invitation…" : invitationSaved ? "Invitation saved" : invitationSource === "upload" ? "Save uploaded invitation" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
                     </form>
                     {invitationSaved && session ? <EventPurchasePanel eventId={savedEvent.id} authorization={`Bearer ${session.idToken}`} /> : null}
                     {inviteError && <p className="formError">{inviteError}</p>}

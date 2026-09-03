@@ -21,6 +21,16 @@ export default function InvitationCard({ invitation, event, compact = false }: P
   const date = starts?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
   const time = starts?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) || "Time to be announced";
 
+  if (invitation.photo_url) {
+    return (
+      <article className={`digitalInvitation customInvitationArtwork${compact ? " compact" : ""}`}>
+        {/* The host uploads completed artwork. It is intentionally shown without overlays or alterations. */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- authenticated previews can use a temporary blob URL. */}
+        <img src={invitation.photo_url} alt={`${invitation.headline || event.title} invitation`} />
+      </article>
+    );
+  }
+
   return (
     <article
       className={`digitalInvitation invitationDesign-${design.id}${compact ? " compact" : ""}`}

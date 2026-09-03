@@ -4,6 +4,7 @@ This folder contains deliberately small backend additions for durable digital in
 
 - `event-invitations.sql` adds one invitation record per event. Existing events, invite tokens, and RSVP responses remain unchanged.
 - `event-invitations-router.js` adds a public read endpoint and an owner-only save endpoint.
+- Finished PNG, JPEG, or WebP invitation artwork can be stored with that record (8 MB maximum). Upload and removal require the event owner; artwork reads require a current invitation token.
 - `event-locations.sql` stores the resolved WGS84 latitude/longitude and normalized international place metadata once per event.
 - `event-locations-router.js` adds owner-only read and save endpoints without changing the existing event table.
 - `invites-rsvp.sql` and `invites_pg.js` persist the guest name, guest count, and message collected by the RSVP form.

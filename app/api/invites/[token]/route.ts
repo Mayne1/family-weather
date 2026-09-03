@@ -14,6 +14,10 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     if (!eventResponse.ok || !eventData.ok) return NextResponse.json(eventData, { status: eventResponse.status });
     const invitationResponse = await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}/invitation`), { cache: "no-store" });
     const invitationData = await invitationResponse.json().catch(() => null);
+    const invitation = invitationResponse.ok && invitationData?.ok ? invitationData.invitation : null;
+    if (invitation?.has_custom_artwork) {
+      invitation.photo_url = `/api/invites/${encodeURIComponent(token)}/keepsake`;
+    }
     return NextResponse.json({
       ok: true,
       valid: true,
@@ -26,7 +30,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
         starts_at: eventData.event?.starts_at,
         ends_at: eventData.event?.ends_at,
       },
-      invitation: invitationResponse.ok && invitationData?.ok ? invitationData.invitation : null,
+      invitation,
     });
   } catch (error) {
     console.error("Invitation lookup failed", error);

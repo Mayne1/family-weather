@@ -367,6 +367,8 @@ to{opacity:1;transform:none}
 .inviteBuilder h3{margin:.4rem 0;font-size:1.25rem}
 .inviteBuilder p{margin:0 0 1rem;color:var(--muted);font-size:.82rem}
 .invitationCustomizer{display:grid;gap:1rem}
+.invitationSourceChooser{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:.9rem}.invitationSourceChooser button{padding:1rem;border:1px solid var(--line);border-radius:15px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}.invitationSourceChooser button strong,.invitationSourceChooser button small{display:block}.invitationSourceChooser button small{margin-top:.3rem;color:var(--muted);font-size:.68rem;line-height:1.4;letter-spacing:0}.invitationSourceChooser button.active{border-color:#d4a94f;background:#fff9e8;box-shadow:0 0 0 2px rgba(212,169,79,.2)}
+.customArtworkPicker{padding:1rem;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.65rem 1rem;border:1px dashed #7aa1aa;border-radius:15px;background:#f2f8f7}.customArtworkPicker strong{display:block}.customArtworkPicker p{margin:.25rem 0 0}.uploadArtworkButton input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.uploadArtworkButton span{display:inline-block;padding:.78rem 1rem;border-radius:999px;background:var(--ink);color:white;font-size:.72rem;font-weight:900;cursor:pointer}.customArtworkName{grid-column:1/-1;color:#286e7e!important;letter-spacing:0!important}.customArtworkPlaceholder{min-height:360px;padding:2rem;border:1px dashed #7aa1aa;border-radius:14px;display:grid;place-items:center;align-content:center;gap:.6rem;background:#f2f8f7;color:#397b8a;text-align:center}.customArtworkPlaceholder span{font-size:2rem}.customArtworkExplanation{padding:1rem;border-radius:14px;background:#f7f5ef}.customArtworkExplanation h4{margin:.35rem 0 .55rem;font-size:1.15rem}.customArtworkExplanation p{margin:0;line-height:1.55}
 .invitationWorkArea{display:grid;grid-template-columns:minmax(260px,.86fr) minmax(260px,1.14fr);gap:1rem;align-items:start}
 .invitationFields{display:grid;gap:.75rem}
 .invitePeopleForm{display:grid;gap:1rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)}
@@ -392,6 +394,7 @@ to{opacity:1;transform:none}
 .inviteResults button,.inviteResults a{border:0;background:white;border-radius:999px;padding:.5rem .7rem;color:#286e7e;font-size:.72rem;font-weight:800;text-decoration:none;cursor:pointer}
 
 .digitalInvitation{--invitation-art:none;--invitation-aspect:4/5;position:relative;isolation:isolate;overflow:hidden;width:100%;aspect-ratio:var(--invitation-aspect);border-radius:18px;background:#ede8dc var(--invitation-art) center/cover no-repeat;color:#18292d;box-shadow:0 18px 45px rgba(7,27,37,.18)}
+.customInvitationArtwork{height:auto;aspect-ratio:auto;background:#ede8dc}.customInvitationArtwork img{display:block;width:100%;height:auto;object-fit:contain}
 .digitalInvitationShade{position:absolute;z-index:-1;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.94) 33% 76%,rgba(255,255,255,.12))}
 .digitalInvitationContent{height:100%;padding:19% 9% 9%;display:flex;flex-direction:column;align-items:center;text-align:center}
 .digitalInvitationCategory{margin:0 0 .65rem!important;font-size:.61rem!important;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:inherit!important}
@@ -472,6 +475,7 @@ to{opacity:1;transform:none}
 
 @media(max-width:600px){.inviteResults article{grid-template-columns:1fr auto}
 .inviteResults a{display:none}
+.invitationSourceChooser{grid-template-columns:1fr}.customArtworkPicker{grid-template-columns:1fr}.uploadArtworkButton{justify-self:start}
 .designChooser>div{grid-template-columns:1fr 1fr}
 .designChooser button{min-height:68px}.designChooser button>b{flex-basis:38px;width:38px;height:44px}
 .invitationWorkArea{grid-template-columns:1fr}.digitalInvitation.compact{width:min(340px,100%);margin:auto}

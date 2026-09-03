@@ -12,3 +12,7 @@ CREATE TABLE IF NOT EXISTS event_invitations (
 
 CREATE INDEX IF NOT EXISTS event_invitations_design_id_idx
   ON event_invitations(design_id);
+
+ALTER TABLE event_invitations
+  ADD COLUMN IF NOT EXISTS artwork_data BYTEA,
+  ADD COLUMN IF NOT EXISTS artwork_mime TEXT;

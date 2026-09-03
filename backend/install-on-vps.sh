@@ -58,12 +58,19 @@ entitlement_require_line = 'const makeEventEntitlementsRouter = require("./route
 if entitlement_require_line not in text:
     text = text.replace(rsvp_require_line, rsvp_require_line + "\n" + entitlement_require_line, 1)
 
-allow_block = '''// Invitation design endpoints. The PUT route verifies the Firebase owner itself.
+legacy_allow_block = '''// Invitation design endpoints. The PUT route verifies the Firebase owner itself.
 if (
   (req.method === "GET" || req.method === "PUT") &&
   /^\\/events\\/[^/]+\\/invitation(?:\\?|$)/.test(url)
 ) return next();'''
-if "Invitation design endpoints" not in text:
+allow_block = '''// Invitation design endpoints. Owner-only write routes verify Firebase themselves.
+if (
+  (req.method === "GET" || req.method === "PUT" || req.method === "DELETE") &&
+  /^\\/events\\/[^/]+\\/invitation(?:\\/artwork)?(?:\\?|$)/.test(url)
+) return next();'''
+if legacy_allow_block in text:
+    text = text.replace(legacy_allow_block, allow_block, 1)
+elif "Invitation design endpoints" not in text:
     marker = 'if (req.method === "OPTIONS") return next();'
     if marker not in text:
         raise SystemExit("Could not find the API-key allowlist insertion point.")

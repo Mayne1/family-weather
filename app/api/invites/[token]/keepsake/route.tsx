@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { getInvitationDesign, suggestedInvitationDesign } from "../../../../invitations/catalog";
 import type { InvitationRecord } from "../../../../invitations/catalog";
+import { backendUrl } from "../../../../lib/serverConfig";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,21 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
     design_id: suggestedInvitationDesign(event.description),
     headline: event.title,
   };
+  if (invitation.has_custom_artwork && invitation.event_id) {
+    const artworkResponse = await fetch(
+      backendUrl(`/events/${encodeURIComponent(invitation.event_id)}/invitation/artwork?token=${encodeURIComponent(token)}`),
+      { cache: "no-store" },
+    );
+    if (artworkResponse.ok) {
+      return new Response(artworkResponse.body, {
+        status: 200,
+        headers: {
+          "Content-Type": artworkResponse.headers.get("content-type") || invitation.artwork_mime || "application/octet-stream",
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
+    }
+  }
   const design = getInvitationDesign(invitation.design_id);
   const dark = ["graduation-ascent", "birthday-after-dark", "wedding-midnight-crest", "wedding-candlelit-wood", "wedding-burgundy-bloom", "wedding-sunset-vows", "wedding-deco-noir"].includes(design.id);
   const ink = dark ? "#fffaf0" : "#172f37";

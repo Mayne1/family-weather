@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from "next/server";
+import { backendUrl } from "../../../../../lib/serverConfig";
+
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_ARTWORK_BYTES = 8 * 1024 * 1024;
+
+function authorization(request: NextRequest) {
+  const value = request.headers.get("authorization") || "";
+  return value.startsWith("Bearer ") ? value : null;
+}
+
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const auth = authorization(request);
+  if (!auth) return NextResponse.json({ ok: false, error: "Sign in before uploading artwork." }, { status: 401 });
+  const mime = String(request.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
+  if (!ALLOWED_TYPES.has(mime)) {
+    return NextResponse.json({ ok: false, error: "Upload a PNG, JPEG, or WebP image." }, { status: 415 });
+  }
+  const declaredSize = Number(request.headers.get("content-length") || 0);
+  if (declaredSize > MAX_ARTWORK_BYTES) {
+    return NextResponse.json({ ok: false, error: "Invitation artwork must be 8 MB or smaller." }, { status: 413 });
+  }
+  const artwork = await request.arrayBuffer();
+  if (!artwork.byteLength) return NextResponse.json({ ok: false, error: "Choose an invitation image first." }, { status: 400 });
+  if (artwork.byteLength > MAX_ARTWORK_BYTES) {
+    return NextResponse.json({ ok: false, error: "Invitation artwork must be 8 MB or smaller." }, { status: 413 });
+  }
+  const { id } = await context.params;
+  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation/artwork`), {
+    method: "PUT",
+    headers: { Authorization: auth, "Content-Type": mime, "Content-Length": String(artwork.byteLength) },
+    body: artwork,
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.ok) {
+    const error = data?.error === "artwork_too_large"
+      ? "Invitation artwork must be 8 MB or smaller."
+      : data?.error === "invalid_artwork_type"
+        ? "Upload a PNG, JPEG, or WebP image."
+        : "Invitation artwork could not be saved.";
+    return NextResponse.json({ ok: false, error }, { status: response.status });
+  }
+  return NextResponse.json({ ok: true, has_custom_artwork: true });
+}
+
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const auth = authorization(request);
+  if (!auth) return NextResponse.json({ ok: false, error: "Sign in before removing artwork." }, { status: 401 });
+  const { id } = await context.params;
+  const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation/artwork`), {
+    method: "DELETE",
+    headers: { Authorization: auth },
+    cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  return NextResponse.json(
+    response.ok && data?.ok ? { ok: true, has_custom_artwork: false } : { ok: false, error: "Invitation artwork could not be removed." },
+    { status: response.status },
+  );
+}
