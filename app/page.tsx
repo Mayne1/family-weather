@@ -107,6 +107,7 @@ function calendarDateText(value: string, options: Intl.DateTimeFormatOptions) {
 
 export default function Home() {
   const [activity, setActivity] = useState("cookout");
+  const [customActivity, setCustomActivity] = useState("");
   const [date, setDate] = useState(0);
   const [customDate, setCustomDate] = useState("");
   const [showResult, setShowResult] = useState(false);
@@ -305,6 +306,7 @@ export default function Home() {
   const dateChoices = availableDays.slice(0, 4);
   const chosenDay = dateChoices[date] || availableDays[0] || null;
   const selectedDate = customDate || chosenDay?.date || homeLocalDate;
+  const selectedActivity = activity === "plan" ? customActivity.trim() : activity;
   const selectedDay = plan?.day || chosenDay;
   const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
 
@@ -316,7 +318,7 @@ export default function Home() {
       const response = await fetch("/api/weather/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: plannerLocation, resolvedLocation: plannerResolved, date: selectedDate, activity, space: "outdoor" }),
+        body: JSON.stringify({ location: plannerLocation, resolvedLocation: plannerResolved, date: selectedDate, activity: selectedActivity, space: "outdoor" }),
       });
       const data = await response.json();
       if (!response.ok || !data.ok) {
@@ -612,9 +614,10 @@ export default function Home() {
             <p className="stepLabel">Plan something</p><h2>What are we doing?</h2>
             <div className="activityGrid" role="group" aria-label="Choose an activity" data-tour="activity">
               {activities.map(([value, icon, label]) => (
-                <button key={value} className={`activity ${activity === value ? "active" : ""}`} onClick={() => setActivity(value)} type="button"><span>{icon}</span>{label}</button>
+                <button key={value} className={`activity ${activity === value ? "active" : ""}`} onClick={() => setActivity(value)} type="button" aria-pressed={activity === value}><span>{icon}</span>{label}</button>
               ))}
             </div>
+            {activity === "plan" && <label className="customActivityField"><span>What do you have in mind?</span><input autoFocus type="text" value={customActivity} onChange={(event) => setCustomActivity(event.target.value)} placeholder="Example: picnic, hike, or reunion" maxLength={60} /></label>}
             <label className="fieldLabel" htmlFor="location">Where?</label>
             <div className="inputShell" data-tour="location"><span aria-hidden="true">⌖</span><LocationSearchInput id="location" value={plannerLocation} placeholder="Venue, address, city, landmark, or destination" forcedSuggestions={plannerSuggestions} onChange={(value) => { setPlannerLocation(value); setPlannerResolved(null); setPlannerSuggestions([]); }} onSelect={(candidate) => { setPlannerLocation(candidate.label); setPlannerResolved(candidate); setPlannerSuggestions([]); }} /><button type="button" onClick={useCurrentLocation} disabled={locationLoading} aria-label="Use current location">{locationLoading ? "…" : "◎"}</button></div>
             <div className="tourDateBlock" data-tour="date">
@@ -630,7 +633,7 @@ export default function Home() {
               <span className="otherDateCopy"><strong>Choose another date</strong><small>Any future day</small></span>
               <input type="date" min={homeLocalDate || undefined} value={customDate} onChange={(event) => setCustomDate(event.target.value)} aria-label="Choose another future date" />
               </label>
-              <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
+              <button className="primaryCta" type="button" onClick={checkPlan} disabled={planLoading || !selectedDate || !selectedActivity}>{planLoading ? "Checking the sky…" : "Check my plan"} <span>→</span></button>
               {planError && <p className="formError" role="alert">{planError}</p>}
               <p className="quietNote">No account needed to check the weather.</p>
             </div>
@@ -678,7 +681,7 @@ export default function Home() {
 
       {tourMode === "active" && <section className={`tourPanel ${tourSteps[tourStep].placement}`} role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="tour-step-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><div className="tourProgress" aria-hidden="true">{tourSteps.map((_, index) => <i className={index <= tourStep ? "active" : ""} key={index} />)}</div><p className="tourLabel">{tourSteps[tourStep].label}</p><h2 id="tour-step-title">{tourSteps[tourStep].title}</h2><p>{tourSteps[tourStep].copy}</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={() => tourStep === 0 ? closeTour() : setTourStep((current) => current - 1)}>{tourStep === 0 ? "Skip" : "Back"}</button><button className="tourPrimary" type="button" onClick={advanceTour}>{tourStep === tourSteps.length - 1 ? "Finish" : "Next"} <span>→</span></button></div></section>}
 
-      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${activity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${selectedActivity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 
       {selectedOutlookDay && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="outlook-detail-title" onMouseDown={(event) => event.target === event.currentTarget && setSelectedOutlookDay(null)}><div className="modalCard outlookDetail"><button className="close" type="button" onClick={() => setSelectedOutlookDay(null)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Daily details</p><h2 id="outlook-detail-title">{new Date(`${selectedOutlookDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h2><p>{selectedOutlookDay.shortForecast || weatherDescription(selectedOutlookDay.weather_code)}</p><div className="outlookFacts"><div><small>HIGH</small><strong>{selectedOutlookDay.temp_max_f}°</strong></div><div><small>LOW</small><strong>{selectedOutlookDay.temp_min_f}°</strong></div><div><small>RAIN</small><strong>{selectedOutlookDay.precip_prob_pct}%</strong></div><div><small>WIND</small><strong>{selectedOutlookDay.wind_max_mph} mph</strong></div></div></div></div>}
 
@@ -698,7 +701,7 @@ export default function Home() {
 
                 <div className="formGrid">
                   <label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label>
-                  <label className="formField"><span>Activity</span><select name="activity" defaultValue={activity}><option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
+                  <label className="formField"><span>Activity</span><select name="activity" defaultValue={selectedActivity || "other"}>{activity === "plan" && selectedActivity && <option value={selectedActivity}>{selectedActivity}</option>}<option>cookout</option><option>birthday</option><option>park day</option><option>game</option><option>concert</option><option>family gathering</option><option>other</option></select></label>
                   <label className="formField"><span>Guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label>
                   <label className="formField full"><span>Venue, landmark, address, city, or postal code</span><LocationSearchInput id="event-location" name="location" required value={eventLocation} forcedSuggestions={eventSuggestions} onChange={(value) => { setEventLocation(value); setEventResolved(null); setEventSuggestions([]); }} onSelect={(candidate) => { setEventLocation(candidate.label); setEventResolved(candidate); setEventSuggestions([]); }} /></label>
                   <label className="formField"><span>Date</span><input name="date" type="date" defaultValue={selectedDate} /></label>
