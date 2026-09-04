@@ -8,7 +8,7 @@ import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
 import LocationSearchInput from "./components/LocationSearchInput";
 import EventPurchasePanel from "./components/EventPurchasePanel";
-import { invitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
+import { rankedInvitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
 import type { LocationCandidate } from "./lib/location";
 
@@ -744,7 +744,7 @@ export default function Home() {
                       </div>
                       {invitationSource === "family_weather" ? <fieldset className="designChooser">
                         <legend>Choose a professional starting design</legend>
-                        <div>{invitationDesigns.map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
+                        <div>{rankedInvitationDesigns(eventDetails?.activity).map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
                       </fieldset> : invitationSource === "upload" ? <div className="customArtworkPicker">
                         <div><strong>Upload the finished invitation</strong><p>PNG, JPEG, or WebP · up to 8 MB. Family Weather will show the artwork exactly as uploaded, without placing text over it.</p></div>
                         <label className="uploadArtworkButton"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseCustomArtwork(event.target.files?.[0] || null)} /><span>{customArtwork ? "Choose a different image" : "Choose image"}</span></label>
