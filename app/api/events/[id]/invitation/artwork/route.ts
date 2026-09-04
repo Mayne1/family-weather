@@ -4,6 +4,13 @@ import { backendUrl } from "../../../../../lib/serverConfig";
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_ARTWORK_BYTES = 8 * 1024 * 1024;
 
+function matchesImageType(bytes: Uint8Array, mime: string) {
+  if (mime === "image/png") return bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+  if (mime === "image/jpeg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (mime === "image/webp") return bytes.length >= 12 && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
+  return false;
+}
+
 function authorization(request: NextRequest) {
   const value = request.headers.get("authorization") || "";
   return value.startsWith("Bearer ") ? value : null;
@@ -43,6 +50,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   if (!artwork.byteLength) return NextResponse.json({ ok: false, error: "Choose an invitation image first." }, { status: 400 });
   if (artwork.byteLength > MAX_ARTWORK_BYTES) {
     return NextResponse.json({ ok: false, error: "Invitation artwork must be 8 MB or smaller." }, { status: 413 });
+  }
+  if (!matchesImageType(new Uint8Array(artwork), mime)) {
+    return NextResponse.json({ ok: false, error: "The uploaded file does not match its image type." }, { status: 415 });
   }
   const { id } = await context.params;
   const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/invitation/artwork`), {

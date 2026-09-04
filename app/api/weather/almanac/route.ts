@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAlmanac } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
+import { enforceRateLimit } from "../../../lib/requestSecurity";
 
 export async function POST(request: NextRequest) {
+  const limited = enforceRateLimit(request, "weather-almanac", 20, 60_000);
+  if (limited) return limited;
   try {
     const body = await request.json();
     const location = String(body.location || "95206").trim();

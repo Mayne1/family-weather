@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendUrl, publicOrigin } from "../../../../lib/serverConfig";
 import type { DistributionMethod } from "../../../../lib/entitlementTypes";
+import { enforceRateLimit } from "../../../../lib/requestSecurity";
 
 const PRODUCT_CODE = "family_weather_launch_event_599";
 const METHODS = new Set<DistributionMethod>(["email", "share_link"]);
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const limited = enforceRateLimit(request, "checkout", 10, 10 * 60_000);
+  if (limited) return limited;
   const authorization = request.headers.get("authorization") || "";
   if (!authorization.startsWith("Bearer ")) return NextResponse.json({ ok: false, error: "Sign in before purchasing this event." }, { status: 401 });
   const secret = process.env.STRIPE_SECRET_KEY?.trim();

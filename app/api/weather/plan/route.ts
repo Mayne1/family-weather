@@ -3,6 +3,7 @@ import { lookupAlmanac } from "../../../lib/almanac";
 import type { AlmanacResult } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
+import { enforceRateLimit } from "../../../lib/requestSecurity";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
 
@@ -146,6 +147,8 @@ async function globalForecast(geo: LocationCandidate, date: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = enforceRateLimit(request, "weather-plan", 30, 60_000);
+  if (limited) return limited;
   try {
     const body = await request.json();
     const location = String(body.location || "95206").trim();

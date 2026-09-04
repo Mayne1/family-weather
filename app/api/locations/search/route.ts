@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchLocations } from "../../../lib/location";
+import { enforceRateLimit } from "../../../lib/requestSecurity";
 
 export async function GET(request: NextRequest) {
+  const limited = enforceRateLimit(request, "location-search", 90, 60_000);
+  if (limited) return limited;
   const query = String(request.nextUrl.searchParams.get("q") || "").trim();
   if (query.length < 2) return NextResponse.json({ ok: true, suggestions: [] });
   try {

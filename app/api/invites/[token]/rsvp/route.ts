@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendUrl } from "../../../../lib/serverConfig";
+import { enforceRateLimit } from "../../../../lib/requestSecurity";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ token: string }> }) {
+  const limited = enforceRateLimit(request, "public-rsvp", 12, 5 * 60_000);
+  if (limited) return limited;
   try {
     const { token } = await context.params;
     const body = await request.json();
