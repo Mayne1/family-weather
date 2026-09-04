@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Privacy Policy — Family Weather",
   description: "How Family Weather collects, uses, protects and shares information.",
   alternates: { canonical: "/privacy" },
+  openGraph: {
+    title: "Privacy Policy — Family Weather",
+    description: "How Family Weather collects, uses, protects and shares information.",
+    url: "/privacy",
+  },
 };
 
 export default function PrivacyPage() {

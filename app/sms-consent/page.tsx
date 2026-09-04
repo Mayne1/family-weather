@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "SMS Consent Terms — Family Weather",
   description: "Consent, frequency, help and opt-out terms for Family Weather text messages.",
   alternates: { canonical: "/sms-consent" },
+  openGraph: {
+    title: "SMS Consent Terms — Family Weather",
+    description: "Consent, frequency, help and opt-out terms for Family Weather text messages.",
+    url: "/sms-consent",
+  },
 };
 
 export default function SmsConsentPage() {

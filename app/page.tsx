@@ -585,13 +585,13 @@ export default function Home() {
           <span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span>
         </a>
         <nav className="desktopNav" aria-label="Primary navigation">
-          <a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link>
+          <a href="#planner">Event planner</a><a href="#outlook">Forecast</a><a href="#almanac">Weather history</a><a href="#how">How it works</a><Link href="/events">My events</Link>
         </nav>
         <div className="headerActions">
           {session ? <button className="textButton accountButton" type="button" onClick={() => { signOut(); setSession(null); }}><span className="accountEmail">{session.email} · </span>Sign out</button> : <><button className="textButton accountButton" type="button" onClick={() => { setAuthMode("signin"); setAuthError(""); setShowAuth(true); }}>Sign in</button><button className="signupButton accountButton" type="button" onClick={() => { setAuthMode("signup"); setAuthError(""); setShowAuth(true); }}>Sign up</button></>}
           <button className="pillButton" type="button" onClick={openEvent} data-tour="create">Create event</button>
         </div>
-        <nav className="mobileNav" aria-label="Mobile navigation"><a href="#top">Home</a><a href="#planner">Plan</a><a href="#outlook">Outlook</a><a href="#almanac">Almanac</a><a href="#how">How it works</a><Link href="/events">My events</Link></nav>
+        <nav className="mobileNav" aria-label="Mobile navigation"><a href="#top">Home</a><a href="#planner">Event planner</a><a href="#outlook">Forecast</a><a href="#almanac">Weather history</a><a href="#how">How it works</a><Link href="/events">My events</Link></nav>
       </header>
 
       <main id="top">
@@ -599,7 +599,7 @@ export default function Home() {
           <div className="heroCopy">
             <p className="eyebrow"><span /> {homeLocation} · {locationDateTime(homeWeather?.timezone, clock, "date")}</p>
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
-            <p className="intro">Family Weather turns the forecast into a simple decision—when to go, what to expect, and what your people need to know.</p>
+            <p className="intro">Family Weather is an event weather planner that helps you choose a better date and time with live forecasts or five-year weather history—then create a digital invitation and manage RSVPs in one place.</p>
             <div className="decisionCard">
               <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>{homeWeather?.current ? "LIVE" : homeWeather ? "UNAVAILABLE" : "LOADING"}</strong></div>
               <div className="decisionMain">
@@ -669,7 +669,7 @@ export default function Home() {
           <div className="steps">
             <article><span>01</span><h3>Tell us the plan</h3><p>Pick the activity, place and date. Checking a plan doesn’t require an account.</p></article>
             <article><span>02</span><h3>Get a real answer</h3><p>See the best time, the important risks and practical advice—not a wall of weather data.</p></article>
-            <article><span>03</span><h3>Keep people together</h3><p>Create the event, invite your people and send updates if the weather changes.</p></article>
+            <article><span>03</span><h3>Keep people together</h3><p>Create a digital invitation, share it with your people and manage RSVPs as the plan comes together.</p></article>
           </div>
           <button className="tourReplay" type="button" onClick={startTour}>Show me around</button>
         </section>

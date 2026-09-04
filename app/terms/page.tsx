@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Terms of Service — Family Weather",
   description: "Terms governing use of Family Weather.",
   alternates: { canonical: "/terms" },
+  openGraph: {
+    title: "Terms of Service — Family Weather",
+    description: "Terms governing use of Family Weather.",
+    url: "/terms",
+  },
 };
 
 export default function TermsPage() {
