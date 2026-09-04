@@ -179,12 +179,18 @@ export async function verifyCanvaReturn(token: string) {
   if (parts.length !== 3) throw new Error("invalid_canva_return");
   const header = decodeJsonPart(parts[0]);
   const claims = decodeJsonPart(parts[1]);
-  if (header.alg !== "RS256" || !header.kid) throw new Error("invalid_canva_return");
+  if (!header.kid) throw new Error("invalid_canva_return");
   const keys = await canvaJson(CANVA_KEYS, { headers: { Accept: "application/json" } });
   const jwk = (Array.isArray(keys?.keys) ? keys.keys : []).find((item: { kid?: string }) => item.kid === header.kid);
   if (!jwk) throw new Error("invalid_canva_return");
+  const algorithm = header.alg === "EdDSA" && jwk.kty === "OKP" && jwk.crv === "Ed25519"
+    ? null
+    : header.alg === "RS256" && jwk.kty === "RSA"
+      ? "RSA-SHA256"
+      : undefined;
+  if (algorithm === undefined) throw new Error("invalid_canva_return");
   const validSignature = verify(
-    "RSA-SHA256",
+    algorithm,
     Buffer.from(`${parts[0]}.${parts[1]}`),
     createPublicKey({ key: jwk, format: "jwk" }),
     Buffer.from(parts[2], "base64url"),
