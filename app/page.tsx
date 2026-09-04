@@ -364,10 +364,12 @@ export default function Home() {
 
   const openEvent = () => {
     setShowResult(false);
-    setEventStep("details");
-    setEventLocation(plannerResolved?.label || plannerLocation);
-    setEventResolved(plannerResolved);
-    setEventSuggestions([]);
+    if (!eventDetails || !plan || eventStep !== "review") {
+      setEventStep("details");
+      setEventLocation(plannerResolved?.label || plannerLocation);
+      setEventResolved(plannerResolved);
+      setEventSuggestions([]);
+    }
     setShowEvent(true);
   };
 
