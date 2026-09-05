@@ -450,7 +450,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${activeSession.idToken}` },
         body: JSON.stringify({
           title: eventDetails.name,
-          description: `${eventDetails.activity} · ${eventSpace} · ${eventDetails.guests || "unspecified"} guests · Weather fit ${plan.score}/100 · Best window ${plan.bestWindow}`,
+          description: `${eventDetails.activity} · ${eventSpace}`,
           location: eventDetails.location,
           starts_at: starts.toISOString(),
           ends_at: ends.toISOString(),

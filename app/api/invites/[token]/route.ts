@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { backendUrl } from "../../../lib/serverConfig";
+import { publicEventDescription } from "../../../invitations/publicDescription";
 
 export async function GET(_request: Request, context: { params: Promise<{ token: string }> }) {
   try {
@@ -25,7 +26,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
       invite: { status: data.invite?.response || "pending" },
       event: {
         title: eventData.event?.title,
-        description: eventData.event?.description,
+        description: publicEventDescription(eventData.event?.description),
         location: eventData.event?.location,
         starts_at: eventData.event?.starts_at,
         ends_at: eventData.event?.ends_at,

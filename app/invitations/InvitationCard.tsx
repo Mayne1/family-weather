@@ -1,6 +1,7 @@
 import { getInvitationDesign } from "./catalog";
 import type { InvitationRecord } from "./catalog";
 import type { CSSProperties } from "react";
+import { publicEventDescription } from "./publicDescription";
 
 export type InvitationEvent = {
   title: string;
@@ -20,6 +21,7 @@ export default function InvitationCard({ invitation, event, compact = false }: P
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   const date = starts?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
   const time = starts?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) || "Time to be announced";
+  const publicDescription = publicEventDescription(event.description);
 
   if (invitation.photo_url) {
     return (
@@ -44,7 +46,7 @@ export default function InvitationCard({ invitation, event, compact = false }: P
         <p className="digitalInvitationCategory">{design.category}</p>
         {invitation.honoree_names && <p className="digitalInvitationHonoree">{invitation.honoree_names}</p>}
         <h1>{invitation.headline || event.title}</h1>
-        <p className="digitalInvitationMessage">{invitation.message || event.description || "Please join us for a day worth remembering."}</p>
+        <p className="digitalInvitationMessage">{invitation.message || publicDescription || "Please join us for a day worth remembering."}</p>
         <div className="digitalInvitationFacts">
           <p><span>Date</span><strong>{date}</strong></p>
           <p><span>Time</span><strong>{time}</strong></p>
