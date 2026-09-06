@@ -5,11 +5,9 @@ import type { WeatherPlanningDestination } from "./destinations";
 
 type AlmanacYear = {
   year: number;
-  highF: number;
-  lowF: number;
+  high_f: number;
+  low_f: number;
   condition: string;
-  rain: boolean;
-  rainfallIn: number;
 };
 
 type PlanResult = {
@@ -131,7 +129,7 @@ export default function WeatherDateCheck({ destination }: { destination: Weather
                   <span key={year.year}>
                     <strong>{year.year}</strong>
                     <small>{year.condition}</small>
-                    <b>{year.highF}° / {year.lowF}°</b>
+                    <b>{year.high_f}° / {year.low_f}°</b>
                   </span>
                 ))}
               </div>
