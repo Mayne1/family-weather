@@ -1,0 +1,75 @@
+export type WeatherPlanningDestination = {
+  slug: string;
+  name: string;
+  shortName: string;
+  region: string;
+  countryCode: string;
+  lat: number;
+  lon: number;
+  type: "city" | "park" | "landmark";
+  planningFocus: string;
+  sourceGroups: string[];
+};
+
+export const weatherPlanningDestinations: WeatherPlanningDestination[] = [
+  { slug: "orlando-florida", name: "Orlando, Florida", shortName: "Orlando", region: "United States", countryCode: "US", lat: 28.5383, lon: -81.3792, type: "city", planningFocus: "theme parks, family trips, and outdoor attractions", sourceGroups: ["AAA", "Visit Orlando"] },
+  { slug: "seattle-washington", name: "Seattle, Washington", shortName: "Seattle", region: "United States", countryCode: "US", lat: 47.6062, lon: -122.3321, type: "city", planningFocus: "waterfront visits, city walks, and Pacific Northwest outings", sourceGroups: ["AAA", "Visit Seattle"] },
+  { slug: "new-york-city", name: "New York City, New York", shortName: "New York City", region: "United States", countryCode: "US", lat: 40.7128, lon: -74.006, type: "city", planningFocus: "city sightseeing, outdoor events, and family travel", sourceGroups: ["AAA", "NYC Tourism"] },
+  { slug: "las-vegas-nevada", name: "Las Vegas, Nevada", shortName: "Las Vegas", region: "United States", countryCode: "US", lat: 36.1699, lon: -115.1398, type: "city", planningFocus: "desert outings, pool days, and evening plans", sourceGroups: ["AAA", "Visit Las Vegas"] },
+  { slug: "miami-florida", name: "Miami, Florida", shortName: "Miami", region: "United States", countryCode: "US", lat: 25.7617, lon: -80.1918, type: "city", planningFocus: "beach days, cruises, and outdoor celebrations", sourceGroups: ["AAA", "Greater Miami"] },
+  { slug: "san-francisco-california", name: "San Francisco, California", shortName: "San Francisco", region: "United States", countryCode: "US", lat: 37.7749, lon: -122.4194, type: "city", planningFocus: "bay excursions, city walks, and outdoor gatherings", sourceGroups: ["AAA", "SF Travel"] },
+  { slug: "anchorage-alaska", name: "Anchorage, Alaska", shortName: "Anchorage", region: "United States", countryCode: "US", lat: 61.2181, lon: -149.9003, type: "city", planningFocus: "wildlife trips, scenic drives, and outdoor adventures", sourceGroups: ["AAA", "Visit Anchorage"] },
+  { slug: "chicago-illinois", name: "Chicago, Illinois", shortName: "Chicago", region: "United States", countryCode: "US", lat: 41.8781, lon: -87.6298, type: "city", planningFocus: "lakefront events, festivals, and city sightseeing", sourceGroups: ["AAA", "Choose Chicago"] },
+  { slug: "denver-colorado", name: "Denver, Colorado", shortName: "Denver", region: "United States", countryCode: "US", lat: 39.7392, lon: -104.9903, type: "city", planningFocus: "mountain day trips, sports, and outdoor events", sourceGroups: ["AAA", "Visit Denver"] },
+  { slug: "boston-massachusetts", name: "Boston, Massachusetts", shortName: "Boston", region: "United States", countryCode: "US", lat: 42.3601, lon: -71.0589, type: "city", planningFocus: "historic walks, harbor plans, and seasonal travel", sourceGroups: ["AAA", "Meet Boston"] },
+  { slug: "fort-lauderdale-florida", name: "Fort Lauderdale, Florida", shortName: "Fort Lauderdale", region: "United States", countryCode: "US", lat: 26.1224, lon: -80.1373, type: "city", planningFocus: "beaches, boating, cruises, and waterfront plans", sourceGroups: ["AAA", "Visit Lauderdale"] },
+  { slug: "anaheim-california", name: "Anaheim, California", shortName: "Anaheim", region: "United States", countryCode: "US", lat: 33.8366, lon: -117.9143, type: "city", planningFocus: "theme parks, family vacations, and outdoor attractions", sourceGroups: ["AAA", "Visit Anaheim"] },
+  { slug: "atlanta-georgia", name: "Atlanta, Georgia", shortName: "Atlanta", region: "United States", countryCode: "US", lat: 33.749, lon: -84.388, type: "city", planningFocus: "family attractions, outdoor events, and city weekends", sourceGroups: ["AAA", "Discover Atlanta"] },
+  { slug: "honolulu-hawaii", name: "Honolulu, Hawaii", shortName: "Honolulu", region: "United States", countryCode: "US", lat: 21.3099, lon: -157.8581, type: "city", planningFocus: "beach days, island excursions, and outdoor ceremonies", sourceGroups: ["AAA", "Go Hawaii"] },
+  { slug: "fairbanks-alaska", name: "Fairbanks, Alaska", shortName: "Fairbanks", region: "United States", countryCode: "US", lat: 64.8378, lon: -147.7164, type: "city", planningFocus: "northern lights trips, winter travel, and outdoor adventures", sourceGroups: ["AAA", "Explore Fairbanks"] },
+  { slug: "rome-italy", name: "Rome, Italy", shortName: "Rome", region: "International destinations", countryCode: "IT", lat: 41.9028, lon: 12.4964, type: "city", planningFocus: "historic sightseeing, walking tours, and open-air dining", sourceGroups: ["UN Tourism", "Italia.it"] },
+  { slug: "vancouver-canada", name: "Vancouver, British Columbia", shortName: "Vancouver", region: "International destinations", countryCode: "CA", lat: 49.2827, lon: -123.1207, type: "city", planningFocus: "harbor trips, mountain outings, and city events", sourceGroups: ["Destination Canada", "Destination Vancouver"] },
+  { slug: "paris-france", name: "Paris, France", shortName: "Paris", region: "International destinations", countryCode: "FR", lat: 48.8566, lon: 2.3522, type: "city", planningFocus: "walking tours, garden visits, and outdoor dining", sourceGroups: ["UN Tourism", "Paris je t'aime"] },
+  { slug: "london-england", name: "London, England", shortName: "London", region: "International destinations", countryCode: "GB", lat: 51.5074, lon: -0.1278, type: "city", planningFocus: "city sightseeing, parks, and outdoor events", sourceGroups: ["VisitBritain", "Visit London"] },
+  { slug: "athens-greece", name: "Athens, Greece", shortName: "Athens", region: "International destinations", countryCode: "GR", lat: 37.9838, lon: 23.7275, type: "city", planningFocus: "historic sites, island connections, and open-air plans", sourceGroups: ["UN Tourism", "Visit Greece"] },
+  { slug: "dublin-ireland", name: "Dublin, Ireland", shortName: "Dublin", region: "International destinations", countryCode: "IE", lat: 53.3498, lon: -6.2603, type: "city", planningFocus: "city walks, coastal day trips, and outdoor gatherings", sourceGroups: ["Tourism Ireland", "Visit Dublin"] },
+  { slug: "barcelona-spain", name: "Barcelona, Spain", shortName: "Barcelona", region: "International destinations", countryCode: "ES", lat: 41.3874, lon: 2.1686, type: "city", planningFocus: "beaches, architecture walks, and outdoor dining", sourceGroups: ["UN Tourism", "Barcelona Turisme"] },
+  { slug: "southampton-england", name: "Southampton, England", shortName: "Southampton", region: "International destinations", countryCode: "GB", lat: 50.9097, lon: -1.4044, type: "city", planningFocus: "cruise departures, waterfront visits, and coastal travel", sourceGroups: ["VisitBritain", "Visit Southampton"] },
+  { slug: "amsterdam-netherlands", name: "Amsterdam, Netherlands", shortName: "Amsterdam", region: "International destinations", countryCode: "NL", lat: 52.3676, lon: 4.9041, type: "city", planningFocus: "canal trips, cycling, and city sightseeing", sourceGroups: ["UN Tourism", "I amsterdam"] },
+  { slug: "edinburgh-scotland", name: "Edinburgh, Scotland", shortName: "Edinburgh", region: "International destinations", countryCode: "GB", lat: 55.9533, lon: -3.1883, type: "city", planningFocus: "festival visits, historic walks, and hilltop outings", sourceGroups: ["VisitScotland", "Forever Edinburgh"] },
+  { slug: "calgary-alberta", name: "Calgary, Alberta", shortName: "Calgary", region: "International destinations", countryCode: "CA", lat: 51.0447, lon: -114.0719, type: "city", planningFocus: "mountain gateways, festivals, and outdoor adventures", sourceGroups: ["Destination Canada", "Tourism Calgary"] },
+  { slug: "halifax-nova-scotia", name: "Halifax, Nova Scotia", shortName: "Halifax", region: "International destinations", countryCode: "CA", lat: 44.6488, lon: -63.5752, type: "city", planningFocus: "harbor visits, coastal drives, and cruise travel", sourceGroups: ["Destination Canada", "Discover Halifax"] },
+  { slug: "reykjavik-iceland", name: "Reykjavik, Iceland", shortName: "Reykjavik", region: "International destinations", countryCode: "IS", lat: 64.1466, lon: -21.9426, type: "city", planningFocus: "northern lights trips, scenic drives, and outdoor excursions", sourceGroups: ["UN Tourism", "Visit Iceland"] },
+  { slug: "cancun-mexico", name: "Cancún, Mexico", shortName: "Cancún", region: "International destinations", countryCode: "MX", lat: 21.1619, lon: -86.8515, type: "city", planningFocus: "beach vacations, resort events, and excursions", sourceGroups: ["Caribbean Tourism Organization", "Visit Mexico"] },
+  { slug: "punta-cana-dominican-republic", name: "Punta Cana, Dominican Republic", shortName: "Punta Cana", region: "International destinations", countryCode: "DO", lat: 18.5601, lon: -68.3725, type: "city", planningFocus: "resort stays, beach ceremonies, and water activities", sourceGroups: ["Caribbean Tourism Organization", "Dominican Republic Tourism"] },
+  { slug: "cozumel-mexico", name: "Cozumel, Mexico", shortName: "Cozumel", region: "International destinations", countryCode: "MX", lat: 20.4229, lon: -86.9223, type: "city", planningFocus: "cruise visits, diving, beaches, and island outings", sourceGroups: ["Caribbean Tourism Organization", "Visit Mexico"] },
+  { slug: "san-jose-costa-rica", name: "San José, Costa Rica", shortName: "San José", region: "International destinations", countryCode: "CR", lat: 9.9281, lon: -84.0907, type: "city", planningFocus: "rainforest day trips, city visits, and regional travel", sourceGroups: ["UN Tourism", "Visit Costa Rica"] },
+  { slug: "puerto-vallarta-mexico", name: "Puerto Vallarta, Mexico", shortName: "Puerto Vallarta", region: "International destinations", countryCode: "MX", lat: 20.6534, lon: -105.2253, type: "city", planningFocus: "beaches, outdoor dining, and resort celebrations", sourceGroups: ["Visit Mexico", "Puerto Vallarta Tourism"] },
+  { slug: "san-juan-puerto-rico", name: "San Juan, Puerto Rico", shortName: "San Juan", region: "International destinations", countryCode: "PR", lat: 18.4655, lon: -66.1057, type: "city", planningFocus: "cruise visits, beaches, and historic walking tours", sourceGroups: ["Discover Puerto Rico", "Caribbean Tourism Organization"] },
+  { slug: "nassau-bahamas", name: "Nassau, The Bahamas", shortName: "Nassau", region: "International destinations", countryCode: "BS", lat: 25.0443, lon: -77.3504, type: "city", planningFocus: "cruise stops, beaches, and island excursions", sourceGroups: ["Caribbean Tourism Organization", "Bahamas Tourism"] },
+  { slug: "oranjestad-aruba", name: "Oranjestad, Aruba", shortName: "Oranjestad", region: "International destinations", countryCode: "AW", lat: 12.5092, lon: -70.0086, type: "city", planningFocus: "beach trips, island tours, and outdoor celebrations", sourceGroups: ["Caribbean Tourism Organization", "Aruba Tourism"] },
+  { slug: "sydney-australia", name: "Sydney, Australia", shortName: "Sydney", region: "International destinations", countryCode: "AU", lat: -33.8688, lon: 151.2093, type: "city", planningFocus: "harbor plans, beaches, and outdoor sightseeing", sourceGroups: ["Tourism Australia", "Destination NSW"] },
+  { slug: "maui-hawaii", name: "Maui, Hawaii", shortName: "Maui", region: "United States", countryCode: "US", lat: 20.7984, lon: -156.3319, type: "landmark", planningFocus: "beaches, scenic drives, and outdoor ceremonies", sourceGroups: ["AAA", "Go Hawaii"] },
+  { slug: "rocky-mountain-national-park", name: "Rocky Mountain National Park", shortName: "Rocky Mountain", region: "National parks and landmarks", countryCode: "US", lat: 40.3428, lon: -105.6836, type: "park", planningFocus: "hiking, scenic drives, and high-elevation trips", sourceGroups: ["National Park Service"] },
+  { slug: "arches-national-park", name: "Arches National Park", shortName: "Arches", region: "National parks and landmarks", countryCode: "US", lat: 38.7331, lon: -109.5925, type: "park", planningFocus: "desert hiking, scenic drives, and photography", sourceGroups: ["National Park Service"] },
+  { slug: "zion-national-park", name: "Zion National Park", shortName: "Zion", region: "National parks and landmarks", countryCode: "US", lat: 37.2982, lon: -113.0263, type: "park", planningFocus: "canyon hikes, shuttle days, and scenic outings", sourceGroups: ["National Park Service"] },
+  { slug: "grand-canyon-national-park", name: "Grand Canyon National Park", shortName: "Grand Canyon", region: "National parks and landmarks", countryCode: "US", lat: 36.1069, lon: -112.1129, type: "park", planningFocus: "rim visits, hiking, and sunrise or sunset plans", sourceGroups: ["National Park Service"] },
+  { slug: "yellowstone-national-park", name: "Yellowstone National Park", shortName: "Yellowstone", region: "National parks and landmarks", countryCode: "US", lat: 44.428, lon: -110.5885, type: "park", planningFocus: "wildlife viewing, geyser visits, and scenic drives", sourceGroups: ["National Park Service"] },
+  { slug: "great-smoky-mountains-national-park", name: "Great Smoky Mountains National Park", shortName: "Great Smoky Mountains", region: "National parks and landmarks", countryCode: "US", lat: 35.6118, lon: -83.4895, type: "park", planningFocus: "hiking, scenic drives, and family park days", sourceGroups: ["National Park Service"] },
+  { slug: "yosemite-national-park", name: "Yosemite National Park", shortName: "Yosemite", region: "National parks and landmarks", countryCode: "US", lat: 37.8651, lon: -119.5383, type: "park", planningFocus: "valley sightseeing, hiking, and outdoor adventures", sourceGroups: ["National Park Service"] },
+  { slug: "machu-picchu-peru", name: "Machu Picchu, Peru", shortName: "Machu Picchu", region: "National parks and landmarks", countryCode: "PE", lat: -13.1631, lon: -72.545, type: "landmark", planningFocus: "historic-site visits, mountain travel, and hiking", sourceGroups: ["UNESCO", "Peru Travel"] },
+  { slug: "montego-bay-jamaica", name: "Montego Bay, Jamaica", shortName: "Montego Bay", region: "International destinations", countryCode: "JM", lat: 18.4762, lon: -77.8939, type: "city", planningFocus: "beach vacations, resort events, and island excursions", sourceGroups: ["Caribbean Tourism Organization", "Visit Jamaica"] },
+
+];
+
+export function weatherPlanningDestination(slug: string) {
+  return weatherPlanningDestinations.find((destination) => destination.slug === slug);
+}
+
+export const destinationResearchSources = [
+  { name: "AAA travel research", href: "https://newsroom.aaa.com/" },
+  { name: "U.S. National Park Service", href: "https://www.nps.gov/findapark/index.htm" },
+  { name: "UN Tourism", href: "https://www.unwto.org/tourism-data" },
+  { name: "Caribbean Tourism Organization", href: "https://www.onecaribbean.org/" },
+  { name: "U.S. International Trade Administration", href: "https://www.trade.gov/national-travel-and-tourism-office" },
+];
