@@ -9,6 +9,7 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 
 test -f "$FRONTEND_DIR/backend/event-invitations.sql"
 test -f "$FRONTEND_DIR/backend/event-invitations-router.js"
+test -f "$FRONTEND_DIR/backend/invitation-design-ids.js"
 test -f "$FRONTEND_DIR/backend/event-locations.sql"
 test -f "$FRONTEND_DIR/backend/event-locations-router.js"
 test -f "$FRONTEND_DIR/backend/invites-rsvp.sql"
@@ -27,6 +28,7 @@ install -m 0644 "$FRONTEND_DIR/backend/invites_pg.js" "$ROUTES_DIR/invites_pg.js
 install -m 0644 \
   "$FRONTEND_DIR/backend/event-invitations-router.js" \
   "$ROUTES_DIR/event-invitations-router.js"
+install -m 0644 "$FRONTEND_DIR/backend/invitation-design-ids.js" "$ROUTES_DIR/invitation-design-ids.js"
 install -m 0644 \
   "$FRONTEND_DIR/backend/event-locations-router.js" \
   "$ROUTES_DIR/event-locations-router.js"

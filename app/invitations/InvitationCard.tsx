@@ -44,7 +44,6 @@ export default function InvitationCard({ invitation, event, compact = false, sho
     >
       <div className="digitalInvitationShade" />
       <div className="digitalInvitationContent">
-        <p className="digitalInvitationCategory">{design.category}</p>
         {invitation.honoree_names && <p className="digitalInvitationHonoree">{invitation.honoree_names}</p>}
         <h1>{invitation.headline || event.title}</h1>
         <p className="digitalInvitationMessage">{invitation.message || publicDescription || "Please join us for a day worth remembering."}</p>

@@ -1,25 +1,7 @@
 "use strict";
 
 const express = require("express");
-
-const DESIGN_IDS = new Set([
-  "wedding-editorial",
-  "graduation-ascent",
-  "baby-botanical",
-  "birthday-after-dark",
-  "cookout-table",
-  "park-paper",
-  "wedding-blush-cascade",
-  "wedding-white-garden",
-  "wedding-midnight-crest",
-  "wedding-candlelit-wood",
-  "wedding-marble-rose",
-  "wedding-burgundy-bloom",
-  "wedding-torn-paper",
-  "wedding-sunset-vows",
-  "wedding-ink-marble",
-  "wedding-deco-noir",
-]);
+const DESIGN_IDS = require("./invitation-design-ids");
 const ARTWORK_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_ARTWORK_BYTES = 8 * 1024 * 1024;
 

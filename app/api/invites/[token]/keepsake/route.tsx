@@ -61,7 +61,6 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
       <img src={artworkData} alt="" width="1200" height="1500" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       <div style={{ position: "absolute", inset: 46, display: "flex", border: `2px solid ${dark ? "rgba(239,197,90,.72)" : "rgba(154,107,22,.45)"}`, borderRadius: 28 }} />
       <div style={{ position: "relative", width: "1020px", display: "flex", flexDirection: "column", alignItems: "center", padding: "58px 68px", borderTop: `2px solid ${accent}`, borderBottom: `2px solid ${accent}`, background: panel, textAlign: "center" }}>
-        <div style={{ display: "flex", marginBottom: 20, color: accent, fontSize: 23, fontWeight: 800, letterSpacing: 6, textTransform: "uppercase" }}>{design.category}</div>
         {invitation.honoree_names ? <div style={{ display: "flex", marginBottom: 16, fontFamily: "Georgia", fontSize: 34, fontStyle: "italic" }}>{invitation.honoree_names}</div> : null}
         <div style={{ display: "flex", maxWidth: 900, marginBottom: 24, fontFamily: "Georgia", fontSize: 66, lineHeight: 1.04, fontWeight: 600 }}>{invitation.headline || event.title || "You’re invited"}</div>
         {invitation.message ? <div style={{ display: "flex", maxWidth: 820, marginBottom: 28, fontFamily: "Georgia", fontSize: 29, lineHeight: 1.4, fontStyle: "italic" }}>{invitation.message}</div> : null}
