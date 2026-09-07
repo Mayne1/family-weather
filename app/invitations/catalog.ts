@@ -1,4 +1,7 @@
 export const invitationDesigns = [
+  { id: "birthday-essential-balloon-sky", category: "Birthday", name: "Balloon Sky", note: "Essential · bright full-bleed celebration", artwork: "/invitations/curated/birthday-essential-balloon-sky.webp", mark: "E", curated: true, tier: "Essential" },
+  { id: "birthday-signature-storybook-safari", category: "Birthday", name: "Storybook Safari", note: "Signature · hand-painted animal celebration", artwork: "/invitations/curated/birthday-signature-storybook-safari.webp", mark: "S", curated: true, tier: "Signature" },
+  { id: "birthday-showpiece-midnight-gold", category: "Birthday", name: "Midnight Gold", note: "Showpiece · cinematic evening glamour", artwork: "/invitations/curated/birthday-showpiece-midnight-gold.webp", mark: "★", curated: true, tier: "Showpiece" },
   {
     id: "wedding-editorial",
     category: "Wedding",
@@ -239,9 +242,20 @@ export function rankedInvitationDesigns(activity?: string | null) {
   const category = invitationCategoryForActivity(activity);
   const preferredId = preferredDesignForActivity(activity);
   return [...invitationDesigns].sort((left, right) => {
-    const rank = (design: (typeof invitationDesigns)[number]) => design.id === preferredId ? 0 : design.category === category ? 1 : design.category === "General" ? 2 : 3;
+    const rank = (design: (typeof invitationDesigns)[number]) => design.id === preferredId ? 0 : design.category === category && "curated" in design ? 1 : design.category === category ? 2 : design.category === "General" ? 3 : 4;
     return rank(left) - rank(right);
   });
+}
+
+export function featuredInvitationDesigns(activity?: string | null) {
+  const category = invitationCategoryForActivity(activity);
+  const curated = invitationDesigns.filter((design) => design.category === category && "curated" in design);
+  return curated.length ? curated : rankedInvitationDesigns(activity).filter((design) => design.category === category).slice(0, 10);
+}
+
+export function archivedInvitationDesigns(activity?: string | null) {
+  const featured = new Set(featuredInvitationDesigns(activity).map((design) => design.id));
+  return rankedInvitationDesigns(activity).filter((design) => !featured.has(design.id));
 }
 
 export function suggestedInvitationDesign(activity?: string | null): InvitationDesignId {

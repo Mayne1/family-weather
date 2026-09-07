@@ -3,6 +3,9 @@
 // Backend validation mirror of app/invitations/catalog.ts. The regression test
 // fails if either side changes without the other.
 module.exports = new Set([
+  "birthday-essential-balloon-sky",
+  "birthday-signature-storybook-safari",
+  "birthday-showpiece-midnight-gold",
   "wedding-editorial",
   "wedding-blush-cascade",
   "wedding-white-garden",

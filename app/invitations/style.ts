@@ -29,3 +29,10 @@ export function normalizeInvitationStyle(value?: Partial<InvitationStyleOptions>
     depth: invitationDepths.includes(value?.depth as InvitationStyleOptions["depth"]) ? value!.depth! : defaultInvitationStyle.depth,
   };
 }
+
+export function recommendedInvitationStyle(designId: string): InvitationStyleOptions {
+  if (designId === "birthday-essential-balloon-sky") return { look: "bright", font: "classic", panel: "spotlight", frame: "fine-line", depth: "shadow" };
+  if (designId === "birthday-signature-storybook-safari") return { look: "natural", font: "script", panel: "open", frame: "gold-leaf", depth: "shadow" };
+  if (designId === "birthday-showpiece-midnight-gold") return { look: "dramatic", font: "modern", panel: "open", frame: "gold-leaf", depth: "glow" };
+  return defaultInvitationStyle;
+}

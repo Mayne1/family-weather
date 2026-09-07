@@ -9,9 +9,10 @@ import InvitationCard from "./invitations/InvitationCard";
 import LocationSearchInput from "./components/LocationSearchInput";
 import EventPurchasePanel from "./components/EventPurchasePanel";
 import InvitationStyleGuide from "./components/InvitationStyleGuide";
-import { rankedInvitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
+import InvitationDesignChooser from "./components/InvitationDesignChooser";
+import { suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
-import { defaultInvitationStyle } from "./invitations/style";
+import { defaultInvitationStyle, recommendedInvitationStyle } from "./invitations/style";
 import type { LocationCandidate } from "./lib/location";
 import type { EventEntitlement } from "./lib/entitlementTypes";
 
@@ -490,7 +491,9 @@ export default function Home() {
         }
       }
       setInvitationHeadline(data.event.title);
-      setInviteDesign(suggestedInvitationDesign(eventDetails.activity));
+      const nextInvitationDesign = suggestedInvitationDesign(eventDetails.activity);
+      setInviteDesign(nextInvitationDesign);
+      setInvitationStyle(recommendedInvitationStyle(nextInvitationDesign));
       setInvitationSaved(false);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Event could not be saved");
@@ -764,10 +767,7 @@ export default function Home() {
                         <button className={invitationSource === "upload" ? "active" : ""} type="button" onClick={() => { setInvitationSource("upload"); setInvitationSaved(false); }} aria-pressed={invitationSource === "upload"}><strong>Upload finished artwork</strong><small>Use a completed invitation saved on your device.</small></button>
                         <button className={invitationSource === "canva" ? "active" : ""} type="button" onClick={() => { setInvitationSource("canva"); setInvitationSaved(false); }} aria-pressed={invitationSource === "canva"}><strong>Design in Canva</strong><small>Create something new, then bring the finished design back automatically.</small></button>
                       </div>
-                      {invitationSource === "family_weather" ? <fieldset className="designChooser">
-                        <legend>Choose a professional starting design</legend>
-                        <div>{rankedInvitationDesigns(eventDetails?.activity).map((design) => <button className={inviteDesign === design.id ? "active" : ""} type="button" key={design.id} onClick={() => { setInviteDesign(design.id); setInvitationSaved(false); }} aria-pressed={inviteDesign === design.id}><b style={{ backgroundImage: `url('${design.artwork}')` }}>{design.mark}</b><span><strong>{design.name}</strong><small>{design.category} · {design.note}</small></span></button>)}</div>
-                      </fieldset> : invitationSource === "upload" ? <div className="customArtworkPicker">
+                      {invitationSource === "family_weather" ? <InvitationDesignChooser activity={eventDetails?.activity} value={inviteDesign} onChange={(nextDesign) => { setInviteDesign(nextDesign); setInvitationStyle(recommendedInvitationStyle(nextDesign)); setInvitationSaved(false); }} /> : invitationSource === "upload" ? <div className="customArtworkPicker">
                         <div><strong>Upload the finished invitation</strong><p>PNG, JPEG, or WebP · up to 8 MB. Family Weather will show the artwork exactly as uploaded, without placing text over it.</p></div>
                         <label className="uploadArtworkButton"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseCustomArtwork(event.target.files?.[0] || null)} /><span>{customArtwork ? "Choose a different image" : "Choose image"}</span></label>
                         {customArtwork ? <small className="customArtworkName">Selected: {customArtwork.name}</small> : null}
