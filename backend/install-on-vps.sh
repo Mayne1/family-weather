@@ -16,6 +16,7 @@ test -f "$FRONTEND_DIR/backend/invites_pg.js"
 test -f "$FRONTEND_DIR/backend/rsvp-details-router.js"
 test -f "$FRONTEND_DIR/backend/event-entitlements.sql"
 test -f "$FRONTEND_DIR/backend/event-entitlements-router.js"
+test -f "$FRONTEND_DIR/backend/commerce-plans.js"
 test -f "$FRONTEND_DIR/backend/canva-jobs.sql"
 test -f "$FRONTEND_DIR/backend/canva-jobs-router.js"
 test -f "$SERVER_FILE"
@@ -33,6 +34,7 @@ install -m 0644 \
   "$FRONTEND_DIR/backend/rsvp-details-router.js" \
   "$ROUTES_DIR/rsvp-details-router.js"
 install -m 0644 "$FRONTEND_DIR/backend/event-entitlements-router.js" "$ROUTES_DIR/event-entitlements-router.js"
+install -m 0644 "$FRONTEND_DIR/backend/commerce-plans.js" "$ROUTES_DIR/commerce-plans.js"
 install -m 0644 "$FRONTEND_DIR/backend/canva-jobs-router.js" "$ROUTES_DIR/canva-jobs-router.js"
 
 SERVER_FILE="$SERVER_FILE" python3 - <<'PY'
@@ -109,13 +111,23 @@ if "Owner-only RSVP detail endpoint" not in text:
         raise SystemExit("Could not find the RSVP detail allowlist insertion point.")
     text = text.replace(marker, marker + "\n\n" + rsvp_allow_block, 1)
 
-entitlement_allow_block = '''// Event purchase and entitlement endpoints. Owner routes verify Firebase;
+legacy_entitlement_allow_block = '''// Event purchase and entitlement endpoints. Owner routes verify Firebase;
 // Stripe confirmation independently verifies Stripe's webhook signature.
 if (
   ((req.method === "GET" || req.method === "POST") && /^\/events\/[^/]+\/entitlement(?:\/checkout)?(?:\?|$)/.test(url)) ||
   (req.method === "POST" && /^\/billing\/stripe-webhook(?:\?|$)/.test(url))
 ) return next();'''
-if "Event purchase and entitlement endpoints" not in text:
+entitlement_allow_block = '''// Event purchase and entitlement endpoints. Owner routes verify Firebase;
+// Stripe confirmation independently verifies Stripe's webhook signature.
+if (
+  ((req.method === "GET" || req.method === "POST" || req.method === "DELETE") && /^\/events\/[^/]+\/entitlement(?:\/(?:checkout|promo|release-email))?(?:\?|$)/.test(url)) ||
+  (req.method === "POST" && /^\/events\/[^/]+\/commerce-event(?:\?|$)/.test(url)) ||
+  ((req.method === "GET" || req.method === "POST") && /^\/billing\/promo-codes(?:\?|$)/.test(url)) ||
+  (req.method === "POST" && /^\/billing\/stripe-webhook(?:\?|$)/.test(url))
+) return next();'''
+if legacy_entitlement_allow_block in text:
+    text = text.replace(legacy_entitlement_allow_block, entitlement_allow_block, 1)
+elif "Event purchase and entitlement endpoints" not in text:
     marker = 'if (req.method === "OPTIONS") return next();'
     if marker not in text:
         raise SystemExit("Could not find the entitlement allowlist insertion point.")

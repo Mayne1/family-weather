@@ -11,6 +11,7 @@ import EventPurchasePanel from "./components/EventPurchasePanel";
 import { rankedInvitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
 import type { LocationCandidate } from "./lib/location";
+import type { EventEntitlement } from "./lib/entitlementTypes";
 
 const activities = [
   ["cookout", "♨", "Cookout"],
@@ -143,6 +144,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [savedEvent, setSavedEvent] = useState<{ id: string; title: string } | null>(null);
+  const [savedEntitlement, setSavedEntitlement] = useState<EventEntitlement | null>(null);
   const [saveError, setSaveError] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [inviteDesign, setInviteDesign] = useState<InvitationDesignId>("birthday-after-dark");
@@ -467,6 +469,12 @@ export default function Home() {
         throw new Error(data.error || "Event could not be saved");
       }
       setSavedEvent(data.event);
+      const entitlementResponse = await fetch(`/api/events/${encodeURIComponent(data.event.id)}/entitlement`, {
+        headers: { Authorization: `Bearer ${activeSession.idToken}` },
+        cache: "no-store",
+      });
+      const entitlementData = await entitlementResponse.json();
+      if (entitlementResponse.ok && entitlementData.ok) setSavedEntitlement(entitlementData.entitlement);
       if (eventResolved) {
         const locationResponse = await fetch(`/api/events/${encodeURIComponent(data.event.id)}/location`, {
           method: "PUT",
@@ -664,6 +672,16 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="homePricing" id="pricing">
+          <div className="sectionHeading"><div><p className="eyebrow dark"><span /> Start free. Pay for polish or delivery.</p><h2>One event. No subscription.</h2></div><p>Plan the weather, design the invitation, share your link, and manage RSVPs free. Upgrade only when Family Weather is doing more for you.</p></div>
+          <div className="homePricingGrid">
+            <article><small>FREE EVENT</small><strong>$0</strong><h3>Plan it and share it yourself.</h3><p>10 direct emails, shareable invitation link, RSVP management, and Family Weather promotion.</p></article>
+            <article><small>CLEAN EVENT</small><strong>$1.99</strong><h3>Take the advertisements away.</h3><p>The Free allowance with a clean guest page and only a small Family Weather signature.</p></article>
+            <article className="featured"><small>EVENT PLUS</small><strong>$5.99</strong><h3>More delivery. Less branding.</h3><p>25 direct emails, no advertisements or promotional branding, and the complete event experience.</p></article>
+          </div>
+          <p className="homePricingFootnote">Need a larger list? Per-event packages support 100, 250, 500, or 1,000 direct email invitations. Your shareable link is not metered.</p>
+        </section>
+
         <section className="how" id="how">
           <p className="eyebrow dark"><span /> One plan, everybody informed</p><h2>From “what if?” to “we’re ready.”</h2>
           <div className="steps">
@@ -763,7 +781,8 @@ export default function Home() {
                       </div>
                       <button className="primaryCta" disabled={invitationLoading || (invitationSource === "upload" && !customArtwork)}>{invitationLoading ? invitationSource === "canva" ? "Opening Canva…" : "Saving invitation…" : invitationSaved ? "Invitation saved" : invitationSource === "canva" ? "Design this invitation in Canva" : invitationSource === "upload" ? "Save uploaded invitation" : "Save invitation design"}<span>{invitationSaved ? "✓" : "→"}</span></button>
                     </form>
-                    {invitationSaved && session ? <EventPurchasePanel eventId={savedEvent.id} authorization={`Bearer ${session.idToken}`} /> : null}
+                    {invitationSaved && session && savedEntitlement ? <EventPurchasePanel eventId={savedEvent.id} authorization={`Bearer ${session.idToken}`} entitlement={savedEntitlement} continueHref={`/events/${encodeURIComponent(savedEvent.id)}`} /> : null}
+                    {invitationSaved && !savedEntitlement ? <a className="continueFreeEvent" href={`/events/${encodeURIComponent(savedEvent.id)}`}>Continue to invitations and RSVP management <span>→</span></a> : null}
                     {inviteError && <p className="formError">{inviteError}</p>}
                   </div>
                 </> : <button className="primaryCta" type="button" onClick={saveEvent} disabled={saveLoading}>{saveLoading ? "Saving event…" : session ? "Save event and continue to invitations" : "Sign in to save this event"} <span>→</span></button>}

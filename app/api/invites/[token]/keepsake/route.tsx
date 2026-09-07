@@ -50,6 +50,7 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const ink = dark ? "#fffaf0" : "#172f37";
   const panel = dark ? "rgba(4,12,24,.84)" : "rgba(255,253,247,.9)";
   const accent = dark ? "#efc55a" : "#9a6b16";
+  const showBranding = data.presentation !== "unbranded";
   const { date, time } = formatDate(event.starts_at);
   const artwork = await readFile(join(process.cwd(), "public", design.artwork.replace(/^\//, "")));
   const artworkData = `data:image/webp;base64,${artwork.toString("base64")}`;
@@ -71,7 +72,7 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
           <div style={{ display: "flex", maxWidth: 850, fontSize: 27, lineHeight: 1.35 }}>{event.location || "Location to be announced"}</div>
         </div>
         {invitation.special_instructions ? <div style={{ display: "flex", maxWidth: 820, marginTop: 25, paddingTop: 22, borderTop: `1px solid ${accent}`, fontSize: 24, lineHeight: 1.4 }}>{invitation.special_instructions}</div> : null}
-        <div style={{ display: "flex", marginTop: 34, color: accent, fontSize: 17, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase" }}>Family Weather</div>
+        {showBranding ? <div style={{ display: "flex", marginTop: 34, color: accent, fontSize: 17, fontWeight: 800, letterSpacing: 3, textTransform: "uppercase" }}>Family Weather</div> : null}
       </div>
     </div>,
     { width: 1200, height: 1500, headers: { "Cache-Control": "private, max-age=3600" } },

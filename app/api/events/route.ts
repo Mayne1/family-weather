@@ -42,6 +42,17 @@ export async function POST(request: NextRequest) {
       cache: "no-store",
     });
     const data = await response.json();
+    const eventId = String(data?.event?.id || data?.id || "");
+    if (response.ok && data?.ok && eventId) {
+      // Provision Free immediately; failures here must never discard the event the host just created.
+      await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}/entitlement`), { headers: { Authorization: authorization }, cache: "no-store" }).catch(() => null);
+      await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}/commerce-event`), {
+        method: "POST",
+        headers: { Authorization: authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ event_name: "event_created" }),
+        cache: "no-store",
+      }).catch(() => null);
+    }
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error("Event creation failed", error);

@@ -117,6 +117,11 @@ export default function SavedInvitationEditor({ event, authorization }: { event:
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "Invitation could not be saved.");
+      fetch(`/api/events/${encodeURIComponent(event.id)}/commerce-event`, {
+        method: "POST",
+        headers: { Authorization: authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ event_name: "invitation_saved", detail: { source } }),
+      }).catch(() => null);
 
       if (source === "canva") {
         const canvaResponse = await fetch(`/api/events/${encodeURIComponent(event.id)}/canva/start`, {
@@ -165,7 +170,7 @@ export default function SavedInvitationEditor({ event, authorization }: { event:
   }
 
   return <section className="savedInvitationPanel">
-    <div className="savedInvitationHeading"><div><p className="eyebrow dark"><span /> Invitation</p><h2>Finish it now or come back later.</h2><p>Your event and saved invitation stay here even before purchase.</p></div><span>{hasStoredArtwork ? "Artwork saved" : "Editable draft"}</span></div>
+    <div className="savedInvitationHeading"><div><p className="eyebrow dark"><span /> Invitation</p><h2>Finish it now or come back later.</h2><p>Your event and saved invitation stay here whether you use Free or upgrade.</p></div><span>{hasStoredArtwork ? "Artwork saved" : "Editable draft"}</span></div>
     {loading ? <p className="invitationEditorLoading">Loading the saved invitation…</p> : <form className="invitationCustomizer" onSubmit={save}>
       <div className="invitationSourceChooser" role="group" aria-label="Invitation artwork source">
         <button className={source === "family_weather" ? "active" : ""} type="button" onClick={() => { setSource("family_weather"); setNotice(""); }} aria-pressed={source === "family_weather"}><strong>Family Weather design</strong><small>Choose a design and edit its wording.</small></button>

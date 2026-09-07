@@ -10,6 +10,7 @@ type InviteData = {
   invite: { status: string };
   event: { title: string; description: string; location: string; starts_at: string; ends_at: string };
   invitation?: { design_id?: string } | null;
+  presentation?: "promoted" | "clean" | "unbranded" | "legacy";
 };
 
 const invitationThemes = {
@@ -98,7 +99,7 @@ export default function RsvpPage() {
   return (
     <main className={`rsvpPage rsvpTheme-${design}`}>
       <section className="rsvpCard rsvpInvitationCard">
-        <Link className="rsvpBrand" href="/">Family Weather</Link>
+        {data?.presentation !== "unbranded" ? <Link className="rsvpBrand" href="/">Family Weather</Link> : null}
         {error ? (
           <div className="rsvpState"><span>!</span><h1>We couldn’t open this invitation.</h1><p>{error}</p></div>
         ) : !data ? (

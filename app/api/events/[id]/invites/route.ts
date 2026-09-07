@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { invitationDesigns } from "../../../../invitations/catalog";
 import { backendUrl, firebaseApiKey, publicOrigin } from "../../../../lib/serverConfig";
 import { sendTransactionalInvitationEmail } from "../../../../lib/transactionalEmail";
+import { enforceRateLimit } from "../../../../lib/requestSecurity";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INVITATION_DESIGNS = new Set<string>(invitationDesigns.map((design) => design.id));
@@ -17,6 +18,8 @@ function parseEmails(value: unknown) {
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const limited = enforceRateLimit(request, "invitation-delivery", 30, 10 * 60_000);
+  if (limited) return limited;
   try {
     const { id } = await context.params;
     const authorization = request.headers.get("authorization") || "";
@@ -66,13 +69,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const entitlementData = await entitlementResponse.json();
     if (!entitlementResponse.ok || !entitlementData.ok) return NextResponse.json({ ok: false, error: "Event purchase information is unavailable." }, { status: entitlementResponse.status });
     const entitlement = entitlementData.entitlement;
-    if (!entitlement) return NextResponse.json({ ok: false, error: "Purchase this event before distributing invitations." }, { status: 402 });
+    if (!entitlement) return NextResponse.json({ ok: false, error: "This event is not ready for invitations yet." }, { status: 409 });
     const legacy = entitlement.status === "legacy";
-    const batchLimit = legacy ? 100 : 25;
-    if (!shareable && emails.length > batchLimit) return NextResponse.json({ ok: false, error: legacy ? "Paste no more than 100 email addresses at a time." : "Send no more than 25 email invitations for one event." }, { status: 400 });
-    if (!legacy && entitlement.status !== "paid") return NextResponse.json({ ok: false, error: "Payment confirmation is still pending." }, { status: 402 });
+    const batchLimit = 100;
+    if (!shareable && emails.length > batchLimit) return NextResponse.json({ ok: false, error: "Paste no more than 100 email addresses at a time." }, { status: 400 });
+    if (!legacy && !["free", "paid"].includes(String(entitlement.status))) return NextResponse.json({ ok: false, error: "Payment confirmation is still pending." }, { status: 402 });
     const requestedMethod = shareable ? "share_link" : "email";
-    if (!legacy && entitlement.distribution_method !== requestedMethod) return NextResponse.json({ ok: false, error: shareable ? "This event was purchased with Family Weather email delivery." : "This event was purchased with a self-distributed shareable link." }, { status: 403 });
     if (!legacy && !shareable && emails.length > Number(entitlement.email_remaining || 0)) return NextResponse.json({ ok: false, error: `This event has ${Number(entitlement.email_remaining || 0)} Family Weather email invitation${Number(entitlement.email_remaining || 0) === 1 ? "" : "s"} remaining.` }, { status: 409 });
 
     const invites = [];
@@ -131,6 +133,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           })
           : undefined;
 
+        if (recipientEmail && emailDelivery?.status === "failed") {
+          await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement/release-email`), {
+            method: "POST",
+            headers: { Authorization: authorization, "Content-Type": "application/json" },
+            body: JSON.stringify({ token: data.token }),
+            cache: "no-store",
+          }).catch(() => null);
+          failures.push({ recipient_email: recipientEmail, error: emailDelivery.error });
+          continue;
+        }
+
         invites.push({
           id: data.token,
           token: data.token,
@@ -157,6 +170,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         failures,
       }, { status: 502 });
     }
+
+    await fetch(backendUrl(`/events/${encodeURIComponent(id)}/commerce-event`), {
+      method: "POST",
+      headers: { Authorization: authorization, "Content-Type": "application/json" },
+      body: JSON.stringify({ event_name: shareable ? "share_link_created" : "email_invitation_sent", detail: { count: invites.length } }),
+      cache: "no-store",
+    }).catch(() => null);
 
     return NextResponse.json({
       ok: true,

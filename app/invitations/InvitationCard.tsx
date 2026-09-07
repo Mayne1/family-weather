@@ -14,9 +14,10 @@ type Props = {
   invitation: InvitationRecord;
   event: InvitationEvent;
   compact?: boolean;
+  showBranding?: boolean;
 };
 
-export default function InvitationCard({ invitation, event, compact = false }: Props) {
+export default function InvitationCard({ invitation, event, compact = false, showBranding = true }: Props) {
   const design = getInvitationDesign(invitation.design_id);
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   const date = starts?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
@@ -53,7 +54,7 @@ export default function InvitationCard({ invitation, event, compact = false }: P
           <p><span>Location</span><strong>{event.location || "Location to be announced"}</strong></p>
         </div>
         {invitation.special_instructions && <p className="digitalInvitationInstructions"><span>Please note</span>{invitation.special_instructions}</p>}
-        <p className="digitalInvitationWeather">Current event details and weather planning by Family Weather</p>
+        {showBranding ? <p className="digitalInvitationWeather">Current event details and weather planning by Family Weather</p> : null}
       </div>
     </article>
   );

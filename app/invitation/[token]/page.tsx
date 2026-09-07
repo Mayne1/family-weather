@@ -10,6 +10,7 @@ type GuestData = {
   valid: boolean;
   event: { title: string; description?: string; location?: string; starts_at?: string };
   invitation?: InvitationRecord | null;
+  presentation?: "promoted" | "clean" | "unbranded" | "legacy";
 };
 
 export default function GuestInvitationPage({ params }: { params: Promise<{ token: string }> }) {
@@ -38,15 +39,18 @@ export default function GuestInvitationPage({ params }: { params: Promise<{ toke
     design_id: suggestedInvitationDesign(data.event.description),
     headline: data.event.title,
   };
+  const showBranding = data.presentation !== "unbranded";
+  const showHeaderBrand = data.presentation === "promoted" || data.presentation === "legacy";
 
   return (
     <main className="guestInvitationPage">
-      <Link className="guestInvitationBrand" href="/">Family Weather</Link>
-      <InvitationCard invitation={invitation} event={data.event} />
+      {showHeaderBrand ? <Link className="guestInvitationBrand" href="/">Family Weather</Link> : null}
+      <InvitationCard invitation={invitation} event={data.event} showBranding={showBranding} />
       <section className="guestInvitationActions">
         <div><small>You’re invited</small><h2>Let the host know if you’ll be there.</h2><p>The RSVP page holds the current event details and records your answer.</p></div>
         <a href={`/rsvp.html?token=${encodeURIComponent(token)}&design=${encodeURIComponent(invitation.design_id)}`}>View details &amp; RSVP <span>→</span></a>
       </section>
+      {data.presentation === "promoted" ? <aside className="freeEventPromotion"><div><small>PLANNED WITH FAMILY WEATHER</small><strong>Choose the date. Know the weather. Invite everybody.</strong><span>Create your own weather-smart event free.</span></div><Link href="/">Plan a free event <span>→</span></Link></aside> : null}
     </main>
   );
 }

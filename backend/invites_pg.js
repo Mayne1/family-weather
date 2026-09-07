@@ -44,8 +44,7 @@ module.exports = function makeInvitesRouter(pool) {
       if (!entitlementResult.rowCount) { await client.query("ROLLBACK"); return res.status(402).json({ ok: false, error: "event_purchase_required" }); }
       const entitlement = entitlementResult.rows[0];
       const legacy = entitlement.status === "legacy";
-      if (!legacy && entitlement.status !== "paid") { await client.query("ROLLBACK"); return res.status(402).json({ ok: false, error: "event_payment_pending" }); }
-      if (!legacy && entitlement.distribution_method !== method) { await client.query("ROLLBACK"); return res.status(403).json({ ok: false, error: "distribution_method_mismatch" }); }
+      if (!legacy && !["free", "paid"].includes(entitlement.status)) { await client.query("ROLLBACK"); return res.status(402).json({ ok: false, error: "event_payment_pending" }); }
       if (!legacy && method === "share_link" && entitlement.share_invite_token) {
         const existing = await client.query("SELECT token,expires_at FROM invites WHERE token=$1 AND event_id=$2 LIMIT 1", [entitlement.share_invite_token, String(eventId)]);
         if (existing.rowCount) { await client.query("COMMIT"); return res.json({ ok: true, token: existing.rows[0].token, eventId: String(eventId), expiresAt: existing.rows[0].expires_at, reused: true }); }
@@ -73,9 +72,10 @@ module.exports = function makeInvitesRouter(pool) {
       const token = String(req.query.token || "").trim();
       if (!token) return res.status(400).json({ ok: false, error: "missing_token" });
       const result = await pool.query(
-        `SELECT token,event_id,inviter_email,invited_email,created_at,expires_at,
-                opened_at,responded_at,response,responder_name,guests_count,message
-         FROM invites WHERE token=$1`,
+        `SELECT i.token,i.event_id,i.inviter_email,i.invited_email,i.created_at,i.expires_at,
+                i.opened_at,i.responded_at,i.response,i.responder_name,i.guests_count,i.message,
+                e.status AS entitlement_status,e.product_code
+         FROM invites i LEFT JOIN event_entitlements e ON e.event_id=i.event_id WHERE i.token=$1`,
         [token]
       );
       if (!result.rowCount) return res.status(404).json({ ok: false, error: "token_not_found" });
@@ -84,7 +84,10 @@ module.exports = function makeInvitesRouter(pool) {
         return res.status(410).json({ ok: false, error: "token_expired", expiresAt: row.expires_at });
       }
       await pool.query("UPDATE invites SET opened_at = COALESCE(opened_at, now()) WHERE token=$1", [token]);
-      return res.json({ ok: true, invite: normalizeInvite(row) });
+      const normalized = normalizeInvite(row);
+      normalized.entitlementStatus = row.entitlement_status || null;
+      normalized.productCode = row.product_code || null;
+      return res.json({ ok: true, invite: normalized });
     } catch (error) {
       console.error("invite_resolve_failed", error);
       return res.status(500).json({ ok: false, error: "invite_resolve_failed" });
@@ -106,7 +109,7 @@ module.exports = function makeInvitesRouter(pool) {
       if (!["yes", "maybe", "no"].includes(answer)) return res.status(400).json({ ok: false, error: "bad_response" });
 
       await client.query("BEGIN");
-      const existing = await client.query("SELECT token,event_id,expires_at FROM invites WHERE token=$1 FOR UPDATE", [value]);
+      const existing = await client.query("SELECT token,event_id,expires_at,responded_at FROM invites WHERE token=$1 FOR UPDATE", [value]);
       if (!existing.rowCount) { await client.query("ROLLBACK"); return res.status(404).json({ ok: false, error: "token_not_found" }); }
       if (new Date(existing.rows[0].expires_at).getTime() < Date.now()) {
         await client.query("ROLLBACK");
@@ -114,7 +117,7 @@ module.exports = function makeInvitesRouter(pool) {
       }
 
       const eventId = existing.rows[0].event_id;
-      const shared = await client.query(`SELECT share_rsvp_limit FROM event_entitlements WHERE event_id=$1 AND status='paid' AND distribution_method='share_link' AND share_invite_token=$2 FOR UPDATE`, [eventId, value]);
+      const shared = await client.query(`SELECT product_code FROM event_entitlements WHERE event_id=$1 AND status IN ('free','paid','legacy') AND share_invite_token=$2 FOR UPDATE`, [eventId, value]);
       if (shared.rowCount) {
         const suppliedKey = String(responseKey || "").trim().slice(0, 100);
         const email = responderEmail ? String(responderEmail).trim().toLowerCase().slice(0, 320) : null;
@@ -125,10 +128,9 @@ module.exports = function makeInvitesRouter(pool) {
           await client.query("COMMIT");
           return res.json({ ok: true, token: value, response: answer, responseKey: current.rows[0].response_key, updated: true });
         }
-        const count = await client.query("SELECT count(*)::int AS count FROM share_link_rsvps WHERE event_id=$1", [eventId]);
-        if (Number(count.rows[0].count) >= Number(shared.rows[0].share_rsvp_limit)) { await client.query("ROLLBACK"); return res.status(409).json({ ok: false, error: "share_link_rsvp_limit_reached" }); }
         const newKey = crypto.randomBytes(24).toString("base64url");
         await client.query(`INSERT INTO share_link_rsvps(event_id,invite_token,response_key,responder_email,responder_name,response,guests_count,message) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [eventId, value, newKey, email, name, answer, guests, note]);
+        await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'first_rsvp',$2::jsonb) ON CONFLICT DO NOTHING", [eventId, JSON.stringify({ delivery: "share_link" })]);
         await client.query("COMMIT");
         return res.json({ ok: true, token: value, response: answer, responseKey: newKey, created: true });
       }
@@ -139,6 +141,7 @@ module.exports = function makeInvitesRouter(pool) {
           guests_count=$5, message=$6 WHERE token=$1`,
         [value, answer, responderEmail ? String(responderEmail).trim() : null, name, guests, note]
       );
+      if (!existing.rows[0].responded_at) await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'first_rsvp',$2::jsonb) ON CONFLICT DO NOTHING", [eventId, JSON.stringify({ delivery: "email" })]);
       await client.query("COMMIT");
       return res.json({ ok: true, token: value, response: answer });
     } catch (error) {

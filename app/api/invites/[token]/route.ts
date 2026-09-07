@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { backendUrl } from "../../../lib/serverConfig";
 import { publicEventDescription } from "../../../invitations/publicDescription";
+import { commercePlan } from "../../../lib/commercePlans";
 
 export async function GET(_request: Request, context: { params: Promise<{ token: string }> }) {
   try {
@@ -19,11 +20,14 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     if (invitation?.has_custom_artwork) {
       invitation.photo_url = `/api/invites/${encodeURIComponent(token)}/keepsake`;
     }
+    const entitlementStatus = String(data.invite?.entitlementStatus || "");
+    const presentation = entitlementStatus === "legacy" ? "legacy" : commercePlan(data.invite?.productCode).presentation;
     return NextResponse.json({
       ok: true,
       valid: true,
       accepted: Boolean(data.invite?.response),
       invite: { status: data.invite?.response || "pending" },
+      presentation,
       event: {
         title: eventData.event?.title,
         description: publicEventDescription(eventData.event?.description),

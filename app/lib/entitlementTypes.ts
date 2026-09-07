@@ -1,20 +1,22 @@
-export type DistributionMethod = "email" | "share_link";
-
 export type EventEntitlement = {
   event_id: string;
-  status: "pending" | "paid" | "legacy";
+  status: "free" | "pending" | "paid" | "legacy";
   product_code: string;
+  plan_name: string;
+  plan_rank: number;
+  presentation: "promoted" | "clean" | "unbranded" | "legacy";
   amount_cents: number;
   currency: string;
-  distribution_method: DistributionMethod | "legacy";
+  distribution_method: "email" | "share_link" | "both" | "legacy";
   email_limit: number;
   email_consumed: number;
-  email_remaining: number;
-  share_rsvp_limit: number;
+  email_remaining: number | null;
   share_rsvp_count: number;
-  share_rsvp_remaining: number;
   share_invite_token?: string | null;
   share_invitation_url?: string | null;
   checkout_url?: string | null;
+  checkout_session_id?: string | null;
+  pending_product_code?: string | null;
+  pending_amount_cents?: number | null;
   purchased_at?: string | null;
 };
