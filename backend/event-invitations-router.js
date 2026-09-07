@@ -92,7 +92,7 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
       const result = await pool.query(
         `SELECT invitation.artwork_data, invitation.artwork_mime
          FROM event_invitations invitation
-         JOIN invites invite ON invite.event_id = invitation.event_id
+         JOIN invites invite ON invite.event_id = invitation.event_id::text
          WHERE invitation.event_id = $1 AND invite.token = $2
            AND invite.expires_at > now() AND invitation.artwork_data IS NOT NULL`,
         [String(req.params.id || "").trim(), token]

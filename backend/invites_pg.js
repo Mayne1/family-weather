@@ -75,7 +75,7 @@ module.exports = function makeInvitesRouter(pool) {
         `SELECT i.token,i.event_id,i.inviter_email,i.invited_email,i.created_at,i.expires_at,
                 i.opened_at,i.responded_at,i.response,i.responder_name,i.guests_count,i.message,
                 e.status AS entitlement_status,e.product_code
-         FROM invites i LEFT JOIN event_entitlements e ON e.event_id=i.event_id WHERE i.token=$1`,
+         FROM invites i LEFT JOIN event_entitlements e ON e.event_id::text=i.event_id WHERE i.token=$1`,
         [token]
       );
       if (!result.rowCount) return res.status(404).json({ ok: false, error: "token_not_found" });
