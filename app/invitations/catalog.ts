@@ -198,6 +198,7 @@ export type InvitationRecord = {
   photo_url?: string | null;
   has_custom_artwork?: boolean;
   artwork_mime?: string | null;
+  style_options?: import("./style").InvitationStyleOptions | null;
 };
 
 export function getInvitationDesign(value?: string | null) {

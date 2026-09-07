@@ -8,8 +8,10 @@ import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
 import LocationSearchInput from "./components/LocationSearchInput";
 import EventPurchasePanel from "./components/EventPurchasePanel";
+import InvitationStyleGuide from "./components/InvitationStyleGuide";
 import { rankedInvitationDesigns, suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
+import { defaultInvitationStyle } from "./invitations/style";
 import type { LocationCandidate } from "./lib/location";
 import type { EventEntitlement } from "./lib/entitlementTypes";
 
@@ -155,6 +157,7 @@ export default function Home() {
   const [invitationHonoree, setInvitationHonoree] = useState("");
   const [invitationMessage, setInvitationMessage] = useState("");
   const [invitationInstructions, setInvitationInstructions] = useState("");
+  const [invitationStyle, setInvitationStyle] = useState(defaultInvitationStyle);
   const [invitationSaved, setInvitationSaved] = useState(false);
   const [invitationLoading, setInvitationLoading] = useState(false);
   const [tourMode, setTourMode] = useState<"closed" | "welcome" | "active">("closed");
@@ -503,6 +506,7 @@ export default function Home() {
     message: invitationMessage,
     special_instructions: invitationInstructions,
     photo_url: invitationSource === "upload" ? customArtworkPreview : null,
+    style_options: invitationStyle,
   };
 
   const chooseCustomArtwork = (file: File | null) => {
@@ -770,6 +774,7 @@ export default function Home() {
                       </div> : <div className="canvaArtworkPicker">
                         <div><small>CANVA CONNECT</small><strong>Start with a blank invitation canvas.</strong><p>Design it in Canva. When you choose Return to Family Weather, page one comes back as your finished invitation artwork.</p></div><span aria-hidden="true">C</span>
                       </div>}
+                      {invitationSource === "family_weather" ? <InvitationStyleGuide value={invitationStyle} onChange={(value) => { setInvitationStyle(value); setInvitationSaved(false); }} /> : null}
                       <div className="invitationWorkArea">
                         {invitationSource === "canva" ? <div className="customArtworkPlaceholder canvaPlaceholder"><span>C</span><strong>Your Canva invitation will return here as finished artwork.</strong></div> : invitationSource === "upload" && !customArtworkPreview ? <div className="customArtworkPlaceholder"><span>↑</span><strong>Your finished invitation will appear here.</strong></div> : <InvitationCard compact invitation={currentInvitation} event={{ title: savedEvent.title, description: eventDetails?.activity, location: eventDetails?.location, starts_at: eventDetails ? new Date(`${eventDetails.date}T${eventDetails.time || "12:00"}:00`).toISOString() : undefined }} />}
                         {invitationSource === "family_weather" ? <div className="invitationFields">

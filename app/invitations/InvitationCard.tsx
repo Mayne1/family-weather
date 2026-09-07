@@ -2,6 +2,7 @@ import { getInvitationDesign } from "./catalog";
 import type { InvitationRecord } from "./catalog";
 import type { CSSProperties } from "react";
 import { publicEventDescription } from "./publicDescription";
+import { normalizeInvitationStyle } from "./style";
 
 export type InvitationEvent = {
   title: string;
@@ -23,6 +24,7 @@ export default function InvitationCard({ invitation, event, compact = false, sho
   const date = starts?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
   const time = starts?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) || "Time to be announced";
   const publicDescription = publicEventDescription(event.description);
+  const style = normalizeInvitationStyle(invitation.style_options);
 
   if (invitation.photo_url) {
     return (
@@ -36,14 +38,16 @@ export default function InvitationCard({ invitation, event, compact = false, sho
 
   return (
     <article
-      className={`digitalInvitation invitationDesign-${design.id}${compact ? " compact" : ""}`}
+      className={`digitalInvitation invitationDesign-${design.id} invitationLook-${style.look} invitationFont-${style.font} invitationPanel-${style.panel} invitationFrame-${style.frame} invitationDepth-${style.depth}${compact ? " compact" : ""}`}
       style={{
         "--invitation-art": `url('${design.artwork}')`,
         "--invitation-aspect": "aspectRatio" in design ? design.aspectRatio : "4 / 5",
       } as CSSProperties}
     >
       <div className="digitalInvitationShade" />
+      <div className="digitalInvitationFrame" aria-hidden="true" />
       <div className="digitalInvitationContent">
+        <div className="digitalInvitationOrnament" aria-hidden="true"><i>✦</i><span /></div>
         {invitation.honoree_names && <p className="digitalInvitationHonoree">{invitation.honoree_names}</p>}
         <h1>{invitation.headline || event.title}</h1>
         <p className="digitalInvitationMessage">{invitation.message || publicDescription || "Please join us for a day worth remembering."}</p>

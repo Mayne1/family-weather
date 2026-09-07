@@ -4,10 +4,27 @@ const express = require("express");
 const DESIGN_IDS = require("./invitation-design-ids");
 const ARTWORK_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_ARTWORK_BYTES = 8 * 1024 * 1024;
+const STYLE_OPTIONS = {
+  look: new Set(["dramatic", "elegant", "bright", "natural"]),
+  font: new Set(["classic", "script", "modern", "bold"]),
+  panel: new Set(["dark-glass", "frosted", "spotlight", "open"]),
+  frame: new Set(["gold-leaf", "double-line", "fine-line", "none"]),
+  depth: new Set(["embossed", "glow", "shadow", "clean"]),
+};
 
 function optionalText(value, limit) {
   const text = value == null ? "" : String(value).trim();
   return text ? text.slice(0, limit) : null;
+}
+
+function invitationStyle(value) {
+  const input = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const style = {};
+  for (const [key, allowed] of Object.entries(STYLE_OPTIONS)) {
+    const option = String(input[key] || "");
+    if (allowed.has(option)) style[key] = option;
+  }
+  return style;
 }
 
 function readArtwork(req) {
@@ -51,7 +68,7 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
       }
       const result = await pool.query(
         `SELECT event_id, design_id, headline, honoree_names, message,
-                special_instructions, photo_url,
+                special_instructions, photo_url, style_options,
                 (artwork_data IS NOT NULL) AS has_custom_artwork,
                 artwork_mime, created_at, updated_at
          FROM event_invitations
@@ -71,7 +88,7 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
     try {
       const result = await pool.query(
         `SELECT event_id, design_id, headline, honoree_names, message,
-                special_instructions, photo_url,
+                special_instructions, photo_url, style_options,
                 (artwork_data IS NOT NULL) AS has_custom_artwork,
                 artwork_mime, created_at, updated_at
          FROM event_invitations
@@ -203,20 +220,22 @@ module.exports = function makeEventInvitationsRouter(pool, requireFirebaseUser) 
         optionalText(req.body?.message, 500),
         optionalText(req.body?.special_instructions, 300),
         null,
+        invitationStyle(req.body?.style_options),
       ];
       const result = await pool.query(
         `INSERT INTO event_invitations
-           (event_id, design_id, headline, honoree_names, message, special_instructions, photo_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)
+           (event_id, design_id, headline, honoree_names, message, special_instructions, photo_url, style_options)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
          ON CONFLICT (event_id) DO UPDATE SET
            design_id = EXCLUDED.design_id,
            headline = EXCLUDED.headline,
            honoree_names = EXCLUDED.honoree_names,
            message = EXCLUDED.message,
            special_instructions = EXCLUDED.special_instructions,
+           style_options = EXCLUDED.style_options,
            updated_at = now()
          RETURNING event_id, design_id, headline, honoree_names, message,
-                   special_instructions, photo_url,
+                   special_instructions, photo_url, style_options,
                    (artwork_data IS NOT NULL) AS has_custom_artwork,
                    artwork_mime, created_at, updated_at`,
         values

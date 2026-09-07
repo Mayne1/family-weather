@@ -16,3 +16,6 @@ CREATE INDEX IF NOT EXISTS event_invitations_design_id_idx
 ALTER TABLE event_invitations
   ADD COLUMN IF NOT EXISTS artwork_data BYTEA,
   ADD COLUMN IF NOT EXISTS artwork_mime TEXT;
+
+ALTER TABLE event_invitations
+  ADD COLUMN IF NOT EXISTS style_options JSONB NOT NULL DEFAULT '{}'::jsonb;
