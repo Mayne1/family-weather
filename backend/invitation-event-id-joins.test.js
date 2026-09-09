@@ -14,5 +14,7 @@ test("invitation joins account for the legacy text event ID column", () => {
 
   assert.match(invites, /e\.event_id::text\s*=\s*i\.event_id/);
   assert.match(rsvpDetails, /e\.event_id::text\s*=\s*i\.event_id/);
+  assert.match(rsvpDetails, /i\.event_id\s*=\s*\$1::text/);
+  assert.match(rsvpDetails, /s\.event_id\s*=\s*\$1::bigint/);
   assert.match(invitations, /invite\.event_id\s*=\s*invitation\.event_id::text/);
 });
