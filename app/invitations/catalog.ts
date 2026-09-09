@@ -1,4 +1,24 @@
 export const invitationDesigns = [
+{id: "signature-family-friends",category: "Family reunion",name: "Family & Friends",layout: "luxe",artwork: "/invitations/signature/family-friends.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "2 / 3" },
+{id: "signature-night-out",category: "General",name: "Night Out On The Town",layout: "luxe",artwork: "/invitations/signature/night-out.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "2 / 3" },
+{id: "signature-birthday",category: "Birthday",name: "Brighter Birthday",layout: "poster",artwork: "/invitations/signature/birthday.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-baby-shower",category: "Baby shower",name: "A Little One, Big Love",layout: "poster",artwork: "/invitations/signature/baby-shower.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-wedding",category: "Wedding",name: "Together Always",layout: "poster",artwork: "/invitations/signature/wedding.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-graduation",category: "Graduation",name: "Congrats Graduate",layout: "poster",artwork: "/invitations/signature/graduation.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-family-reunion",category: "Family reunion",name: "Family Reunion",layout: "poster",artwork: "/invitations/signature/family-reunion.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-cookout",category: "Cookout",name: "Good Food, Hot Times",layout: "poster",artwork: "/invitations/signature/cookout.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 258" },
+{id: "signature-pool-party",category: "Outdoor event",name: "Pool Party",layout: "poster",artwork: "/invitations/signature/pool-party.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-movie-night",category: "Outdoor event",name: "Movie Night",layout: "poster",artwork: "/invitations/signature/movie-night.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-sports-watch",category: "Outdoor event",name: "Game On",layout: "poster",artwork: "/invitations/signature/sports-watch.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-brunch",category: "Cookout",name: "Brunch & Good Vibes",layout: "poster",artwork: "/invitations/signature/brunch.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-holiday",category: "General",name: "Happier Holidays",layout: "poster",artwork: "/invitations/signature/holiday.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-retirement",category: "General",name: "A New Adventure",layout: "poster",artwork: "/invitations/signature/retirement.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 263" },
+{id: "signature-housewarming",category: "General",name: "Welcome Home",layout: "poster",artwork: "/invitations/signature/housewarming.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
+{id: "signature-girls-night-out",category: "General",name: "Girls’ Night Out",layout: "poster",artwork: "/invitations/signature/girls-night-out.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
+{id: "signature-networking",category: "General",name: "Let’s Connect",layout: "poster",artwork: "/invitations/signature/networking.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
+{id: "signature-community",category: "General",name: "Stronger Together",layout: "poster",artwork: "/invitations/signature/community.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
+{id: "signature-anniversary",category: "Wedding",name: "Love Grows Brighter",layout: "poster",artwork: "/invitations/signature/anniversary.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
+{id: "signature-other",category: "General",name: "Your Event Here",layout: "poster",artwork: "/invitations/signature/other.webp",note: "Signature collection · artwork-led invitation",mark: "✦",featured: true, aspectRatio: "228 / 230" },
   { id: "birthday-essential-balloon-sky", category: "Birthday", name: "Balloon Sky", note: "Essential · bright full-bleed celebration", artwork: "/invitations/curated/birthday-essential-balloon-sky.webp", mark: "E", curated: true, tier: "Essential" },
   { id: "birthday-signature-storybook-safari", category: "Birthday", name: "Storybook Safari", note: "Signature · hand-painted animal celebration", artwork: "/invitations/curated/birthday-signature-storybook-safari.webp", mark: "S", curated: true, tier: "Signature" },
   { id: "birthday-showpiece-midnight-gold", category: "Birthday", name: "Midnight Gold", note: "Showpiece · cinematic evening glamour", artwork: "/invitations/curated/birthday-showpiece-midnight-gold.webp", mark: "★", curated: true, tier: "Showpiece" },
@@ -249,18 +269,15 @@ export function rankedInvitationDesigns(activity?: string | null) {
 
 export function featuredInvitationDesigns(activity?: string | null) {
   const category = invitationCategoryForActivity(activity);
-  const curated = invitationDesigns.filter((design) => design.category === category && "curated" in design);
-  return curated.length ? curated : rankedInvitationDesigns(activity).filter((design) => design.category === category).slice(0, 10);
+  return invitationDesigns.filter((design) => "featured" in design)
+    .sort((a, b) => Number(b.category === category) - Number(a.category === category));
 }
 
 export function archivedInvitationDesigns(activity?: string | null) {
-  const featured = new Set(featuredInvitationDesigns(activity).map((design) => design.id));
+  const featured = new Set<InvitationDesignId>(featuredInvitationDesigns(activity).map((design) => design.id));
   return rankedInvitationDesigns(activity).filter((design) => !featured.has(design.id));
 }
 
 export function suggestedInvitationDesign(activity?: string | null): InvitationDesignId {
-  const preferredId = preferredDesignForActivity(activity);
-  if (preferredId) return preferredId;
-  const category = invitationCategoryForActivity(activity);
-  return invitationDesigns.find((design) => design.category === category)?.id || "general-sunlit";
+  return featuredInvitationDesigns(activity)[0].id;
 }

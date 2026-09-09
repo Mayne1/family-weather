@@ -3,6 +3,7 @@ import type { InvitationRecord } from "./catalog";
 import type { CSSProperties } from "react";
 import { publicEventDescription } from "./publicDescription";
 import { normalizeInvitationStyle } from "./style";
+import SignatureInvitation from "./SignatureInvitation";
 
 export type InvitationEvent = {
   title: string;
@@ -34,6 +35,11 @@ export default function InvitationCard({ invitation, event, compact = false, sho
         <img src={invitation.photo_url} alt={`${invitation.headline || event.title} invitation`} />
       </article>
     );
+  }
+
+  if ("layout" in design) {
+    return <SignatureInvitation invitation={invitation} event={event} artwork={design.artwork}
+      title={design.name} aspectRatio={design.aspectRatio} luxe={design.layout === "luxe"} showBranding={showBranding} />;
   }
 
   return (

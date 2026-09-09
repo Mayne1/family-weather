@@ -5,6 +5,7 @@ import { getInvitationDesign, suggestedInvitationDesign } from "../../../../invi
 import type { InvitationRecord } from "../../../../invitations/catalog";
 import { normalizeInvitationStyle } from "../../../../invitations/style";
 import { backendUrl } from "../../../../lib/serverConfig";
+import SignatureInvitation from "../../../../invitations/SignatureInvitation";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,15 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const { date, time } = formatDate(event.starts_at);
   const artwork = await readFile(join(process.cwd(), "public", design.artwork.replace(/^\//, "")));
   const artworkData = `data:image/webp;base64,${artwork.toString("base64")}`;
+
+  if ("layout" in design) {
+    const exportArt = await readFile(join(process.cwd(), "public", design.artwork.replace(/^\//, "").replace(/\.webp$/, ".png")));
+    return new ImageResponse(
+      <SignatureInvitation invitation={invitation} event={event} artwork={`data:image/png;base64,${exportArt.toString("base64")}`}
+        title={design.name} aspectRatio={design.aspectRatio} luxe={design.layout === "luxe"} showBranding={showBranding} exporting />,
+      { width: 600, height: undefined, headers: { "Cache-Control": "private, max-age=3600" } },
+    );
+  }
 
   return new ImageResponse(
     <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: ink, overflow: "hidden" }}>

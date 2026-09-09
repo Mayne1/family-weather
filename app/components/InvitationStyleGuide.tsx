@@ -3,6 +3,7 @@ import type { InvitationStyleOptions } from "../invitations/style";
 type Props = {
   value: InvitationStyleOptions;
   onChange: (value: InvitationStyleOptions) => void;
+  artworkLocked?: boolean;
 };
 
 const groups = [
@@ -13,10 +14,11 @@ const groups = [
   { key: "depth", number: "5", title: "Add depth", options: [["embossed", "Embossed", "Raised lettering"], ["glow", "Soft glow", "Evening atmosphere"], ["shadow", "Drop shadow", "Strong separation"], ["clean", "Clean", "Minimal finish"]] },
 ] as const;
 
-export default function InvitationStyleGuide({ value, onChange }: Props) {
+export default function InvitationStyleGuide({ value, onChange, artworkLocked = false }: Props) {
   return <section className="invitationStyleGuide" aria-label="Guided invitation styling">
     <div className="invitationStyleGuideHeading"><small>GUIDED INVITATION STUDIO</small><h3>Make the design feel like yours.</h3><p>Choose one option in each row. The preview updates immediately.</p></div>
-    {groups.map((group) => <fieldset key={group.key}>
+    {artworkLocked ? <p>The artwork and its title stay as designed. Lettering choices change your personal event details below.</p> : null}
+    {groups.filter((group) => !artworkLocked || group.key === "font").map((group) => <fieldset key={group.key}>
       <legend><b>{group.number}</b>{group.title}</legend>
       <div>{group.options.map(([option, label, note]) => <button key={option} type="button" className={value[group.key] === option ? "active" : ""} aria-pressed={value[group.key] === option} onClick={() => onChange({ ...value, [group.key]: option })}><strong>{label}</strong><small>{note}</small></button>)}</div>
     </fieldset>)}
