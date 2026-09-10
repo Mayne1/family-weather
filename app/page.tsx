@@ -26,6 +26,8 @@ const activities = [
 ];
 
 const TOUR_STORAGE_KEY = "family-weather-walkthrough-v1";
+const HOME_LOCATION_STORAGE_KEY = "family-weather-home-location-v2";
+const LEGACY_HOME_LOCATION_STORAGE_KEY = "family-weather-home-location";
 const tourSteps = [
   { target: "activity", placement: "bottom-left", label: "Step 1 of 5", title: "Start with the plan", copy: "Choose the kind of event you have in mind. This helps Family Weather give advice that fits what people will actually be doing." },
   { target: "location", placement: "bottom-left", label: "Step 2 of 5", title: "Tell us where", copy: "Enter a venue, street address, city, landmark, resort, park, or destination. Choose a match if the name could mean more than one place." },
@@ -224,11 +226,11 @@ export default function Home() {
         .then((response) => response.ok ? response.json() : Promise.reject())
         .then((data) => {
           if (!data.ok || !hasResolvedLocation(data.label, data.lat, data.lon)) {
-            localStorage.removeItem("family-weather-home-location");
+            localStorage.removeItem(HOME_LOCATION_STORAGE_KEY);
             return false;
           }
           if (remember) {
-            localStorage.setItem("family-weather-home-location", JSON.stringify({
+            localStorage.setItem(HOME_LOCATION_STORAGE_KEY, JSON.stringify({
               ...coordinates,
               savedAt: Date.now(),
             }));
@@ -237,11 +239,15 @@ export default function Home() {
           return true;
         })
         .catch(() => {
-          localStorage.removeItem("family-weather-home-location");
+          localStorage.removeItem(HOME_LOCATION_STORAGE_KEY);
           return false;
         });
 
-    const saved = localStorage.getItem("family-weather-home-location");
+    // Older builds silently cached whatever coordinates the browser returned.
+    // Do not let one of those unconfirmed locations overwrite the homepage.
+    localStorage.removeItem(LEGACY_HOME_LOCATION_STORAGE_KEY);
+
+    const saved = localStorage.getItem(HOME_LOCATION_STORAGE_KEY);
     if (saved) {
       try {
         const coordinates = JSON.parse(saved);
@@ -252,25 +258,16 @@ export default function Home() {
           });
           return;
         }
-        localStorage.removeItem("family-weather-home-location");
+        localStorage.removeItem(HOME_LOCATION_STORAGE_KEY);
       } catch {
-        localStorage.removeItem("family-weather-home-location");
+        localStorage.removeItem(HOME_LOCATION_STORAGE_KEY);
       }
     }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(({ coords }) => {
-        loadCoordinates({ lat: coords.latitude, lon: coords.longitude }, true).then((loaded) => {
-          if (!loaded) loadDefault();
-        });
-      }, loadDefault, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-    } else {
-      loadDefault();
-    }
+    // Device coordinates are used only after the visitor presses the location
+    // control. Automatic geolocation can be approximate and must not silently
+    // replace the visible city or its clock.
+    loadDefault();
   }, []);
 
   useEffect(() => {
@@ -289,7 +286,7 @@ export default function Home() {
           if (!data.ok || !hasResolvedLocation(data.label, data.lat, data.lon)) {
             throw new Error("We could not verify that location.");
           }
-          localStorage.setItem("family-weather-home-location", JSON.stringify({
+          localStorage.setItem(HOME_LOCATION_STORAGE_KEY, JSON.stringify({
             ...coordinates,
             savedAt: Date.now(),
           }));
@@ -298,7 +295,7 @@ export default function Home() {
           setPlannerLocation(data.label);
           setPlannerResolved(null);
         })
-        .catch(() => localStorage.removeItem("family-weather-home-location"))
+        .catch(() => localStorage.removeItem(HOME_LOCATION_STORAGE_KEY))
         .finally(() => setLocationLoading(false));
     }, () => setLocationLoading(false), {
       enableHighAccuracy: true,
