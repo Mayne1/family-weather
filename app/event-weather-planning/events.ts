@@ -1,0 +1,163 @@
+export type EventWeatherPlanningPage = {
+  slug: string;
+  name: string;
+  activity: string;
+  defaultSpace: "outdoor" | "mixed" | "indoor";
+  icon: string;
+  summary: string;
+  weatherWhy: string;
+  considerations: [string, string, string];
+  checklist: [string, string, string, string];
+  fallback: string;
+};
+
+export const eventWeatherPlanningPages: EventWeatherPlanningPage[] = [
+  {
+    slug: "wedding-weather-planner",
+    name: "Wedding Weather Planner",
+    activity: "wedding",
+    defaultSpace: "mixed",
+    icon: "♡",
+    summary: "Check the forecast or five-year weather history before choosing the ceremony time, reception setup, and rain plan.",
+    weatherWhy: "Weather affects guest comfort, photography, flowers, clothing, transportation, and every outdoor part of the day—even when the reception is indoors.",
+    considerations: ["Rain during the ceremony or photographs", "Heat, cold, and wind for guests and décor", "Sunset timing and changing evening temperatures"],
+    checklist: ["Confirm a covered ceremony option", "Give vendors a weather decision deadline", "Plan shade, water, heaters, or blankets", "Tell guests about grass, wind, or temperature"],
+    fallback: "Choose the exact point when the ceremony moves indoors or under cover, and give one person authority to make that call.",
+  },
+  {
+    slug: "birthday-party-weather-planner",
+    name: "Birthday Party Weather Planner",
+    activity: "birthday party",
+    defaultSpace: "mixed",
+    icon: "✦",
+    summary: "Plan a birthday around rain, temperature, wind, and the hours when guests will actually be outside.",
+    weatherWhy: "A comfortable afternoon can turn cold after sunset, while heat or rain can affect food, decorations, games, seating, and travel.",
+    considerations: ["Comfort for children, older guests, and pets", "Wind around balloons, candles, and decorations", "Rain or heat affecting games and food service"],
+    checklist: ["Set up shade or a covered area", "Anchor lightweight decorations", "Protect cake and food from heat", "Keep one indoor activity ready"],
+    fallback: "Move the main gathering under cover and keep a smaller outdoor area available if conditions improve.",
+  },
+  {
+    slug: "family-reunion-weather-planner",
+    name: "Family Reunion Weather Planner",
+    activity: "family reunion",
+    defaultSpace: "outdoor",
+    icon: "⌂",
+    summary: "Use real weather data to choose a reunion date, meal time, activity window, and backup location.",
+    weatherWhy: "Reunions often last several hours and include guests with different mobility, heat tolerance, and shelter needs.",
+    considerations: ["Midday heat and limited shade", "Rain affecting seating, games, and group photos", "Long events spanning more than one weather window"],
+    checklist: ["Reserve shelter near the gathering area", "Provide water and shaded seating", "Schedule photos before weather changes", "Share the backup location in advance"],
+    fallback: "Use a pavilion, community room, or nearby family home as the announced backup gathering point.",
+  },
+  {
+    slug: "bbq-cookout-weather-planner",
+    name: "BBQ / Cookout Weather Planner",
+    activity: "cookout",
+    defaultSpace: "outdoor",
+    icon: "♨",
+    summary: "Check cooking conditions, guest comfort, rain risk, and wind before firing up the grill.",
+    weatherWhy: "Wind changes grill safety, heat affects food holding and guests, and even a short shower can disrupt cooking and seating.",
+    considerations: ["Wind around grills, smokers, and open flame", "Food safety during hot weather", "Rain affecting cooking and seating areas"],
+    checklist: ["Place the grill away from structures", "Keep cold food cold until serving", "Anchor canopies according to instructions", "Prepare a covered serving area"],
+    fallback: "Keep cooking outdoors only where it is safe, then move serving and seating into a covered space.",
+  },
+  {
+    slug: "graduation-party-weather-planner",
+    name: "Graduation Party Weather Planner",
+    activity: "graduation party",
+    defaultSpace: "mixed",
+    icon: "◇",
+    summary: "Plan the celebration around ceremony travel, outdoor photos, guest comfort, and changing afternoon weather.",
+    weatherWhy: "Graduation plans often combine a fixed ceremony time with travel, photographs, food, and an open-house party that lasts for hours.",
+    considerations: ["Heat during ceremonies and photographs", "Traffic and travel during rain", "Wind around signs, tents, and table décor"],
+    checklist: ["Build travel time into the schedule", "Set a shaded photo location", "Anchor signs and decorations", "Keep food and gifts protected"],
+    fallback: "Move the party portion indoors while keeping a short covered window for photographs and arrivals.",
+  },
+  {
+    slug: "baby-shower-weather-planner",
+    name: "Baby Shower Weather Planner",
+    activity: "baby shower",
+    defaultSpace: "mixed",
+    icon: "☾",
+    summary: "Check the day before arranging patio seating, decorations, games, food, and a comfortable arrival for every guest.",
+    weatherWhy: "Temperature and rain matter for outdoor seating, while wind can quickly disturb table settings, balloons, signs, and lightweight decorations.",
+    considerations: ["Comfortable seating for the guest of honor", "Wind around decorations and gift tables", "Rain during guest arrivals and unloading"],
+    checklist: ["Keep the main seat out of direct sun", "Use weighted table decorations", "Provide a dry gift-drop area", "Prepare indoor versions of outdoor games"],
+    fallback: "Bring the celebration indoors and use the patio only as optional overflow if the weather allows.",
+  },
+  {
+    slug: "outdoor-party-weather-planner",
+    name: "Outdoor Party Weather Planner",
+    activity: "outdoor party",
+    defaultSpace: "outdoor",
+    icon: "☀",
+    summary: "Match your party date and time to temperature, rain, wind, and the strongest available weather window.",
+    weatherWhy: "An outdoor party depends on more than rain. Direct sun, wind, humidity, cold after sunset, and poor air conditions can all change the plan.",
+    considerations: ["Direct sun and peak afternoon heat", "Wind limits for tents and decorations", "Temperature changes after sunset"],
+    checklist: ["Check shade throughout the event hours", "Follow canopy wind limits", "Provide water and weather-appropriate seating", "Set a clear cancellation or move time"],
+    fallback: "Choose a covered location large enough for the essential parts of the party and announce it before guests leave home.",
+  },
+  {
+    slug: "picnic-weather-planner",
+    name: "Picnic Weather Planner",
+    activity: "picnic",
+    defaultSpace: "outdoor",
+    icon: "♧",
+    summary: "Find a comfortable picnic window and plan around rain, wind, shade, wet ground, and food temperature.",
+    weatherWhy: "A dry forecast does not guarantee dry grass, and wind, heat, or sudden temperature changes can matter as much as rain.",
+    considerations: ["Wet ground from earlier rain", "Wind across open park areas", "Sun exposure and safe food temperatures"],
+    checklist: ["Check park shelter availability", "Bring a waterproof ground layer", "Pack food in insulated containers", "Choose a shaded or wind-protected table"],
+    fallback: "Move to a reservable shelter or turn the picnic into an indoor shared meal nearby.",
+  },
+  {
+    slug: "festival-concert-weather-planner",
+    name: "Festival / Concert Weather Planner",
+    activity: "festival or concert",
+    defaultSpace: "outdoor",
+    icon: "♫",
+    summary: "Check weather for arrival, standing time, performance hours, travel home, and venue restrictions.",
+    weatherWhy: "Festival and concert weather affects clothing, hydration, parking, transportation, ground conditions, and whether outdoor production can continue safely.",
+    considerations: ["Heat and long periods without shade", "Rain, mud, and venue bag restrictions", "Lightning or wind delays at outdoor venues"],
+    checklist: ["Read the venue weather policy", "Check permitted rain gear and water bottles", "Plan transportation for delays", "Recheck conditions before departure"],
+    fallback: "Follow the organizer’s official delay or evacuation instructions and choose a meeting point in case your group is separated.",
+  },
+  {
+    slug: "corporate-event-weather-planner",
+    name: "Corporate Event Weather Planner",
+    activity: "corporate event",
+    defaultSpace: "mixed",
+    icon: "▦",
+    summary: "Plan guest arrivals, outdoor sessions, transportation, equipment, and schedule changes with one shared weather check.",
+    weatherWhy: "Even indoor events can be disrupted by travel delays, loading conditions, outdoor networking, catering logistics, and power or equipment exposure.",
+    considerations: ["Guest and vendor arrival conditions", "Outdoor breakout or networking spaces", "Equipment, signage, and loading access"],
+    checklist: ["Assign a weather decision owner", "Set vendor notification deadlines", "Protect registration and equipment", "Prepare one concise guest update"],
+    fallback: "Move programmed outdoor portions indoors and distribute one schedule update through every attendee channel.",
+  },
+  {
+    slug: "anniversary-party-weather-planner",
+    name: "Anniversary Party Weather Planner",
+    activity: "anniversary party",
+    defaultSpace: "mixed",
+    icon: "∞",
+    summary: "Protect the dinner, photographs, guest arrival, and outdoor atmosphere with a date-specific weather plan.",
+    weatherWhy: "Anniversary celebrations often rely on lighting, flowers, formal clothing, photographs, and a comfortable evening temperature.",
+    considerations: ["Evening temperature for dining and dancing", "Wind around candles, flowers, and table settings", "Rain during portraits and arrivals"],
+    checklist: ["Choose a covered portrait location", "Plan heaters or light wraps", "Use protected or flameless lighting", "Keep a dry arrival path"],
+    fallback: "Preserve the dinner and program indoors, then use any clear weather window for photographs.",
+  },
+  {
+    slug: "holiday-party-weather-planner",
+    name: "Holiday Party Weather Planner",
+    activity: "holiday party",
+    defaultSpace: "indoor",
+    icon: "✧",
+    summary: "Plan holiday travel, arrivals, outdoor displays, deliveries, and guest comfort around the actual date and location.",
+    weatherWhy: "A party can be indoors while rain, snow, wind, or cold still affects roads, parking, coats, deliveries, and outdoor decorations.",
+    considerations: ["Travel and parking in seasonal weather", "Coat, umbrella, and wet-entry management", "Wind or moisture around outdoor decorations"],
+    checklist: ["Share parking and entrance instructions", "Create space for coats and umbrellas", "Protect electrical decorations", "Set a weather update time for guests"],
+    fallback: "Delay the start, simplify the program, or switch to the safest arrival window while keeping guests updated.",
+  },
+];
+
+export function eventWeatherPlanningPage(slug: string) {
+  return eventWeatherPlanningPages.find((event) => event.slug === slug);
+}

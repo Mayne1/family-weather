@@ -19,6 +19,7 @@ export default function WeatherPlanningPage() {
           <span><strong>Family Weather</strong><small>Plan around what matters.</small></span>
         </Link>
         <nav aria-label="Destination weather navigation">
+          <Link href="/event-weather-planning">Event planners</Link>
           <Link href="/#almanac">Almanac</Link>
           <Link href="/events">My events</Link>
           <Link className="destinationHome" href="/">Home</Link>
@@ -59,6 +60,7 @@ export default function WeatherPlanningPage() {
       </main>
       <footer className="destinationFooter">
         <strong>Family Weather</strong><span>Plan it. Invite them. Know the weather.</span>
+        <Link href="/event-weather-planning">Event planners</Link>
         <Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link>
       </footer>
     </div>

@@ -55,6 +55,7 @@ export default async function DestinationWeatherPage({ params }: { params: Promi
         </Link>
         <nav aria-label="Destination weather navigation">
           <Link href="/weather-planning">All destinations</Link>
+          <Link href="/event-weather-planning">Event planners</Link>
           <Link href="/#almanac">Almanac</Link>
           <Link className="destinationHome" href="/">Home</Link>
         </nav>
@@ -86,7 +87,7 @@ export default async function DestinationWeatherPage({ params }: { params: Promi
           <Link className="destinationPrimaryLink" href="/#planner"><span>Plan an event</span><span aria-hidden="true">→</span></Link>
         </section>
       </main>
-      <footer className="destinationFooter"><strong>Family Weather</strong><span>Plan it. Invite them. Know the weather.</span><Link href="/weather-planning">Destinations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></footer>
+      <footer className="destinationFooter"><strong>Family Weather</strong><span>Plan it. Invite them. Know the weather.</span><Link href="/event-weather-planning">Event planners</Link><Link href="/weather-planning">Destinations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></footer>
     </div>
   );
 }
