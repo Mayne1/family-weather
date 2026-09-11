@@ -3,8 +3,8 @@ import Link from "next/link";
 import { eventWeatherPlanningPages } from "./events";
 
 export const metadata: Metadata = {
-  title: "Event Weather Planners | Family Weather",
-  description: "Weather planning guides for weddings, birthdays, reunions, cookouts, graduations, showers, concerts, corporate events, and more.",
+  title: "Free Event Weather Planners | Family Weather",
+  description: "Check event weather free for weddings, birthdays, reunions, cookouts, graduations, showers, concerts and more using forecasts or same-date history.",
   alternates: { canonical: "/event-weather-planning" },
   openGraph: { title: "Event Weather Planners | Family Weather", description: "Choose your event, location, and real date to check a live forecast or five years of matching-date weather history.", type: "website", url: "/event-weather-planning" },
 };
@@ -18,7 +18,7 @@ export default function EventWeatherPlanningIndex() {
       </header>
       <main>
         <section className="destinationIndexHero">
-          <p className="destinationKicker">Event weather planners</p>
+          <p className="destinationKicker">Free event weather planners</p>
           <h1>Plan the occasion.<br />Know the weather.</h1>
           <p>Start with what you are celebrating. Each guide checks your actual location and date, then uses a live forecast when available or five years of matching-date history for plans farther away.</p>
           <Link className="destinationPrimaryLink" href={`/event-weather-planning/${eventWeatherPlanningPages[0].slug}`}><span>Choose an event</span><span aria-hidden="true">→</span></Link>

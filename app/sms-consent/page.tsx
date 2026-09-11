@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "SMS Consent Terms — Family Weather",
   description: "Consent, frequency, help and opt-out terms for Family Weather text messages.",
   alternates: { canonical: "/sms-consent" },
+  robots: { index: false, follow: true },
   openGraph: {
     title: "SMS Consent Terms — Family Weather",
     description: "Consent, frequency, help and opt-out terms for Family Weather text messages.",

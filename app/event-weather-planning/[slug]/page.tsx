@@ -16,10 +16,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!eventPage) return {};
   const description = `${eventPage.summary} Use a live forecast or five years of same-date weather history.`;
   return {
-    title: `${eventPage.name} | Family Weather`,
+    title: `Free ${eventPage.name} | Family Weather`,
     description,
     alternates: { canonical: `/event-weather-planning/${eventPage.slug}` },
-    openGraph: { title: `${eventPage.name} | Family Weather`, description, type: "website", url: `/event-weather-planning/${eventPage.slug}` },
+    openGraph: { title: `Free ${eventPage.name} | Family Weather`, description, type: "website", url: `/event-weather-planning/${eventPage.slug}` },
   };
 }
 

@@ -697,7 +697,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/weather-planning">Destinations</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/sms-consent">SMS consent</Link></p></footer>
+      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/event-weather-planning">Event weather planners</Link> · <Link href="/weather-planning">Destination weather planners</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/sms-consent">SMS consent</Link></p></footer>
 
       {tourMode === "welcome" && <section className="tourWelcome" role="dialog" aria-modal="false" aria-labelledby="tour-welcome-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><p className="tourLabel">NEW TO FAMILY WEATHER?</p><h2 id="tour-welcome-title">Let us show you around.</h2><p>Take a quick walk through planning the weather, creating an event, and inviting your people.</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={closeTour}>Skip</button><button className="tourPrimary" type="button" onClick={startTour}>Start tour <span>→</span></button></div></section>}
 

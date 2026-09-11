@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const destination = weatherPlanningDestination(slug);
   if (!destination) return {};
-  const title = `${destination.name} Weather by Date | Family Weather`;
-  const description = `Plan ${destination.planningFocus} with live forecast data and five years of same-date weather history for ${destination.name}.`;
+  const title = `Free ${destination.shortName} Weather Planner by Date | Family Weather`;
+  const description = `Check ${destination.name} weather for a trip or event date. Use a live forecast for near dates or compare five years of same-date temperature, rain and wind history.`;
   return {
     title,
     description,
@@ -34,7 +34,7 @@ export default async function DestinationWeatherPage({ params }: { params: Promi
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: `${destination.name} weather planning`,
+    name: `${destination.name} weather planner by date`,
     url: pageUrl,
     description: `Weather planning for ${destination.planningFocus} in ${destination.name}.`,
     about: {
@@ -63,9 +63,9 @@ export default async function DestinationWeatherPage({ params }: { params: Promi
       <main>
         <section className="destinationHero">
           <div>
-            <p className="destinationKicker">Weather planning guide</p>
-            <h1>{destination.name}</h1>
-            <p>Check the weather for your date before planning {destination.planningFocus}. Near dates use forecast data; dates beyond the forecast window use the same calendar date from the previous five years.</p>
+            <p className="destinationKicker">Free weather planner by date</p>
+            <h1>{destination.shortName} Weather Planner</h1>
+            <p>Check the weather in {destination.name} for your actual trip or event date before planning {destination.planningFocus}. Near dates use live forecast data; dates beyond the forecast window compare the same calendar date across the previous five years.</p>
           </div>
           <aside className="destinationCoordinates">
             <small>RESOLVED LOCATION</small>
@@ -76,8 +76,8 @@ export default async function DestinationWeatherPage({ params }: { params: Promi
 
         <WeatherDateCheck destination={destination} />
 
-        <section className="destinationExplainer" aria-label="How destination weather planning works">
-          <article><span>01</span><h2>Choose your real date</h2><p>Check a vacation day, ceremony, excursion, or outdoor event instead of relying on a broad monthly average.</p></article>
+        <section className="destinationExplainer" aria-label={`How to check ${destination.shortName} weather by date`}>
+          <article><span>01</span><h2>Choose your {destination.shortName} date</h2><p>Check a vacation day, ceremony, excursion, or outdoor event instead of relying on a broad monthly average.</p></article>
           <article><span>02</span><h2>Use the right data</h2><p>Family Weather automatically uses live forecast data when available and matching-date history when the date is farther away.</p></article>
           <article><span>03</span><h2>Plan with context</h2><p>Compare temperature, rain, wind, and recent yearly records, then keep a backup plan for conditions that can change.</p></article>
         </section>

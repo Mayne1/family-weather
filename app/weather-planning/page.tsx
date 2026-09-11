@@ -3,8 +3,8 @@ import Link from "next/link";
 import { destinationResearchSources, weatherPlanningDestinations } from "./destinations";
 
 export const metadata: Metadata = {
-  title: "Destination Weather Planning | Family Weather",
-  description: "Check forecast-range weather or five years of same-date weather history for popular cities, vacation destinations, national parks, and landmarks.",
+  title: "Free Destination Weather Planner by Date | Family Weather",
+  description: "Check weather for a trip or event date free. Explore live forecasts and five years of same-date temperature, rain and wind history for 48 destinations.",
   alternates: { canonical: "/weather-planning" },
 };
 
@@ -27,7 +27,7 @@ export default function WeatherPlanningPage() {
       </header>
       <main>
         <section className="destinationIndexHero">
-          <p className="destinationKicker">Destination weather planner</p>
+          <p className="destinationKicker">Free destination weather planner by date</p>
           <h1>Plan the date.<br />Know the weather.</h1>
           <p>Explore useful destination pages built around real coordinates. Check near-term forecasts or compare the same calendar date across the previous five years before you plan a trip, outing, or outdoor event.</p>
           <Link className="destinationPrimaryLink" href={`/weather-planning/${weatherPlanningDestinations[0].slug}`}><span>Explore a destination</span><span aria-hidden="true">→</span></Link>
