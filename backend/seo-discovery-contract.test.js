@@ -17,8 +17,18 @@ test("public discovery pages target free event and destination weather searches"
 
 test("the homepage links search crawlers to both planning collections", () => {
   const home = read("app", "page.tsx");
+  assert.match(home, /href="\/weather-stories"/);
   assert.match(home, /href="\/event-weather-planning"/);
   assert.match(home, /href="\/weather-planning"/);
+});
+
+test("weather stories publish five editorial discovery pages and include them in the sitemap", () => {
+  const stories = read("app", "weather-stories", "stories.ts");
+  const sitemap = read("app", "sitemap.ts");
+  const storyCount = (stories.match(/published: "2026-09-12"/g) || []).length;
+  assert.equal(storyCount, 5);
+  assert.match(sitemap, /weatherStories/);
+  assert.match(read("app", "weather-stories", "[slug]", "page.tsx"), /"@type": "Article"/);
 });
 
 test("legal and consent pages stay accessible but out of the search index", () => {
