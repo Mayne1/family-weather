@@ -1,6 +1,4 @@
 import type { MetadataRoute } from "next";
-import { eventWeatherPlanningPages } from "./event-weather-planning/events";
-import { weatherPlanningDestinations } from "./weather-planning/destinations";
 import { weatherStories } from "./weather-stories/stories";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -8,11 +6,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: origin, changeFrequency: "daily", priority: 1 },
     { url: `${origin}/event-weather-planning`, changeFrequency: "weekly", priority: 0.8 },
-    ...eventWeatherPlanningPages.map(({ slug }) => ({
-      url: `${origin}/event-weather-planning/${slug}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    })),
     { url: `${origin}/weather-stories`, changeFrequency: "weekly", priority: 0.8 },
     ...weatherStories.map(({ slug }) => ({
       url: `${origin}/weather-stories/${slug}`,
@@ -20,10 +13,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     })),
     { url: `${origin}/weather-planning`, changeFrequency: "weekly", priority: 0.8 },
-    ...weatherPlanningDestinations.map(({ slug }) => ({
-      url: `${origin}/weather-planning/${slug}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    })),
   ];
 }

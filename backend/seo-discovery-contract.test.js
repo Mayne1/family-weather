@@ -7,12 +7,16 @@ const test = require("node:test");
 
 const read = (...parts) => fs.readFileSync(path.join(__dirname, "..", ...parts), "utf8");
 
-test("public discovery pages target free event and destination weather searches", () => {
+test("planning is consolidated into two useful hubs without generated detail routes", () => {
   assert.match(read("app", "layout.tsx"), /Free Event Weather Planner & Digital Invitations/);
-  assert.match(read("app", "event-weather-planning", "page.tsx"), /Free Event Weather Planners/);
-  assert.match(read("app", "event-weather-planning", "[slug]", "page.tsx"), /Free \$\{eventPage\.name\}/);
-  assert.match(read("app", "weather-planning", "page.tsx"), /Free Destination Weather Planner by Date/);
-  assert.match(read("app", "weather-planning", "[slug]", "page.tsx"), /Free \$\{destination\.shortName\} Weather Planner by Date/);
+  assert.match(read("app", "event-weather-planning", "page.tsx"), /One useful tool instead of twelve repeated guides/);
+  assert.match(read("app", "weather-planning", "page.tsx"), /One planner works for every destination/);
+  assert.equal(fs.existsSync(path.join(__dirname, "..", "app", "event-weather-planning", "[slug]", "page.tsx")), false);
+  assert.equal(fs.existsSync(path.join(__dirname, "..", "app", "weather-planning", "[slug]", "page.tsx")), false);
+
+  const sitemap = read("app", "sitemap.ts");
+  assert.doesNotMatch(sitemap, /eventWeatherPlanningPages/);
+  assert.doesNotMatch(sitemap, /weatherPlanningDestinations/);
 });
 
 test("the homepage links search crawlers to both planning collections", () => {
