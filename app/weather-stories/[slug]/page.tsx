@@ -44,7 +44,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
       <header className="destinationHeader">
         <Link className="destinationBrand" href="/" aria-label="Family Weather home"><span className="brandMark" aria-hidden="true"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plan around what matters.</small></span></Link>
-        <nav aria-label="Weather story navigation"><Link href="/weather-stories">All stories</Link><Link href="/event-weather-planning">Event guides</Link><Link className="destinationHome" href="/">Home</Link></nav>
+        <nav aria-label="Weather story navigation"><Link href="/weather-stories">All stories</Link><Link href="/plan">Activity planner</Link><Link className="destinationHome" href="/">Home</Link></nav>
       </header>
       <main>
         <section className="destinationHero eventPlanningHero">
@@ -70,7 +70,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
           <section className="eventGuideIntro"><p className="destinationKicker">About these stories</p><h2>Weather is part of the event, not the sales pitch.</h2><p>Family Weather compares an activity, location and date using a live forecast when available or five years of same-date history when the event is farther away.</p></section>
         )}
       </main>
-      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/weather-stories">Weather stories</Link><Link href="/event-weather-planning">Event guides</Link><Link href="/weather-planning">Destinations</Link></footer>
+      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/weather-stories">Weather stories</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link></footer>
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function WeatherStoriesIndex() {
     <div className="destinationPage eventPlanningPage">
       <header className="destinationHeader">
         <Link className="destinationBrand" href="/" aria-label="Family Weather home"><span className="brandMark" aria-hidden="true"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plan around what matters.</small></span></Link>
-        <nav aria-label="Weather stories navigation"><Link href="/event-weather-planning">Event guides</Link><Link href="/weather-planning">Destinations</Link><Link className="destinationHome" href="/">Home</Link></nav>
+        <nav aria-label="Weather stories navigation"><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><Link className="destinationHome" href="/">Home</Link></nav>
       </header>
       <main>
         <section className="destinationIndexHero">
@@ -35,7 +35,7 @@ export default function WeatherStoriesIndex() {
           </div>
         </section>
       </main>
-      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/event-weather-planning">Event guides</Link><Link href="/weather-planning">Destinations</Link><Link href="/privacy">Privacy</Link></footer>
+      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><a href="/privacy">Privacy</a></footer>
     </div>
   );
 }

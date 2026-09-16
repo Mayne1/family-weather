@@ -18,7 +18,7 @@ export const weatherStories: WeatherStory[] = [
     description: "A short story about the rain, wind, heat and seasonal weather that glossy destination-wedding pictures leave outside the frame.",
     kicker: "Destination wedding weather",
     published: "2026-09-12",
-    readTime: "4 minute read",
+    readTime: "2 minute read",
     sections: [
       {
         heading: "The package sold one perfect afternoon",
@@ -50,7 +50,7 @@ export const weatherStories: WeatherStory[] = [
     description: "A desert wedding can look weatherproof until Las Vegas monsoon rain, wind and flash flooding enter the picture.",
     kicker: "Las Vegas monsoon season",
     published: "2026-09-12",
-    readTime: "4 minute read",
+    readTime: "2 minute read",
     sections: [
       {
         heading: "Everything was arranged for the desert",
@@ -85,7 +85,7 @@ export const weatherStories: WeatherStory[] = [
     description: "Burning Man weather showed how quickly rain can turn Nevada desert ground into mud and change a massive outdoor event.",
     kicker: "Burning Man weather",
     published: "2026-09-12",
-    readTime: "4 minute read",
+    readTime: "2 minute read",
     sections: [
       {
         heading: "Everybody expects the dust",
@@ -121,7 +121,7 @@ export const weatherStories: WeatherStory[] = [
     description: "A family poolside cookout explains how ordinary wind can change an outdoor gathering without canceling the cooking.",
     kicker: "Windy cookout story",
     published: "2026-09-12",
-    readTime: "3 minute read",
+    readTime: "2 minute read",
     sections: [
       {
         heading: "A hot day sounded like a pool day",
@@ -153,7 +153,7 @@ export const weatherStories: WeatherStory[] = [
     description: "Rain can change an event's arrival time without changing the whole day, especially when guests are driving across Northern California.",
     kicker: "Best time for an outdoor event",
     published: "2026-09-12",
-    readTime: "4 minute read",
+    readTime: "2 minute read",
     sections: [
       {
         heading: "The invitation had a time, but the storm had one too",

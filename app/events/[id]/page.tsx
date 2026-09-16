@@ -5,8 +5,6 @@ import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getValidSession } from "../../lib/firebaseAuth";
-import EventPurchasePanel from "../../components/EventPurchasePanel";
-import SavedInvitationEditor from "../../components/SavedInvitationEditor";
 import type { EventEntitlement } from "../../lib/entitlementTypes";
 
 type EventDetail = {
@@ -41,7 +39,6 @@ export default function EventDetailPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
-  const [authorization, setAuthorization] = useState("");
   const [entitlement, setEntitlement] = useState<EventEntitlement | null>(null);
   const [shareLink, setShareLink] = useState("");
   const [canvaNotice, setCanvaNotice] = useState<"complete" | "failed" | "">("");
@@ -55,7 +52,6 @@ export default function EventDetailPage() {
     getValidSession().then((session) => {
       if (!session) throw new Error("Your sign-in expired. Return home and sign in again.");
       const headers = { Authorization: `Bearer ${session.idToken}` };
-      setAuthorization(headers.Authorization);
       return Promise.all([
         fetch(`/api/events/${id}`, { headers, cache: "no-store" }),
         fetch(`/api/events/${id}/rsvp-details`, { headers, cache: "no-store" }),
@@ -155,11 +151,10 @@ export default function EventDetailPage() {
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   return <main className="eventManagePage">
     <header className="manageHeader"><Link className="eventsBrand" href="/" aria-label="Family Weather home"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span></Link><Link className="backToEvents" href="/events"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6.5-5 5.5 5 5.5"/></svg><span>My events</span></Link></header>
+    <nav className="eventWorkspaceNav" aria-label="Event workspace"><Link className="active" href={`/events/${id}`}>Overview & guests</Link><Link href={`/events/${id}/invitation`}>Invitation design</Link><Link href={`/events/${id}/package`}>Package</Link></nav>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>
     {canvaNotice ? <p className={canvaNotice === "complete" ? "canvaReturnNotice success" : "canvaReturnNotice error"}>{canvaNotice === "complete" ? "Your Canva invitation is saved to this event." : "The Canva invitation could not be saved. Your previous invitation artwork is still safe."}</p> : null}
     <section className="responseSummary"><article><strong>{counts.yes}</strong><span>Going</span></article><article><strong>{counts.maybe}</strong><span>Maybe</span></article><article><strong>{counts.no}</strong><span>Can’t go</span></article><article><strong>{counts.waiting}</strong><span>Waiting</span></article></section>
-    <SavedInvitationEditor event={event} authorization={authorization} />
-    {entitlement && entitlement.status !== "legacy" ? <EventPurchasePanel eventId={id} authorization={authorization} entitlement={entitlement} /> : null}
     {entitlement && (["free", "paid", "legacy"].includes(entitlement.status)) ? <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>Send it directly or share it yourself.</h2><p className="panelIntro">Use Family Weather email delivery for selected guests, and share one invitation link through your own email, Messages, social media, or other communication tools.</p></div>
       <p className="entitlementUsage">{entitlement.status === "legacy" ? "Existing event email access" : `${entitlement.email_remaining} of ${entitlement.email_limit} Family Weather email invitations remaining`}</p><form className="inviteMoreForm" onSubmit={inviteMorePeople}><label className="formField"><span>Email addresses</span><textarea name="recipients" required rows={4} placeholder={"maya@example.com, jordan@example.com\nterry@example.com"} /></label><button className="primaryCta" type="submit" disabled={inviteLoading || (entitlement.status !== "legacy" && entitlement.email_remaining === 0)}>{inviteLoading ? "Sending invitations…" : entitlement.status !== "legacy" && entitlement.email_remaining === 0 ? "Email allowance used" : "Send invitations"}<span>→</span></button></form>
       <div className="shareDistribution"><p className="entitlementUsage">{entitlement.share_rsvp_count} guest response{entitlement.share_rsvp_count === 1 ? "" : "s"} received · Share the link wherever you like</p>{shareLink ? <div className="shareLinkReady"><input aria-label="Shareable invitation link" readOnly value={shareLink} /><button type="button" onClick={() => navigator.clipboard.writeText(shareLink)}>Copy link</button><a href={shareLink} target="_blank" rel="noreferrer">Open</a></div> : <button className="primaryCta" type="button" onClick={createShareableLink} disabled={inviteLoading}>{inviteLoading ? "Creating link…" : "Create my shareable invitation link"}<span>→</span></button>}</div>

@@ -1,8 +1,12 @@
 "use client";
 
+/* Intentional full-page navigation keeps advertising scripts out of private and legal routes. */
+/* eslint-disable @next/next/no-html-link-for-pages */
+
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getValidSession, signIn, signOut, signUp } from "./lib/firebaseAuth";
 import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
@@ -67,7 +71,7 @@ function hasResolvedLocation(label?: string, lat?: number, lon?: number) {
 }
 
 function locationDateTime(timeZone: string | null | undefined, value: Date | null, mode: "date" | "time") {
-  if (!value) return mode === "date" ? "Loading local date…" : "Loading…";
+  if (!value) return mode === "date" ? "Weather for real-life plans" : "Current conditions";
   try {
     return value.toLocaleString("en-US", mode === "date"
       ? { timeZone: timeZone || undefined, weekday: "long", month: "long", day: "numeric" }
@@ -112,6 +116,7 @@ function calendarDateText(value: string, options: Intl.DateTimeFormatOptions) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [activity, setActivity] = useState("cookout");
   const [customActivity, setCustomActivity] = useState("");
   const [date, setDate] = useState(0);
@@ -314,30 +319,9 @@ export default function Home() {
   const selectedBestWindow = plan?.bestWindow || (selectedDay ? selectedDay.temp_max_f >= 90 ? "5–8 PM" : selectedDay.temp_max_f >= 82 ? "4–7 PM" : selectedDay.temp_max_f < 65 ? "1–4 PM" : "12–3 PM" : "Checking…");
 
   const checkPlan = async () => {
-    setPlanLoading(true);
     setPlanError("");
-    setPlan(null);
-    try {
-      const response = await fetch("/api/weather/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: plannerLocation, resolvedLocation: plannerResolved, date: selectedDate, activity: selectedActivity, space: "outdoor" }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        if (response.status === 409) setPlannerSuggestions(data.suggestions || []);
-        throw new Error(data.error || "Weather check failed");
-      }
-      setPlannerResolved(data.resolvedLocation);
-      setPlannerLocation(data.resolvedLocation?.label || plannerLocation);
-      setPlannerSuggestions([]);
-      setPlan(data);
-      setShowResult(true);
-    } catch (error) {
-      setPlanError(error instanceof Error ? error.message : "Weather check failed");
-    } finally {
-      setPlanLoading(false);
-    }
+    if (!plannerLocation.trim()) return setPlanError("Enter the address, venue, city, landmark, or destination first.");
+    router.push(`/plan?activity=${encodeURIComponent(selectedActivity)}&location=${encodeURIComponent(plannerLocation)}&date=${encodeURIComponent(selectedDate)}`);
   };
 
   const checkAlmanac = async (event: FormEvent<HTMLFormElement>) => {
@@ -368,14 +352,7 @@ export default function Home() {
   };
 
   const openEvent = () => {
-    setShowResult(false);
-    if (!eventDetails || !plan || eventStep !== "review") {
-      setEventStep("details");
-      setEventLocation(plannerResolved?.label || plannerLocation);
-      setEventResolved(plannerResolved);
-      setEventSuggestions([]);
-    }
-    setShowEvent(true);
+    router.push(`/create-event?activity=${encodeURIComponent(selectedActivity)}&location=${encodeURIComponent(plannerResolved?.label || plannerLocation)}&date=${encodeURIComponent(selectedDate)}&window=${encodeURIComponent(selectedBestWindow)}`);
   };
 
   const reviewEvent = async (event: FormEvent<HTMLFormElement>) => {
@@ -597,13 +574,13 @@ export default function Home() {
           <span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span>
         </a>
         <nav className="desktopNav" aria-label="Primary navigation">
-          <a href="#planner">Event planner</a><a href="#outlook">Forecast</a><a href="#almanac">Weather history</a><Link href="/weather-planning">Destinations</Link><a href="#how">How it works</a><Link href="/events">My events</Link>
+          <Link href="/plan">Plan an activity</Link><Link href="/today">Today</Link><Link href="/weather-history">Weather history</Link><Link href="/how-it-works">How it works</Link><Link href="/weather-stories">Stories</Link><a href="/events">My events</a>
         </nav>
         <div className="headerActions">
           {session ? <button className="textButton accountButton" type="button" onClick={() => { signOut(); setSession(null); }}><span className="accountEmail">{session.email} · </span>Sign out</button> : <><button className="textButton accountButton" type="button" onClick={() => { setAuthMode("signin"); setAuthError(""); setShowAuth(true); }}>Sign in</button><button className="signupButton accountButton" type="button" onClick={() => { setAuthMode("signup"); setAuthError(""); setShowAuth(true); }}>Sign up</button></>}
-          <button className="pillButton" type="button" onClick={openEvent} data-tour="create">Create event</button>
+          <a className="pillButton" href="/create-event" data-tour="create">Create event</a>
         </div>
-        <nav className="mobileNav" aria-label="Mobile navigation"><a href="#top">Home</a><a href="#planner">Event planner</a><a href="#outlook">Forecast</a><a href="#almanac">Weather history</a><Link href="/weather-planning">Destinations</Link><a href="#how">How it works</a><Link href="/events">My events</Link></nav>
+        <nav className="mobileNav" aria-label="Mobile navigation"><Link href="/">Home</Link><Link href="/plan">Plan</Link><Link href="/today">Today</Link><Link href="/weather-history">History</Link><Link href="/how-it-works">How it works</Link><a href="/events">My events</a></nav>
       </header>
 
       <main id="top">
@@ -613,12 +590,12 @@ export default function Home() {
             <h1>Make the plan.<br /><em>Know the weather.</em></h1>
             <p className="intro">Family Weather is an event weather planner that helps you choose a better date and time with live forecasts or five-year weather history—then create a digital invitation and manage RSVPs in one place.</p>
             <div className="decisionCard">
-              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>{homeWeather?.current ? "LIVE" : homeWeather ? "UNAVAILABLE" : "LOADING"}</strong></div>
+              <div className="decisionTop"><span className="statusDot" /><span>{homeLocation} right now · {locationDateTime(homeWeather?.timezone, clock, "time")}</span><strong>{homeWeather?.current ? "LIVE" : homeWeather ? "UNAVAILABLE" : "CHECKING"}</strong></div>
               <div className="decisionMain">
                 <div><span className="temperature">{homeWeather?.current?.temp_f ?? "—"}°</span><span className="condition">Feels like {homeWeather?.current?.feels_like_f ?? "—"}°<br />Wind {homeWeather?.current?.wind_mph ?? "—"} mph</span></div>
                 <div className="todayRange" aria-label="Today’s high and low"><span><b>{today?.temp_max_f ?? "—"}°</b><small>HIGH</small></span><span><b>{today?.temp_min_f ?? "—"}°</b><small>LOW</small></span></div>
               </div>
-              <p><strong>{today ? today.shortForecast || weatherDescription(today.weather_code) : "Loading forecast…"}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.${homeWeather?.current ? "" : " The current observation is temporarily unavailable."}` : "Real weather is being requested from the Family Weather engine."}</p>
+              <p><strong>{today ? today.shortForecast || weatherDescription(today.weather_code) : "Live conditions are being checked."}</strong> {today ? `${today.precip_prob_pct}% rain chance with wind near ${today.wind_max_mph} mph.${homeWeather?.current ? "" : " The current observation is temporarily unavailable."}` : "In the meantime, use the planner to check a specific activity, place, and date."}</p>
             </div>
           </div>
 
@@ -638,7 +615,7 @@ export default function Home() {
               {dateChoices.map((choice, index) => { const offset = calendarDayOffset(choice.date, homeLocalDate); return (
                 <button key={choice.date} className={`dateOption ${!customDate && date === index ? "active" : ""}`} onClick={() => { setDate(index); setCustomDate(""); }} type="button"><small>{calendarDateText(choice.date, { weekday: "short" }).toUpperCase()}</small><strong>{calendarDate(choice.date).getUTCDate()}</strong><span>{offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : calendarDateText(choice.date, { weekday: "long" })}</span></button>
               ); })}
-              {!dateChoices.length && Array.from({ length: 4 }, (_, index) => <span className="dateOption dateOptionLoading" aria-hidden="true" key={index}><small>···</small><strong>—</strong><span>Loading</span></span>)}
+              {!dateChoices.length && Array.from({ length: 4 }, (_, index) => <span className="dateOption dateOptionLoading" aria-hidden="true" key={index}><small>DAY {index + 1}</small><strong>—</strong><span>Forecast</span></span>)}
               </div>
               <label className={`otherDateOption ${customDate ? "active" : ""}`}>
               <span className="calendarMark" aria-hidden="true">▦</span>
@@ -658,12 +635,12 @@ export default function Home() {
             {liveForecast.map(({ label, day, icon, temp, lead, copy, style, weather }) => (
               <button className={`forecastDay ${style}`} key={`${label}-${day}`} type="button" onClick={() => weather && setSelectedOutlookDay(weather)} aria-label={`View detailed weather for ${day}`}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p><span className="forecastMore">View details</span></button>
             ))}
-            {!liveForecast.length && <p className="forecastLoading" role="status">Loading the real forecast…</p>}
+            {!liveForecast.length && <p className="forecastLoading" role="status"><strong>The forecast service is being contacted.</strong><br />The activity planner and five-year weather history remain available as separate tools.</p>}
           </div>
         </section>
 
         <section className="almanacSection" id="almanac">
-          <div className="almanacIntro"><p className="eyebrow dark"><span /> Five-year weather history</p><h2>What has this date done before?</h2><p>Choose a destination and calendar day. Family Weather will compare that same date across five prior years—anywhere our worldwide history covers.</p></div>
+          <div className="almanacIntro"><p className="eyebrow dark"><span /> Five-year weather history</p><h2>What has this date done before?</h2><p>Choose a destination and calendar day. Family Weather will compare that same date across five prior years—anywhere our worldwide history covers.</p><Link className="sectionPageLink" href="/weather-history">Open the complete Weather History page →</Link></div>
           <div className="almanacCard" data-tour="almanac">
             <form onSubmit={checkAlmanac}>
               <label><span>LOCATION</span><LocationSearchInput id="almanac-location" value={almanacLocation} forcedSuggestions={almanacSuggestions} onChange={(value) => { setAlmanacLocation(value); setAlmanacResolved(null); setAlmanacSuggestions([]); }} onSelect={(candidate) => { setAlmanacLocation(candidate.label); setAlmanacResolved(candidate); setAlmanacSuggestions([]); }} /></label>
@@ -684,6 +661,7 @@ export default function Home() {
             <article className="featured"><small>EVENT PLUS</small><strong>$5.99</strong><h3>More delivery. Less branding.</h3><p>25 direct emails, no advertisements or promotional branding, and the complete event experience.</p></article>
           </div>
           <p className="homePricingFootnote">Need a larger list? Per-event packages support 100, 250, 500, or 1,000 direct email invitations. Your shareable link is not metered.</p>
+          <Link className="sectionPageLink" href="/pricing">See every package on the Pricing page →</Link>
         </section>
 
         <section className="how" id="how">
@@ -694,10 +672,11 @@ export default function Home() {
             <article><span>03</span><h3>Keep people together</h3><p>Create a digital invitation, share it with your people and manage RSVPs as the plan comes together.</p></article>
           </div>
           <button className="tourReplay" type="button" onClick={startTour}>Show me around</button>
+          <Link className="sectionPageLink" href="/how-it-works">Read how Family Weather works →</Link>
         </section>
       </main>
 
-      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/weather-stories">Weather stories</Link> · <Link href="/event-weather-planning">Event weather planners</Link> · <Link href="/weather-planning">Destination weather planners</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/sms-consent">SMS consent</Link></p></footer>
+      <footer><div className="brand"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plans change. Families stay connected.</small></span></div><p><a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a></p><p><Link href="/today">Today</Link> · <Link href="/plan">Plan an activity</Link> · <Link href="/weather-history">Weather history</Link> · <Link href="/weather-stories">Weather stories</Link> · <Link href="/about">About</Link> · <a href="/contact">Contact</a> · <Link href="/pricing">Pricing</Link> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></footer>
 
       {tourMode === "welcome" && <section className="tourWelcome" role="dialog" aria-modal="false" aria-labelledby="tour-welcome-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><p className="tourLabel">NEW TO FAMILY WEATHER?</p><h2 id="tour-welcome-title">Let us show you around.</h2><p>Take a quick walk through planning the weather, creating an event, and inviting your people.</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={closeTour}>Skip</button><button className="tourPrimary" type="button" onClick={startTour}>Start tour <span>→</span></button></div></section>}
 

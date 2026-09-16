@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AdSenseLoader from "./components/AdSenseLoader";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://thefamilyweather.com").replace(/\/+$/, "");
 const title = "Free Event Weather Planner & Digital Invitations | Family Weather";
@@ -73,18 +74,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <head>
-        <script
-          async
-          crossOrigin="anonymous"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7197347169057891"
-        />
-      </head>
       <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
+        <AdSenseLoader />
         {children}
       </body>
     </html>
