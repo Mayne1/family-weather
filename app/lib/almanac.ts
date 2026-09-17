@@ -77,6 +77,22 @@ function average(values: number[]) {
   return Math.round(values.reduce((total, value) => total + value, 0) / values.length);
 }
 
+async function fetchArchive(url: URL) {
+  let lastError: unknown;
+  for (const timeout of [12_000, 18_000]) {
+    try {
+      const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(timeout) });
+      if (response.ok) return response;
+      if (response.status < 500) throw new Error("Historical weather lookup is temporarily unavailable");
+      lastError = new Error(`Archive service returned ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  console.error("Historical weather archive did not answer after retry", lastError);
+  throw new Error("The history service took too long to answer. Try the lookup again.");
+}
+
 export async function lookupAlmanac(geo: LocationCandidate, targetDate: string): Promise<AlmanacResult> {
   const requestedDates = historicalDates(targetDate);
   const chronological = [...requestedDates].sort();
@@ -91,8 +107,7 @@ export async function lookupAlmanac(geo: LocationCandidate, targetDate: string):
   url.searchParams.set("precipitation_unit", "inch");
   url.searchParams.set("timezone", "auto");
 
-  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error("Historical weather lookup is temporarily unavailable");
+  const response = await fetchArchive(url);
   const payload = await response.json();
   const daily = payload?.daily;
   const indices = new Map<string, number>((daily?.time || []).map((date: string, index: number) => [date, index]));

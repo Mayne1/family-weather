@@ -12,12 +12,14 @@ import type { AuthSession } from "./lib/firebaseAuth";
 import InvitationCard from "./invitations/InvitationCard";
 import LocationSearchInput from "./components/LocationSearchInput";
 import EventPurchasePanel from "./components/EventPurchasePanel";
+import WeatherIcon from "./components/WeatherIcon";
 import InvitationStyleGuide from "./components/InvitationStyleGuide";
 import InvitationDesignChooser from "./components/InvitationDesignChooser";
 import { suggestedInvitationDesign } from "./invitations/catalog";
 import type { InvitationDesignId, InvitationRecord } from "./invitations/catalog";
 import { defaultInvitationStyle, recommendedInvitationStyle } from "./invitations/style";
 import type { LocationCandidate } from "./lib/location";
+import type { AlmanacResult } from "./lib/almanac";
 import type { EventEntitlement } from "./lib/entitlementTypes";
 
 const activities = [
@@ -42,18 +44,9 @@ const tourSteps = [
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
 type HomeWeather = { label?: string; lat?: number; lon?: number; timezone?: string | null; current_source?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number; weather_code: number; observed_at?: string; source?: string } | null; days: WeatherDay[] };
-type AlmanacYear = { year: number; date: string; high_f: number; low_f: number; precipitation_in: number; rain: boolean; weather_code: number; condition: string };
-type AlmanacResult = { targetDate: string; location: string; years: AlmanacYear[]; averageHighF: number; averageLowF: number; averageWindMph: number; rainYears: number; rainFrequencyPct: number; typicalWeatherCode: number; summary: string; source: string };
 type PlanAdvice = { tone: string; title: string; copy: string };
 type PlanResult = { source: string; location: string; resolvedLocation: LocationCandidate; day: WeatherDay; almanac?: AlmanacResult | null; space: string; activity: string; score: number; bestWindow: string; advice: PlanAdvice[] };
 type EventDetails = { name: string; activity: string; guests: string; location: string; date: string; time: string };
-
-function weatherSymbol(code: number) {
-  if (code >= 200 && code < 700) return "☂";
-  if (code === 800) return "☀";
-  if (code > 800) return "◒";
-  return "☁";
-}
 
 function weatherDescription(code: number) {
   if (code >= 200 && code < 300) return "Thunderstorms possible.";
@@ -127,13 +120,10 @@ export default function Home() {
   const [eventSpace, setEventSpace] = useState("outdoor");
   const [homeWeather, setHomeWeather] = useState<HomeWeather | null>(null);
   const [clock, setClock] = useState<Date | null>(null);
-  const [selectedOutlookDay, setSelectedOutlookDay] = useState<WeatherDay | null>(null);
   const [almanacLocation, setAlmanacLocation] = useState("");
   const [almanacResolved, setAlmanacResolved] = useState<LocationCandidate | null>(null);
   const [almanacSuggestions, setAlmanacSuggestions] = useState<LocationCandidate[]>([]);
   const [almanacDate, setAlmanacDate] = useState("");
-  const [almanacResult, setAlmanacResult] = useState<AlmanacResult | null>(null);
-  const [almanacLoading, setAlmanacLoading] = useState(false);
   const [almanacError, setAlmanacError] = useState("");
   const [homeLocation, setHomeLocation] = useState("Stockton, California");
   const [plannerLocation, setPlannerLocation] = useState("");
@@ -326,29 +316,10 @@ export default function Home() {
 
   const checkAlmanac = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setAlmanacLoading(true);
     setAlmanacError("");
-    setAlmanacResult(null);
-    try {
-      const response = await fetch("/api/weather/almanac", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: almanacLocation, resolvedLocation: almanacResolved, date: almanacDate }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        if (response.status === 409) setAlmanacSuggestions(data.suggestions || []);
-        throw new Error(data.error || "Almanac lookup failed");
-      }
-      setAlmanacResolved(data.resolvedLocation);
-      setAlmanacLocation(data.resolvedLocation?.label || almanacLocation);
-      setAlmanacSuggestions([]);
-      setAlmanacResult(data.almanac);
-    } catch (error) {
-      setAlmanacError(error instanceof Error ? error.message : "Almanac lookup failed");
-    } finally {
-      setAlmanacLoading(false);
-    }
+    const selectedLocation = almanacResolved?.label || almanacLocation.trim();
+    if (!selectedLocation) return setAlmanacError("Enter a location before opening Weather History.");
+    router.push(`/weather-history?location=${encodeURIComponent(selectedLocation)}&date=${encodeURIComponent(almanacDate)}`);
   };
 
   const openEvent = () => {
@@ -557,7 +528,7 @@ export default function Home() {
 
   const today = availableDays.find((item) => item.date === homeLocalDate) || availableDays[0];
   const liveForecast = availableDays.length
-    ? availableDays.map((item) => { const offset = calendarDayOffset(item.date, homeLocalDate); return ({ label: offset === 0 ? "TODAY" : offset === 1 ? "TOMORROW" : calendarDateText(item.date, { weekday: "short" }).toUpperCase(), day: calendarDateText(item.date, { weekday: "long" }), icon: weatherSymbol(item.weather_code), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: offset === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }); })
+    ? availableDays.map((item) => { const offset = calendarDayOffset(item.date, homeLocalDate); return ({ label: offset === 0 ? "TODAY" : offset === 1 ? "TOMORROW" : calendarDateText(item.date, { weekday: "short" }).toUpperCase(), day: calendarDateText(item.date, { weekday: "long" }), temp: `${item.temp_max_f}°`, lead: item.precip_prob_pct < 20 ? "Low rain risk" : "Watch the rain", copy: `${item.precip_prob_pct}% chance · wind ${item.wind_max_mph} mph`, style: offset === 0 ? "featured" : item.precip_prob_pct >= 40 ? "caution" : "", weather: item }); })
     : [];
 
   return (
@@ -629,11 +600,20 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="how homeHow" id="how">
+          <div className="homeHowHeading"><div><p className="eyebrow dark"><span /> You can stop at the weather—or keep building the plan</p><h2>Here is what to do when you land here.</h2></div><p>Family Weather is useful whether you are cutting grass by yourself or organizing a gathering. Start with the decision you need to make; the invitation tools stay out of the way until you actually need them.</p></div>
+          <div className="steps">
+            <article><span>01</span><h3>Tell us what you are doing</h3><p>Pick an activity, real location, and date. The same weather does not mean the same thing for yard work, a cookout, travel, or an outdoor wedding.</p><Link href="/plan">Open the activity planner →</Link></article>
+            <article><span>02</span><h3>Read the complete weather fit</h3><p>Get the best available window, temperature range, rain, wind, score, and plain-language reasons behind the answer.</p><Link href="/today">See the full weather view →</Link></article>
+            <article><span>03</span><h3>Invite people only if this is an event</h3><p>Create the event, design an invitation, share one link, and manage RSVPs. A personal weather check never has to become an event.</p><Link href="/how-it-works">See the whole process →</Link></article>
+          </div>
+        </section>
+
         <section className="outlook" id="outlook">
           <div className="sectionHeading"><div><p className="eyebrow dark"><span /> The next few days</p><h2>Weather you can use.</h2></div><p>Not just numbers. Each day comes with a plain-language recommendation for your plans.</p></div>
           <div className="forecastGrid">
-            {liveForecast.map(({ label, day, icon, temp, lead, copy, style, weather }) => (
-              <button className={`forecastDay ${style}`} key={`${label}-${day}`} type="button" onClick={() => weather && setSelectedOutlookDay(weather)} aria-label={`View detailed weather for ${day}`}><div><small>{label}</small><h3>{day}</h3></div><span className="weatherIcon" aria-hidden="true">{icon}</span><strong>{temp}</strong><p><b>{lead}</b> {copy}</p><span className="forecastMore">View details</span></button>
+            {liveForecast.map(({ label, day, temp, lead, copy, style, weather }) => (
+              <Link className={`forecastDay ${style}`} href={`/today?date=${encodeURIComponent(weather.date)}#day-details`} key={`${label}-${day}`} aria-label={`Open the full weather view for ${day}`}><div><small>{label}</small><h3>{day}</h3></div><WeatherIcon code={weather.weather_code} /><strong>{temp}</strong><p><b>{lead}</b> {copy}</p><span className="forecastMore">Open full day →</span></Link>
             ))}
             {!liveForecast.length && <p className="forecastLoading" role="status"><strong>The forecast service is being contacted.</strong><br />The activity planner and five-year weather history remain available as separate tools.</p>}
           </div>
@@ -645,34 +625,11 @@ export default function Home() {
             <form onSubmit={checkAlmanac}>
               <label><span>LOCATION</span><LocationSearchInput id="almanac-location" value={almanacLocation} forcedSuggestions={almanacSuggestions} onChange={(value) => { setAlmanacLocation(value); setAlmanacResolved(null); setAlmanacSuggestions([]); }} onSelect={(candidate) => { setAlmanacLocation(candidate.label); setAlmanacResolved(candidate); setAlmanacSuggestions([]); }} /></label>
               <label><span>SPECIAL DATE</span><input type="date" value={almanacDate} onChange={(event) => setAlmanacDate(event.target.value)} required /></label>
-              <button className="primaryCta" type="submit" disabled={almanacLoading}>{almanacLoading ? "Looking through history…" : "Check the almanac"}<span>→</span></button>
+              <button className="primaryCta" type="submit">Open full Weather History<span>→</span></button>
             </form>
             {almanacError && <p className="formError" role="alert">{almanacError}</p>}
-            {!almanacResult && !almanacError && <div className="almanacEmpty"><strong>A weather time machine, minus the questionable wiring.</strong><p>This reports recorded historical patterns. It does not pretend five old Tuesdays can guarantee the next one.</p></div>}
-            {almanacResult && <div className="almanacResults"><p className="almanacPlace">{almanacResult.location}</p><div className="almanacSummary"><div><small>AVG HIGH</small><strong>{almanacResult.averageHighF}°</strong></div><div><small>AVG LOW</small><strong>{almanacResult.averageLowF}°</strong></div><div><small>RAIN HISTORY</small><strong>{almanacResult.rainYears}/{almanacResult.years.length}</strong></div></div><p>{almanacResult.summary}</p><p className="almanacDisclaimer" role="note"><strong>Historical pattern only — not a forecast.</strong></p><div className="almanacYears">{almanacResult.years.map((year) => <article key={year.date}><strong>{year.year}</strong><span>{year.condition}</span><b>{year.high_f}° / {year.low_f}°</b><small>{year.rain ? `${year.precipitation_in.toFixed(2)} in rain` : "No rain recorded"}</small></article>)}</div></div>}
+            {!almanacError && <div className="almanacEmpty"><strong>This box is the doorway, not the whole room.</strong><p>Choose the place and date here. The complete Weather History page will show all five matching years, the averages, rain frequency, wind, and the path back to a complete activity plan.</p><span>Historical pattern only—not a forecast.</span></div>}
           </div>
-        </section>
-
-        <section className="homePricing" id="pricing">
-          <div className="sectionHeading"><div><p className="eyebrow dark"><span /> Start free. Pay for polish or delivery.</p><h2>One event. No subscription.</h2></div><p>Plan the weather, design the invitation, share your link, and manage RSVPs free. Upgrade only when Family Weather is doing more for you.</p></div>
-          <div className="homePricingGrid">
-            <article><small>FREE EVENT</small><strong>$0</strong><h3>Plan it and share it yourself.</h3><p>10 direct emails, shareable invitation link, RSVP management, and Family Weather promotion.</p></article>
-            <article><small>CLEAN EVENT</small><strong>$1.99</strong><h3>Take the advertisements away.</h3><p>The Free allowance with a clean guest page and only a small Family Weather signature.</p></article>
-            <article className="featured"><small>EVENT PLUS</small><strong>$5.99</strong><h3>More delivery. Less branding.</h3><p>25 direct emails, no advertisements or promotional branding, and the complete event experience.</p></article>
-          </div>
-          <p className="homePricingFootnote">Need a larger list? Per-event packages support 100, 250, 500, or 1,000 direct email invitations. Your shareable link is not metered.</p>
-          <Link className="sectionPageLink" href="/pricing">See every package on the Pricing page →</Link>
-        </section>
-
-        <section className="how" id="how">
-          <p className="eyebrow dark"><span /> One plan, everybody informed</p><h2>From “what if?” to “we’re ready.”</h2>
-          <div className="steps">
-            <article><span>01</span><h3>Tell us the plan</h3><p>Pick the activity, place and date. Checking a plan doesn’t require an account.</p></article>
-            <article><span>02</span><h3>Get a real answer</h3><p>See the best time, the important risks and practical advice—not a wall of weather data.</p></article>
-            <article><span>03</span><h3>Keep people together</h3><p>Create a digital invitation, share it with your people and manage RSVPs as the plan comes together.</p></article>
-          </div>
-          <button className="tourReplay" type="button" onClick={startTour}>Show me around</button>
-          <Link className="sectionPageLink" href="/how-it-works">Read how Family Weather works →</Link>
         </section>
       </main>
 
@@ -682,9 +639,9 @@ export default function Home() {
 
       {tourMode === "active" && <section className={`tourPanel ${tourSteps[tourStep].placement}`} role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="tour-step-title"><button className="tourClose" type="button" onClick={closeTour} aria-label="Close walkthrough">×</button><div className="tourProgress" aria-hidden="true">{tourSteps.map((_, index) => <i className={index <= tourStep ? "active" : ""} key={index} />)}</div><p className="tourLabel">{tourSteps[tourStep].label}</p><h2 id="tour-step-title">{tourSteps[tourStep].title}</h2><p>{tourSteps[tourStep].copy}</p><div className="tourActions"><button className="tourSecondary" type="button" onClick={() => tourStep === 0 ? closeTour() : setTourStep((current) => current - 1)}>{tourStep === 0 ? "Skip" : "Back"}</button><button className="tourPrimary" type="button" onClick={advanceTour}>{tourStep === tourSteps.length - 1 ? "Finish" : "Next"} <span>→</span></button></div></section>}
 
-      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${selectedActivity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
+      {tourMode === "closed" && <button className="tourLauncher" type="button" onClick={startTour}><span aria-hidden="true">?</span><strong>Show me around</strong></button>}
 
-      {selectedOutlookDay && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="outlook-detail-title" onMouseDown={(event) => event.target === event.currentTarget && setSelectedOutlookDay(null)}><div className="modalCard outlookDetail"><button className="close" type="button" onClick={() => setSelectedOutlookDay(null)} aria-label="Close">×</button><p className="eyebrow dark"><span /> Daily details</p><h2 id="outlook-detail-title">{new Date(`${selectedOutlookDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h2><p>{selectedOutlookDay.shortForecast || weatherDescription(selectedOutlookDay.weather_code)}</p><div className="outlookFacts"><div><small>HIGH</small><strong>{selectedOutlookDay.temp_max_f}°</strong></div><div><small>LOW</small><strong>{selectedOutlookDay.temp_min_f}°</strong></div><div><small>RAIN</small><strong>{selectedOutlookDay.precip_prob_pct}%</strong></div><div><small>WIND</small><strong>{selectedOutlookDay.wind_max_mph} mph</strong></div></div></div></div>}
+      {showResult && plan && <div className="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" onMouseDown={(event) => event.target === event.currentTarget && setShowResult(false)}><div className="modalCard"><button className="close" type="button" onClick={() => setShowResult(false)} aria-label="Close">×</button><p className="eyebrow dark"><span /> {new Date(`${selectedDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p><h2 id="result-title">{plan.almanac ? "Here’s the historical pattern." : `Your ${selectedActivity} has a weather window.`}</h2><p className="resultLocation">{plan.almanac ? "Five-year history" : plan.source === "nws" ? "Official NWS forecast" : "Worldwide forecast"} for <strong>{plan.location}</strong></p><div className="resultAnswer"><span>{plan.almanac ? "PLANNING BASIS" : "BEST TIME"}</span><strong>{selectedBestWindow}</strong></div><p>{plan.almanac ? `${plan.almanac.summary} Average high ${plan.day.temp_max_f}° and low ${plan.day.temp_min_f}°. This is historical guidance, not a forecast.` : `${plan.day.shortForecast || "Forecast available"}. High ${plan.day.temp_max_f}°, ${plan.day.precip_prob_pct}% rain chance, and wind near ${plan.day.wind_max_mph} mph.`}</p><button className="primaryCta" type="button" onClick={openEvent}>Create this event <span>→</span></button></div></div>}
 
       {showEvent && (
         <div className="eventOverlay" role="dialog" aria-modal="true" aria-labelledby="event-title">

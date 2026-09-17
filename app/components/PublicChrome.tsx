@@ -10,6 +10,7 @@ export function PublicHeader() {
         <span className="brandMark" aria-hidden="true"><i /><i /><i /></span>
         <span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span>
       </Link>
+      <Link className="publicHeaderHome" href="/" aria-label="Return to the Family Weather homepage">Home</Link>
       <nav aria-label="Primary navigation">
         <Link href="/today">Today</Link>
         <Link href="/plan">Plan an activity</Link>

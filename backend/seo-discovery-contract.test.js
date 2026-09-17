@@ -31,6 +31,13 @@ test("the homepage links visitors to the real public tools and company pages", (
   assert.match(home, /href="\/about"/);
   assert.match(home, /href="\/contact"/);
   assert.match(home, /href="\/pricing"/);
+  assert.match(home, /href=\{`\/today\?date=/);
+  assert.match(home, /router\.push\(`\/weather-history\?location=/);
+  assert.match(home, /className="tourLauncher"/);
+  assert.doesNotMatch(home, /className="homePricing"/);
+
+  const chrome = read("app", "components", "PublicChrome.tsx");
+  assert.match(chrome, /className="publicHeaderHome" href="\/"/);
 });
 
 test("weather stories publish five editorial discovery pages and include them in the sitemap", () => {
