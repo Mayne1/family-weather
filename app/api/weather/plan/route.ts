@@ -4,6 +4,8 @@ import type { AlmanacResult } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
 import { enforceRateLimit } from "../../../lib/requestSecurity";
+import { buildDecision } from "../../../lib/decisionSpine";
+import type { DecisionResult, HourlyCondition, Space } from "../../../lib/decisionSpine";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
 
@@ -12,6 +14,7 @@ type NwsPeriod = {
   isDaytime: boolean;
   temperature: number;
   probabilityOfPrecipitation?: { value?: number | null };
+  relativeHumidity?: { value?: number | null };
   windSpeed?: string;
   shortForecast?: string;
 };
@@ -62,46 +65,45 @@ type ForecastDay = {
   shortForecast?: string;
 };
 
-function clamp(value: number, low = 0, high = 100) {
-  return Math.max(low, Math.min(high, Math.round(value)));
-}
-
-function buildRecommendation(day: ForecastDay, space: string, activity: string, historical?: AlmanacResult | null) {
-  const exposure = space === "indoor" ? 0.2 : space === "both" ? 0.6 : 1;
-  const heatPenalty = Math.max(0, day.temp_max_f - 84) * 1.7 * exposure;
-  const coldPenalty = Math.max(0, 58 - day.temp_max_f) * 1.2 * exposure;
-  const rainPenalty = day.precip_prob_pct * 0.55 * exposure;
-  const windPenalty = Math.max(0, day.wind_max_mph - 12) * 2 * exposure;
-  const activityPenalty = activity === "park day" || activity === "game" ? heatPenalty * 0.25 : 0;
-  const score = clamp(100 - heatPenalty - coldPenalty - rainPenalty - windPenalty - activityPenalty);
-
-  let bestWindow = "12–3 PM";
-  if (day.temp_max_f >= 90) bestWindow = "5–8 PM";
-  else if (day.temp_max_f >= 82) bestWindow = "4–7 PM";
-  else if (day.temp_max_f < 65) bestWindow = "1–4 PM";
-  if (space === "indoor") bestWindow = "Your planned time";
-
+function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null) {
   if (historical) {
-    const advice = [
-      { tone: historical.rainFrequencyPct >= 40 ? "warn" : "good", title: "Five-year rain pattern", copy: `${historical.rainYears} of ${historical.years.length} matching dates recorded rain. This is history, not a forecast.` },
-      { tone: historical.averageHighF >= 90 && space !== "indoor" ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
-      { tone: historical.averageWindMph > 12 ? "warn" : "good", title: "Typical peak wind", copy: `Matching dates averaged about ${historical.averageWindMph} mph for peak wind.` },
-    ];
-    return { score, bestWindow: "Historical pattern", advice };
+    return {
+      score: 0,
+      bestWindow: "Historical pattern only",
+      summary: decision.summary,
+      advice: [
+        { tone: historical.rainFrequencyPct >= 40 ? "warn" : "good", title: "Five-year rain pattern", copy: `${historical.rainYears} of ${historical.years.length} matching dates recorded rain. This is history, not a forecast.` },
+        { tone: historical.averageHighF >= 90 ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
+        { tone: historical.averageWindMph > 12 ? "warn" : "good", title: "Typical peak wind", copy: `Matching dates averaged about ${historical.averageWindMph} mph for peak wind.` },
+        { tone: "warn", title: "No hourly promise", copy: "Use a live forecast closer to the date before choosing a time." },
+      ],
+    };
   }
 
-  const advice = [];
-  if (day.precip_prob_pct < 20) advice.push({ tone: "good", title: "Rain is unlikely", copy: `Only a ${day.precip_prob_pct}% chance is currently forecast.` });
-  else if (day.precip_prob_pct < 50) advice.push({ tone: "warn", title: "Keep cover nearby", copy: `${day.precip_prob_pct}% rain chance—have a quick backup ready.` });
-  else advice.push({ tone: "warn", title: "Use the indoor backup", copy: `${day.precip_prob_pct}% rain chance makes exposure the main concern.` });
+  const advice = [
+    ...decision.reasons.map((copy, index) => ({ tone: "good", title: index === 0 ? "Why this window works" : "Supporting condition", copy })),
+    ...decision.cautions.map((copy, index) => ({ tone: "warn", title: index === 0 ? "What could interfere" : "Additional caution", copy })),
+  ];
+  if (decision.alternateWindow) advice.push({ tone: "good", title: "Second choice", copy: `${decision.alternateWindow.label} is the next-best non-overlapping window.` });
+  if (decision.confidence.level !== "high") advice.push({ tone: "warn", title: `${decision.confidence.level[0].toUpperCase()}${decision.confidence.level.slice(1)} confidence`, copy: `The hourly data is missing ${decision.confidence.missing.join(", ") || "some forecast detail"}.` });
+  return {
+    score: decision.score,
+    bestWindow: decision.bestWindow?.label || (decision.status === "recommended" ? "Your planned time" : "No responsible window"),
+    summary: decision.summary,
+    advice: advice.slice(0, 5),
+  };
+}
 
-  if (day.temp_max_f >= 90 && space !== "indoor") advice.push({ tone: "warn", title: "Plan for heat", copy: `The high is near ${day.temp_max_f}°. Shade and cold drinks matter.` });
-  else advice.push({ tone: "good", title: "Temperature is manageable", copy: `The forecast high is ${day.temp_max_f}° with a low near ${day.temp_min_f}°.` });
-
-  if (day.wind_max_mph <= 12) advice.push({ tone: "good", title: "Wind stays manageable", copy: `Peak wind is around ${day.wind_max_mph} mph.` });
-  else advice.push({ tone: "warn", title: "Secure lightweight items", copy: `Wind could reach ${day.wind_max_mph} mph.` });
-
-  return { score, bestWindow, advice };
+function nwsHourly(periods: NwsPeriod[], date: string): HourlyCondition[] {
+  return periods.filter((period) => period.startTime.slice(0, 10) === date).map((period) => ({
+    time: period.startTime,
+    temperatureF: Number.isFinite(period.temperature) ? period.temperature : null,
+    precipitationProbabilityPct: typeof period.probabilityOfPrecipitation?.value === "number" ? period.probabilityOfPrecipitation.value : null,
+    windMph: period.windSpeed ? maxWind(period.windSpeed) : null,
+    humidityPct: typeof period.relativeHumidity?.value === "number" ? period.relativeHumidity.value : null,
+    condition: period.shortForecast,
+    isDaylight: period.isDaytime,
+  }));
 }
 
 async function nwsForecast(geo: LocationCandidate, date: string) {
@@ -109,22 +111,27 @@ async function nwsForecast(geo: LocationCandidate, date: string) {
   if (!pointResponse.ok) return null;
   const point = await pointResponse.json();
   const forecastUrl = point?.properties?.forecast;
-  if (!forecastUrl) return null;
-  const forecastResponse = await fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store" });
-  if (!forecastResponse.ok) return null;
-  const forecast = await forecastResponse.json();
+  const hourlyUrl = point?.properties?.forecastHourly;
+  if (!forecastUrl || !hourlyUrl) return null;
+  const [forecastResponse, hourlyResponse] = await Promise.all([
+    fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store" }),
+    fetch(hourlyUrl, { headers: NWS_HEADERS, cache: "no-store" }),
+  ]);
+  if (!forecastResponse.ok || !hourlyResponse.ok) return null;
+  const [forecast, hourlyForecast] = await Promise.all([forecastResponse.json(), hourlyResponse.json()]);
   const day = buildDays(forecast?.properties?.periods || []).find((item) => item.date === date);
   if (!day) return null;
   const place = point?.properties?.relativeLocation?.properties;
   const label = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
-  return { source: "nws", label, day };
+  return { source: "nws", label, day, hourly: nwsHourly(hourlyForecast?.properties?.periods || [], date) };
 }
 
 async function globalForecast(geo: LocationCandidate, date: string) {
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(geo.lat));
   url.searchParams.set("longitude", String(geo.lon));
-  url.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max");
+  url.searchParams.set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset");
+  url.searchParams.set("hourly", "temperature_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,relative_humidity_2m");
   url.searchParams.set("temperature_unit", "fahrenheit");
   url.searchParams.set("wind_speed_unit", "mph");
   url.searchParams.set("timezone", "auto");
@@ -143,7 +150,38 @@ async function globalForecast(geo: LocationCandidate, date: string) {
     wind_max_mph: Math.round(Number(data.daily.wind_speed_10m_max?.[index]) || 0),
     shortForecast: "Worldwide forecast",
   };
-  return { source: "open-meteo", label: geo.label, day };
+  const sunrise = data.daily.sunrise?.[index];
+  const sunset = data.daily.sunset?.[index];
+  const hourly: HourlyCondition[] = Array.isArray(data?.hourly?.time) ? data.hourly.time.flatMap((time: string, hourlyIndex: number) => {
+    if (!time.startsWith(`${date}T`)) return [];
+    const code = Number(data.hourly.weather_code?.[hourlyIndex]);
+    return [{
+      time,
+      temperatureF: numericOrNull(data.hourly.temperature_2m?.[hourlyIndex]),
+      feelsLikeF: numericOrNull(data.hourly.apparent_temperature?.[hourlyIndex]),
+      precipitationProbabilityPct: numericOrNull(data.hourly.precipitation_probability?.[hourlyIndex]),
+      windMph: numericOrNull(data.hourly.wind_speed_10m?.[hourlyIndex]),
+      windGustMph: numericOrNull(data.hourly.wind_gusts_10m?.[hourlyIndex]),
+      humidityPct: numericOrNull(data.hourly.relative_humidity_2m?.[hourlyIndex]),
+      condition: globalCondition(code),
+      isDaylight: typeof sunrise === "string" && typeof sunset === "string" ? time >= sunrise && time < sunset : null,
+    }];
+  }) : [];
+  return { source: "open-meteo", label: geo.label, day, hourly };
+}
+
+function numericOrNull(value: unknown) {
+  const number = typeof value === "number" ? value : Number.NaN;
+  return Number.isFinite(number) ? number : null;
+}
+
+function globalCondition(code: number) {
+  if ([95, 96, 99].includes(code)) return "Thunderstorms";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain or showers";
+  if ([45, 48].includes(code)) return "Fog";
+  if ([0, 1].includes(code)) return "Clear";
+  return "Cloudy";
 }
 
 export async function POST(request: NextRequest) {
@@ -154,7 +192,7 @@ export async function POST(request: NextRequest) {
     const location = String(body.location || "95206").trim();
     const date = String(body.date || new Date().toISOString().slice(0, 10));
     const activity = String(body.activity || "event");
-    const space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
+    const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
     const geo = await resolveLocation(location, body.resolvedLocation);
     const forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await globalForecast(geo, date);
@@ -168,7 +206,8 @@ export async function POST(request: NextRequest) {
       wind_max_mph: almanac!.averageWindMph,
       shortForecast: almanac!.summary,
     };
-    const recommendation = buildRecommendation(day, space, activity, almanac);
+    const decision = buildDecision({ activity, space, hourly: forecast?.hourly || [], historical: Boolean(almanac) });
+    const recommendation = recommendationFromDecision(decision, almanac);
     return NextResponse.json({
       ok: true,
       source: forecast?.source || "almanac",
@@ -178,6 +217,7 @@ export async function POST(request: NextRequest) {
       almanac,
       space,
       activity,
+      decision,
       ...recommendation,
     });
   } catch (error) {
