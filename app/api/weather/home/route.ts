@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalizeAirQuality } from "../../../lib/airQuality";
 import { backendUrl } from "../../../lib/serverConfig";
 
 const NWS_HEADERS = {
@@ -242,6 +243,21 @@ async function jsonOrNull(url: string, headers?: HeadersInit) {
   }
 }
 
+async function airQuality(lat: number, lon: number) {
+  const params = new URLSearchParams({ latitude: String(lat), longitude: String(lon), current: "us_aqi", timeformat: "unixtime" });
+  const key = process.env.OPEN_METEO_API_KEY;
+  if (key) params.set("apikey", key);
+  const host = key ? "customer-air-quality-api.open-meteo.com" : "air-quality-api.open-meteo.com";
+  try {
+    const response = await fetch(`https://${host}/v1/air-quality?${params}`, {
+      next: { revalidate: 600 }, signal: AbortSignal.timeout(4000),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return normalizeAirQuality(payload?.current);
+  } catch { return null; }
+}
+
 export async function GET(request: NextRequest) {
   const rawLat = request.nextUrl.searchParams.get("lat");
   const rawLon = request.nextUrl.searchParams.get("lon");
@@ -256,7 +272,8 @@ export async function GET(request: NextRequest) {
   const lat = hasCoordinates ? requestedLat : 37.9177;
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
-  const [currentPayload, fallbackForecast, point] = await Promise.all([
+  const [airQualityReading, currentPayload, fallbackForecast, point] = await Promise.all([
+    airQuality(lat, lon),
     jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`)),
     jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`)),
     jsonOrNull(
@@ -321,6 +338,7 @@ export async function GET(request: NextRequest) {
     lat,
     lon,
     current,
+    air_quality: airQualityReading,
     days,
     source,
     timezone: timeZone,

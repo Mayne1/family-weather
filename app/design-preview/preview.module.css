@@ -23,3 +23,5 @@
 @media(max-width:520px){.header{gap:14px}.accountButton{font-size:11px!important;padding:9px 12px}.weatherTicker{font-size:12px;padding:14px 5%;column-gap:16px}.weatherTicker>strong{font-size:9px}.weatherTicker b{font-size:16px}.planner{padding:0 20px 24px;border-radius:15px}.formHead{margin-inline:-20px;padding:24px 20px;gap:12px}.formHead h3{font-size:26px}.formHead p{font-size:8px}.accountDialog{padding:28px}}
 .accountDialog{margin:auto}
 .accountDialog a.planButton{color:#fff5d4;justify-content:center;text-align:center;font-weight:700}
+
+.weatherTicker .airQuality{flex-wrap:wrap;gap:6px;max-width:100%}.airQuality i{font-size:11px;opacity:.85}.weatherTicker>span{flex-shrink:0}.weatherTicker .airQuality b{overflow-wrap:anywhere}
