@@ -5,17 +5,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const page = fs.readFileSync(path.join(__dirname, "..", "app", "page.tsx"), "utf8");
+const page = fs.readFileSync(path.join(__dirname, "..", "app", "design-preview", "HomePreview.tsx"), "utf8");
 
 test("homepage does not silently replace its city with unconfirmed device coordinates", () => {
-  const initialLocationFlow = page.slice(
-    page.indexOf("const loadDefault"),
-    page.indexOf("const useCurrentLocation"),
-  );
-
   assert.match(page, /HOME_LOCATION_STORAGE_KEY = "family-weather-home-location-v2"/);
-  assert.match(initialLocationFlow, /localStorage\.removeItem\(LEGACY_HOME_LOCATION_STORAGE_KEY\)/);
-  assert.match(initialLocationFlow, /loadDefault\(\);/);
+  const initialLocationFlow = page.slice(page.indexOf("useEffect"), page.indexOf("const useCurrentLocation"));
+  assert.match(initialLocationFlow, /localStorage\.getItem\(HOME_LOCATION_STORAGE_KEY\)/);
   assert.doesNotMatch(initialLocationFlow, /navigator\.geolocation/);
 });
 

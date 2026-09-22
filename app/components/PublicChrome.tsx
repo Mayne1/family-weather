@@ -15,6 +15,7 @@ export function PublicHeader() {
         <Link href="/today">Today</Link>
         <Link href="/plan">Plan an activity</Link>
         <Link href="/weather-history">Weather history</Link>
+        <Link href="/live">Live desk</Link>
         <Link href="/how-it-works">How it works</Link>
         <Link href="/weather-stories">Stories</Link>
         <a href="/events">My events</a>
@@ -33,6 +34,7 @@ export function PublicFooter() {
       </div>
       <nav aria-label="Company and support">
         <Link href="/about">About</Link>
+        <Link href="/faq">FAQ</Link>
         <a href="/contact">Contact</a>
         <Link href="/pricing">Pricing</Link>
         <a href="/privacy">Privacy</a>

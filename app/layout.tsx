@@ -3,9 +3,9 @@ import "./globals.css";
 import AdSenseLoader from "./components/AdSenseLoader";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://thefamilyweather.com").replace(/\/+$/, "");
-const title = "Free Event Weather Planner & Digital Invitations | Family Weather";
+const title = "Activity Weather Planner, History & Invitations | Family Weather";
 const description =
-  "Plan event weather free with live forecasts and five-year same-date history, then create digital invitations, share one link and manage RSVPs.";
+  "Apply live forecasts or five-year same-date weather history to yard work, dining, travel, family plans and events—then create invitations when people need to join.";
 
 const structuredData = {
   "@context": "https://schema.org",

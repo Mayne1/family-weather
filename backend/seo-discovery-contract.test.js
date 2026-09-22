@@ -8,7 +8,7 @@ const test = require("node:test");
 const read = (...parts) => fs.readFileSync(path.join(__dirname, "..", ...parts), "utf8");
 
 test("planning is consolidated into substantial public tools without generated detail routes", () => {
-  assert.match(read("app", "layout.tsx"), /Free Event Weather Planner & Digital Invitations/);
+  assert.match(read("app", "layout.tsx"), /Activity Weather Planner, History & Invitations/);
   assert.match(read("app", "plan", "page.tsx"), /Activity Weather Planner/);
   assert.match(read("app", "weather-history", "page.tsx"), /Five-Year Weather History Lookup/);
   assert.match(read("app", "event-weather-planning", "page.tsx"), /permanentRedirect\("\/plan"\)/);
@@ -22,7 +22,7 @@ test("planning is consolidated into substantial public tools without generated d
 });
 
 test("the homepage links visitors to the real public tools and company pages", () => {
-  const home = read("app", "page.tsx");
+  const home = read("app", "page.tsx") + read("app", "design-preview", "HomePreview.tsx");
   assert.match(home, /href="\/weather-stories"/);
   assert.match(home, /href="\/plan"/);
   assert.match(home, /href="\/today"/);
@@ -32,8 +32,8 @@ test("the homepage links visitors to the real public tools and company pages", (
   assert.match(home, /href="\/contact"/);
   assert.match(home, /href="\/pricing"/);
   assert.match(home, /href=\{`\/today\?date=/);
-  assert.match(home, /router\.push\(`\/weather-history\?location=/);
-  assert.match(home, /className="tourLauncher"/);
+  assert.match(home, /href="\/live"/);
+  assert.match(home, /href="\/faq"/);
   assert.doesNotMatch(home, /className="homePricing"/);
 
   const chrome = read("app", "components", "PublicChrome.tsx");
