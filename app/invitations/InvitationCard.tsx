@@ -51,7 +51,7 @@ export default function InvitationCard({ invitation, event, compact = false, sho
       style={{
         "--invitation-title-size": `${headlineSize}cqw`,
         "--invitation-art": `url('${design.artwork}')`,
-        "--invitation-aspect": "aspectRatio" in design ? design.aspectRatio : "4 / 5",
+        "--invitation-aspect": "4 / 5",
       } as CSSProperties}
     >
       <div className="digitalInvitationShade" />

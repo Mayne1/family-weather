@@ -37,7 +37,6 @@ export const invitationDesigns = [
     note: "Soft roses and airy botanical corners",
     artwork: "/invitations/designs/wedding-blush-cascade.webp",
     mark: "W1",
-    aspectRatio: "274 / 643",
   },
   {
     id: "wedding-white-garden",
@@ -46,7 +45,6 @@ export const invitationDesigns = [
     note: "White florals framed by a fine gold oval",
     artwork: "/invitations/designs/wedding-white-garden.webp",
     mark: "W2",
-    aspectRatio: "269 / 643",
   },
   {
     id: "wedding-midnight-crest",
@@ -55,7 +53,6 @@ export const invitationDesigns = [
     note: "Formal navy-black stationery with gold filigree",
     artwork: "/invitations/designs/wedding-midnight-crest.webp",
     mark: "W3",
-    aspectRatio: "286 / 643",
   },
   {
     id: "wedding-candlelit-wood",
@@ -64,7 +61,6 @@ export const invitationDesigns = [
     note: "Warm string lights, dark wood, and candle glow",
     artwork: "/invitations/designs/wedding-candlelit-wood.webp",
     mark: "W4",
-    aspectRatio: "274 / 643",
   },
   {
     id: "wedding-marble-rose",
@@ -73,7 +69,6 @@ export const invitationDesigns = [
     note: "Modern marble with blush florals and geometric gold",
     artwork: "/invitations/designs/wedding-marble-rose.webp",
     mark: "W5",
-    aspectRatio: "282 / 643",
   },
   {
     id: "wedding-burgundy-bloom",
@@ -82,7 +77,6 @@ export const invitationDesigns = [
     note: "Deep wine florals for an evening celebration",
     artwork: "/invitations/designs/wedding-burgundy-bloom.webp",
     mark: "W6",
-    aspectRatio: "274 / 478",
   },
   {
     id: "wedding-torn-paper",
@@ -91,7 +85,6 @@ export const invitationDesigns = [
     note: "Handmade paper texture with white blossoms",
     artwork: "/invitations/designs/wedding-torn-paper.webp",
     mark: "W7",
-    aspectRatio: "269 / 478",
   },
   {
     id: "wedding-sunset-vows",
@@ -100,7 +93,6 @@ export const invitationDesigns = [
     note: "A candlelit tropical shoreline at sunset",
     artwork: "/invitations/designs/wedding-sunset-vows.webp",
     mark: "W8",
-    aspectRatio: "286 / 478",
   },
   {
     id: "wedding-ink-marble",
@@ -109,7 +101,6 @@ export const invitationDesigns = [
     note: "Minimal black ink, white stone, and fine gold",
     artwork: "/invitations/designs/wedding-ink-marble.webp",
     mark: "W9",
-    aspectRatio: "274 / 478",
   },
   {
     id: "wedding-deco-noir",
@@ -118,7 +109,6 @@ export const invitationDesigns = [
     note: "Black-and-gold Art Deco ceremony style",
     artwork: "/invitations/designs/wedding-deco-noir.webp",
     mark: "W10",
-    aspectRatio: "282 / 478",
   },
   {
     id: "graduation-ascent",

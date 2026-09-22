@@ -676,3 +676,6 @@ to{opacity:1;transform:none}
 .digitalInvitation .digitalInvitationWeather{font-size:2.7cqw!important;line-height:1.35;letter-spacing:0}
 .digitalInvitation .digitalInvitationInstructions{font-size:3.3cqw!important;line-height:1.4}
 .digitalInvitation.invitationPanel-open .digitalInvitationContent{background:transparent;box-shadow:none;backdrop-filter:none}
+
+/* Standard artwork previews use the same 4:5 crop as the invitation and keepsake. */
+.signatureDesignPicker.designChooser>div>button>b.standardInvitationThumbnail{height:auto;aspect-ratio:4/5;background-size:cover}
