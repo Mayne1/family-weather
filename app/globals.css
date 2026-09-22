@@ -660,3 +660,19 @@ to{opacity:1;transform:none}
 @media(max-width:1000px){.todayPrimary{grid-template-columns:1fr auto}.todayCurrentIcon{display:none}.weatherUseGrid,.answerAnatomyGrid{grid-template-columns:repeat(2,1fr)}.homeHowHeading{grid-template-columns:1fr;gap:1rem}.historyMethodGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.publicHero:before{opacity:.55}.publicHeaderHome{margin-left:auto}.tourLauncher{right:.75rem;bottom:.75rem}.tourLauncher strong{display:none}.tourLauncher{padding:.48rem}.weatherUseGuide,.historyMethod,.answerAnatomy{padding:3.5rem 1rem}.weatherUseGuide>div:first-child,.historyMethod>div:first-child,.answerAnatomy>div:first-child{grid-template-columns:1fr;gap:.6rem}.weatherUseGrid,.historyMethodGrid,.answerAnatomyGrid{grid-template-columns:1fr}.todayDayFacts,.historyQuestionGrid{grid-template-columns:1fr}.todayDayHeading>.weatherGlyph{width:64px;height:64px}.todayForecast a{padding:.85rem}.homeHow{padding-left:1rem;padding-right:1rem}}
 @media(prefers-reduced-motion:reduce){.weatherGlyphRain,.weatherGlyphSun,.publicHero:before,.tourLauncher{animation:none!important}}
+
+/* Invitation type scales with its card, not the browser window. */
+.digitalInvitation:not(.customInvitationArtwork){container-type:inline-size;display:flex;align-items:center;min-height:0;height:auto}
+.digitalInvitation .digitalInvitationContent{width:70%;min-height:0;margin:10% auto;padding:5%;box-sizing:border-box;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.digitalInvitation.invitationPanel-dark-glass{--invitation-panel:rgba(3,15,26,.55)}
+.digitalInvitation .digitalInvitationContent>*{max-width:100%;min-width:0;overflow-wrap:anywhere}
+.digitalInvitation .digitalInvitationContent h1{width:100%;font-size:var(--invitation-title-size,9cqw);line-height:1.07;letter-spacing:-.035em;text-align:center;white-space:normal;margin:2cqw 0 3cqw}
+.digitalInvitation .digitalInvitationHonoree{font-size:5cqw!important;line-height:1.25;letter-spacing:.02em}
+.digitalInvitation .digitalInvitationMessage{font-size:4cqw!important;margin-bottom:3cqw!important;line-height:1.35!important}
+.digitalInvitation .digitalInvitationFacts{padding:2cqw 0;gap:1cqw}
+.digitalInvitation .digitalInvitationFacts p{padding:2cqw 1cqw!important;font-size:3.3cqw!important}
+.digitalInvitation .digitalInvitationFacts strong{font-size:3.6cqw;line-height:1.3}
+.digitalInvitation .digitalInvitationFacts span{font-size:2.8cqw;letter-spacing:.1em}
+.digitalInvitation .digitalInvitationWeather{font-size:2.7cqw!important;line-height:1.35;letter-spacing:0}
+.digitalInvitation .digitalInvitationInstructions{font-size:3.3cqw!important;line-height:1.4}
+.digitalInvitation.invitationPanel-open .digitalInvitationContent{background:transparent;box-shadow:none;backdrop-filter:none}

@@ -51,8 +51,10 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const style = normalizeInvitationStyle(invitation.style_options);
   const dark = style.look === "dramatic" || style.panel === "dark-glass";
   const ink = dark ? "#fffaf0" : "#172f37";
-  const panel = style.panel === "open" ? "transparent" : dark ? "rgba(4,12,24,.82)" : style.panel === "spotlight" ? "rgba(255,253,247,.68)" : "rgba(255,253,247,.84)";
+  const panel = style.panel === "open" ? "transparent" : dark ? "rgba(4,12,24,.55)" : style.panel === "spotlight" ? "rgba(255,253,247,.68)" : "rgba(255,253,247,.84)";
   const accent = style.look === "bright" ? "#d64e66" : style.look === "natural" ? "#8c6338" : dark ? "#efc55a" : "#9a6b16";
+  const headline = String(invitation.headline || event.title || "You’re invited").trim().replace(/\s+/g, " ");
+  const headlineSize = Math.min(style.font === "bold" ? 72 : 66, 920 / Math.max(1, ...headline.split(" ").map(word => word.length)));
   const headlineFont = style.font === "modern" || style.font === "bold" ? "Arial" : "Georgia";
   const frameWidth = style.frame === "none" ? 0 : style.frame === "fine-line" ? 1 : 3;
   const showBranding = data.presentation !== "unbranded";
@@ -74,9 +76,9 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
       {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires a plain image element. */}
       <img src={artworkData} alt="" width="1200" height="1500" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       <div style={{ position: "absolute", inset: 46, display: "flex", border: `${frameWidth}px ${style.frame === "double-line" || style.frame === "gold-leaf" ? "double" : "solid"} ${accent}`, borderRadius: 28 }} />
-      <div style={{ position: "relative", width: "940px", display: "flex", flexDirection: "column", alignItems: "center", padding: "64px 68px", border: style.panel === "open" ? "0" : `1px solid ${accent}`, borderRadius: 18, background: panel, textAlign: "center" }}>
+      <div style={{ position: "relative", width: "840px", display: "flex", flexDirection: "column", alignItems: "center", padding: "44px 48px", border: style.panel === "open" ? "0" : `1px solid ${accent}`, borderRadius: 18, background: panel, textAlign: "center" }}>
         {invitation.honoree_names ? <div style={{ display: "flex", marginBottom: 16, fontFamily: "Georgia", fontSize: 34, fontStyle: "italic" }}>{invitation.honoree_names}</div> : null}
-        <div style={{ display: "flex", maxWidth: 900, marginBottom: 24, fontFamily: headlineFont, fontSize: style.font === "bold" ? 72 : 66, lineHeight: .98, fontWeight: style.font === "bold" ? 900 : 600, textTransform: style.font === "bold" ? "uppercase" : "none" }}>{invitation.headline || event.title || "You’re invited"}</div>
+        <div style={{ display: "flex", width: "100%", justifyContent: "center", overflowWrap: "anywhere", marginBottom: 24, fontFamily: headlineFont, fontSize: headlineSize, lineHeight: .98, fontWeight: style.font === "bold" ? 900 : 600, textTransform: style.font === "bold" ? "uppercase" : "none" }}>{headline}</div>
         {invitation.message ? <div style={{ display: "flex", maxWidth: 820, marginBottom: 28, fontFamily: "Georgia", fontSize: 29, lineHeight: 1.4, fontStyle: "italic" }}>{invitation.message}</div> : null}
         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 25, borderTop: `1px solid ${accent}` }}>
           <div style={{ display: "flex", marginBottom: 8, color: accent, fontSize: 19, fontWeight: 800, letterSpacing: 4 }}>WHEN</div>

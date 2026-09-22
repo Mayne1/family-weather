@@ -5,7 +5,7 @@ import Link from "next/link";
 import WeatherIcon from "../components/WeatherIcon";
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { label?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number } | null; days: WeatherDay[] };
+type HomeWeather = { label?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number | null } | null; days: WeatherDay[] };
 
 function condition(code: number) {
   if (code >= 200 && code < 300) return "Thunderstorms possible";
@@ -37,14 +37,14 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
         <div className="todayCurrentCopy">
           <p className="publicKicker">{weather?.label || "Your weather dashboard"}</p>
           <h2>{weather?.current ? `${weather.current.temp_f}°` : "Current conditions are being checked"}</h2>
-          <p>{error || (weather?.current ? `Feels like ${weather.current.feels_like_f}° with wind near ${weather.current.wind_mph} mph.` : "While the live observation arrives, you can still open the activity planner or weather history tool below.")}</p>
+          <p>{error || (weather?.current ? `Feels like ${weather.current.feels_like_f}°. ${typeof weather.current.wind_mph === "number" && Number.isFinite(weather.current.wind_mph) ? `Observed wind ${Math.round(weather.current.wind_mph)} mph.` : "Current wind observation unavailable."}` : "While the live observation arrives, you can still open the activity planner or weather history tool below.")}</p>
         </div>
         {today ? <WeatherIcon className="todayCurrentIcon" code={today.weather_code} title={today.shortForecast || condition(today.weather_code)} /> : null}
         <div className="todaySnapshot">
           <span><small>HIGH</small><strong>{today ? `${today.temp_max_f}°` : "—"}</strong></span>
           <span><small>LOW</small><strong>{today ? `${today.temp_min_f}°` : "—"}</strong></span>
           <span><small>RAIN</small><strong>{today ? `${today.precip_prob_pct}%` : "—"}</strong></span>
-          <span><small>WIND</small><strong>{today ? `${today.wind_max_mph} mph` : "—"}</strong></span>
+          <span><small>FORECAST PEAK WIND</small><strong>{today ? `${today.wind_max_mph} mph` : "—"}</strong></span>
         </div>
       </div>
       <div className="todayForecast">

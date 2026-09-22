@@ -26,6 +26,9 @@ export default function InvitationCard({ invitation, event, compact = false, sho
   const time = starts?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) || "Time to be announced";
   const publicDescription = publicEventDescription(event.description);
   const style = normalizeInvitationStyle(invitation.style_options);
+  const headline = (invitation.headline || event.title).trim().replace(/\s+/g, " ");
+  const longestWord = Math.max(1, ...headline.split(" ").map(word => word.length));
+  const headlineSize = Math.min(10, 76 / longestWord);
 
   if (invitation.photo_url) {
     return (
@@ -46,6 +49,7 @@ export default function InvitationCard({ invitation, event, compact = false, sho
     <article
       className={`digitalInvitation invitationDesign-${design.id} invitationLook-${style.look} invitationFont-${style.font} invitationPanel-${style.panel} invitationFrame-${style.frame} invitationDepth-${style.depth}${compact ? " compact" : ""}`}
       style={{
+        "--invitation-title-size": `${headlineSize}cqw`,
         "--invitation-art": `url('${design.artwork}')`,
         "--invitation-aspect": "aspectRatio" in design ? design.aspectRatio : "4 / 5",
       } as CSSProperties}
@@ -55,7 +59,7 @@ export default function InvitationCard({ invitation, event, compact = false, sho
       <div className="digitalInvitationContent">
         <div className="digitalInvitationOrnament" aria-hidden="true"><i>✦</i><span /></div>
         {invitation.honoree_names && <p className="digitalInvitationHonoree">{invitation.honoree_names}</p>}
-        <h1>{invitation.headline || event.title}</h1>
+        <h1>{headline}</h1>
         <p className="digitalInvitationMessage">{invitation.message || publicDescription || "Please join us for a day worth remembering."}</p>
         <div className="digitalInvitationFacts">
           <p><span>Date</span><strong>{date}</strong></p>

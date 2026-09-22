@@ -68,7 +68,7 @@ type ForecastDay = {
 function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null) {
   if (historical) {
     return {
-      score: 0,
+      score: null,
       bestWindow: "Historical pattern only",
       summary: decision.summary,
       advice: [
