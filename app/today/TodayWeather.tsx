@@ -5,7 +5,7 @@ import Link from "next/link";
 import WeatherIcon from "../components/WeatherIcon";
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { label?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number | null } | null; days: WeatherDay[] };
+type HomeWeather = { label?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number | null; humidity_pct?: number | null; humidity_estimated?: boolean } | null; days: WeatherDay[]; air_quality?: { us_aqi: number; category: string } | null };
 
 function condition(code: number) {
   if (code >= 200 && code < 300) return "Thunderstorms possible";
@@ -20,7 +20,12 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/weather/home", { cache: "no-store" })
+    let query = "";
+    try {
+      const saved = JSON.parse(localStorage.getItem("family-weather-home-location-v2") || "null");
+      if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lon)) query = `?lat=${saved.lat}&lon=${saved.lon}`;
+    } catch { /* Use the default location if the saved preference is invalid. */ }
+    fetch(`/api/weather/home${query}`, { cache: "no-store" })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.error || "Weather is temporarily unavailable.");
@@ -45,8 +50,11 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
           <span><small>LOW</small><strong>{today ? `${today.temp_min_f}°` : "—"}</strong></span>
           <span><small>RAIN</small><strong>{today ? `${today.precip_prob_pct}%` : "—"}</strong></span>
           <span><small>FORECAST PEAK WIND</small><strong>{today ? `${today.wind_max_mph} mph` : "—"}</strong></span>
+          <span><small>HUMIDITY{weather?.current?.humidity_estimated ? " (EST.)" : ""}</small><strong>{weather?.current?.humidity_pct == null ? "Unavailable" : `${weather.current.humidity_pct}%`}</strong></span>
+          <span><small>US AQI (EST.)</small><strong>{weather?.air_quality ? `${weather.air_quality.us_aqi} · ${weather.air_quality.category}` : "Unavailable"}</strong></span>
         </div>
       </div>
+      <p><small>Air quality estimates: <a href="https://open-meteo.com/">Open-Meteo</a> / <a href="https://atmosphere.copernicus.eu/">CAMS ENSEMBLE and global forecasts</a>.</small></p>
       <div className="todayForecast">
         {(weather?.days || []).slice(0, 7).map((day) => <Link className={selected?.date === day.date ? "selected" : ""} href={`/today?date=${encodeURIComponent(day.date)}#day-details`} key={day.date}><div className="todayForecastTop"><small>{new Date(`${day.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })}</small><WeatherIcon code={day.weather_code} /></div><strong>{day.temp_max_f}°</strong><span>{day.temp_min_f}° low</span><p>{day.shortForecast || condition(day.weather_code)}</p><b>{day.precip_prob_pct}% rain · {day.wind_max_mph} mph wind</b><em>Open day →</em></Link>)}
         {!weather && !error ? Array.from({ length: 5 }, (_, index) => <article className="weatherPlaceholder" key={index}><small>DAY {index + 1}</small><strong>—</strong><span>Live data on the way</span><p>Family Weather is contacting the weather service.</p></article>) : null}

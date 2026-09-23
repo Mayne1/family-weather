@@ -29,3 +29,4 @@
 /* Keep the right-now strip compact as more readings are added. */
 .weatherTicker{min-height:56px;gap:12px;padding-block:8px;font-size:10px}.weatherTicker>span{padding-right:12px;gap:6px}.weatherTicker b{font-size:13px}.weatherTicker svg{width:18px;height:18px}.weatherTicker>button,.weatherTicker>a{font-size:10px;padding:7px 9px;min-height:34px}
 @media(max-width:520px){.weatherTicker{font-size:11px;padding-block:10px}.weatherTicker b{font-size:13px}.weatherTicker>button,.weatherTicker>a{font-size:10px;padding:7px 9px}}
+.weatherTicker{flex-wrap:nowrap;white-space:nowrap;overflow-x:auto;gap:9px;min-height:50px;padding-block:6px}.weatherTicker>*{flex-shrink:0}.weatherTicker>span{padding-right:9px}.weatherTicker .airQuality{flex-wrap:nowrap;max-width:none}.weatherTicker .airQuality b{overflow-wrap:normal}.weatherTicker .airQuality i{font-size:9px}.weatherTicker>strong{font-size:9px;padding:6px 8px}.weatherTicker>button,.weatherTicker>a{white-space:nowrap}

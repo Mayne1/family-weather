@@ -173,6 +173,8 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
     wind_speed_unit: "mph",
     timezone: requestedTimeZone || "auto",
     forecast_days: "8",
+    current: "relative_humidity_2m",
+    timeformat: "iso8601",
   });
   const payload = await jsonOrNull(`https://api.open-meteo.com/v1/forecast?${params}`);
   const daily = payload?.daily;
@@ -189,7 +191,8 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
       shortForecast: openMeteoDescription(rawCode),
     };
   });
-  return { days, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
+  const humidity = finiteNumberOrNull(payload?.current?.relative_humidity_2m);
+  return { days, humidity: humidity !== null && humidity >= 0 && humidity <= 100 ? Math.round(humidity) : null, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
 }
 
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
@@ -317,7 +320,10 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
   }
 
-  const current = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
+  const rawCurrent = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
+  const observedHumidity = finiteNumberOrNull(rawCurrent?.humidity_pct);
+  const validHumidity = observedHumidity !== null && observedHumidity >= 0 && observedHumidity <= 100;
+  const current = rawCurrent ? { ...rawCurrent, humidity_pct: validHumidity ? Math.round(observedHumidity) : calendar.humidity, humidity_estimated: !validHumidity && calendar.humidity !== null } : null;
   if (!current && !days.length) {
     return NextResponse.json(
       { ok: false, error: "Weather service unavailable" },
