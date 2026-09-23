@@ -25,3 +25,7 @@
 .accountDialog a.planButton{color:#fff5d4;justify-content:center;text-align:center;font-weight:700}
 
 .weatherTicker .airQuality{flex-wrap:wrap;gap:6px;max-width:100%}.airQuality i{font-size:11px;opacity:.85}.weatherTicker>span{flex-shrink:0}.weatherTicker .airQuality b{overflow-wrap:anywhere}
+
+/* Keep the right-now strip compact as more readings are added. */
+.weatherTicker{min-height:56px;gap:12px;padding-block:8px;font-size:10px}.weatherTicker>span{padding-right:12px;gap:6px}.weatherTicker b{font-size:13px}.weatherTicker svg{width:18px;height:18px}.weatherTicker>button,.weatherTicker>a{font-size:10px;padding:7px 9px;min-height:34px}
+@media(max-width:520px){.weatherTicker{font-size:11px;padding-block:10px}.weatherTicker b{font-size:13px}.weatherTicker>button,.weatherTicker>a{font-size:10px;padding:7px 9px}}
