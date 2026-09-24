@@ -5,6 +5,11 @@ export type HourlyCondition = {
   temperatureF: number | null;
   feelsLikeF?: number | null;
   precipitationProbabilityPct: number | null;
+  /** Expected precipitation for the provider's forecast interval (often 1 or 6 hours). */
+  precipitationAmountMm?: number | null;
+  /** Length of the precipitation interval represented by precipitationAmountMm. */
+  precipitationWindowHours?: number | null;
+  precipitationSource?: string | null;
   windMph: number | null;
   windGustMph?: number | null;
   humidityPct?: number | null;
