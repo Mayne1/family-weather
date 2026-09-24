@@ -306,12 +306,12 @@ function scoreHour(hourly: HourlyCondition, profile: ActivityProfile, space: Spa
     score -= 14;
   } else if (rain > 70) {
     score -= 65;
-    cautions.push(`Rain is likely during this period (\${Math.round(rain)}% chance).`);
+    cautions.push(`Rain is likely during this period (${Math.round(rain)}% chance).`);
   } else if (rain > profile.maximumRainPct) {
     score -= Math.min(42, 12 + (rain - profile.maximumRainPct) * 0.8);
-    cautions.push(`Rain risk is \${Math.round(rain)}% during this period, higher than this activity tolerates well.`);
+    cautions.push(`Rain risk is ${Math.round(rain)}% during this period, higher than this activity tolerates well.`);
   } else {
-    reasons.push(`Rain risk is \${Math.round(rain)}% during this period and stays within a workable range.`);
+    reasons.push(`Rain risk is ${Math.round(rain)}% during this period and stays within a workable range.`);
   }
 
   if (wind === null) {
