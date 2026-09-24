@@ -2,6 +2,8 @@ import type { LocationCandidate } from "./location";
 
 export type PrecipitationOverlay = {
   dayProbabilityPct: number | null;
+  /** Local timezone used by the provider's hourly timestamps. */
+  timezone: string | null;
   hourly: Array<{
     time: string;
     probabilityPct: number | null;
@@ -58,6 +60,7 @@ export async function weatherApiPrecipitation(geo: LocationCandidate, date: stri
 
     return {
       dayProbabilityPct: numberOrNull(day?.day?.daily_chance_of_rain),
+      timezone: typeof payload?.location?.tz_id === "string" ? payload.location.tz_id : null,
       hourly,
     };
   } catch {
