@@ -67,12 +67,17 @@ export async function metForecast(geo: LocationCandidate, date: string) {
   const hourly: HourlyCondition[] = points.map((item) => {
     const instant = item.data?.instant?.details || {};
     const next = item.data?.next_1_hours || item.data?.next_6_hours;
+    const precipitationWindowHours = item.data?.next_1_hours ? 1 : item.data?.next_6_hours ? 6 : null;
+    const details = next?.details || {};
     const symbol = next?.summary?.symbol_code || "";
     return {
       time: item.time as string,
       temperatureF: metTemperatureF(instant.air_temperature),
       feelsLikeF: null,
-      precipitationProbabilityPct: null,
+      precipitationProbabilityPct: metNumber(details.probability_of_precipitation),
+      precipitationAmountMm: metNumber(details.precipitation_amount),
+      precipitationWindowHours,
+      precipitationSource: "met-norway",
       windMph: metWindMph(instant.wind_speed),
       windGustMph: metWindMph(instant.wind_speed_of_gust),
       humidityPct: metNumber(instant.relative_humidity),
