@@ -177,6 +177,25 @@ function numericOrNull(value: unknown) {
   return Number.isFinite(number) ? number : null;
 }
 
+function providerLocalKey(isoTime: string, timezone: string | null) {
+  if (!timezone) return isoTime.slice(0, 13);
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(isoTime));
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return values.year && values.month && values.day && values.hour
+      ? values.year + "-" + values.month + "-" + values.day + "T" + values.hour
+      : isoTime.slice(0, 13);
+  } catch {
+    return isoTime.slice(0, 13);
+  }
+}
 function globalCondition(code: number) {
   if ([95, 96, 99].includes(code)) return "Thunderstorms";
   if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
@@ -209,7 +228,7 @@ export async function POST(request: NextRequest) {
             precip_prob_pct: precipitation.dayProbabilityPct ?? forecast.day.precip_prob_pct,
           },
           hourly: forecast.hourly.map((hour) => {
-            const overlay = byTime.get(hour.time.slice(0, 13));
+            const overlay = byTime.get(providerLocalKey(hour.time, precipitation.timezone));
             return overlay ? {
               ...hour,
               precipitationProbabilityPct: overlay.probabilityPct ?? hour.precipitationProbabilityPct,
