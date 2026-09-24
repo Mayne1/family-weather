@@ -46,11 +46,11 @@ export async function metForecast(geo: LocationCandidate, date: string) {
     const symbol = next?.summary?.symbol_code || "";
     return {
       time: item.time as string,
-      temperatureF: metNumber(instant.air_temperature),
+      temperatureF: metTemperatureF(instant.air_temperature),
       feelsLikeF: null,
       precipitationProbabilityPct: null,
-      windMph: metNumber(instant.wind_speed),
-      windGustMph: metNumber(instant.wind_speed_of_gust),
+      windMph: metWindMph(instant.wind_speed),
+      windGustMph: metWindMph(instant.wind_speed_of_gust),
       humidityPct: metNumber(instant.relative_humidity),
       condition: metCondition(symbol),
       isDaylight: null,
