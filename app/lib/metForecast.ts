@@ -47,7 +47,21 @@ export async function metForecast(geo: LocationCandidate, date: string) {
   if (!response.ok) throw new Error("Worldwide forecast lookup failed");
   const payload = await response.json();
   const series: MetTimeseries[] = Array.isArray(payload?.properties?.timeseries) ? payload.properties.timeseries : [];
-  const points = series.filter((item) => typeof item.time === "string" && item.time.slice(0, 10) === date);
+  // MET Norway switches from hourly points to six-hour blocks farther out. Expand each block into representative hourly points so the planner can evaluate a two-hour activity window without inventing new weather values.
+  const points = series.flatMap((item, index) => {
+    if (typeof item.time !== "string") return [];
+    const start = Date.parse(item.time);
+    if (!Number.isFinite(start)) return [];
+    const nextTime = series[index + 1]?.time;
+    const next = typeof nextTime === "string" ? Date.parse(nextTime) : start + 60 * 60 * 1000;
+    const end = Number.isFinite(next) && next > start ? next : start + 60 * 60 * 1000;
+    const rows: MetTimeseries[] = [];
+    for (let timestamp = start; timestamp < end; timestamp += 60 * 60 * 1000) {
+      const time = new Date(timestamp).toISOString();
+      if (time.slice(0, 10) === date) rows.push({ ...item, time });
+    }
+    return rows;
+  });
   if (!points.length) return null;
 
   const hourly: HourlyCondition[] = points.map((item) => {
