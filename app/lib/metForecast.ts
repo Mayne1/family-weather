@@ -15,6 +15,16 @@ function metNumber(value: unknown) {
   return Number.isFinite(number) ? number : null;
 }
 
+function metTemperatureF(value: unknown) {
+  const number = metNumber(value);
+  return number === null ? null : Math.round((number * 9) / 5 + 32);
+}
+
+function metWindMph(value: unknown) {
+  const number = metNumber(value);
+  return number === null ? null : Math.round(number * 2.23694);
+}
+
 function metCondition(symbol = "") {
   const text = symbol.toLowerCase();
   if (text.includes("thunder")) return "Thunderstorms";
