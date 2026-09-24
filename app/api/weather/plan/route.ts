@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAlmanac } from "../../../lib/almanac";
+import { metForecast } from "../../../lib/metForecast";
 import type { AlmanacResult } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
@@ -60,7 +61,7 @@ type ForecastDay = {
   weather_code: number;
   temp_max_f: number;
   temp_min_f: number;
-  precip_prob_pct: number;
+  precip_prob_pct: number | null;
   wind_max_mph: number;
   shortForecast?: string;
 };
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
     const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
     const geo = await resolveLocation(location, body.resolvedLocation);
-    const forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await globalForecast(geo, date);
+    const forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date);
     const almanac = forecast ? null : await lookupAlmanac(geo, date);
     const day: ForecastDay = forecast?.day || {
       date,
