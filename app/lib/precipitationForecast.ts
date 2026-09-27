@@ -8,13 +8,22 @@ export type PrecipitationOverlay = {
     time: string;
     probabilityPct: number | null;
     amountMm: number | null;
+    condition: string | null;
     source: "weatherapi";
   }>;
 };
 
 function numberOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function weatherApiCondition(text: unknown, code: unknown) {
+  const normalized = typeof text === "string" ? text : "";
+  const numericCode = numberOrNull(code);
+  if ([1087, 1273, 1276, 1279, 1282].includes(numericCode ?? -1) || /thunder|lightning/i.test(normalized)) return "Thunderstorms";
+  return normalized || null;
 }
 
 /**
@@ -54,6 +63,7 @@ export async function weatherApiPrecipitation(geo: LocationCandidate, date: stri
         time: typeof item?.time === "string" ? item.time.replace(" ", "T") : "",
         probabilityPct: numberOrNull(item?.chance_of_rain),
         amountMm: numberOrNull(item?.precip_mm),
+        condition: weatherApiCondition(item?.condition?.text, item?.condition?.code),
         source: "weatherapi" as const,
       })).filter((item: { time: string }) => item.time)
       : [];

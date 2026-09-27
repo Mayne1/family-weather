@@ -50,7 +50,7 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
       weather_code: weatherCode(shortForecast),
       temp_max_f: Math.round(period.temperature),
       temp_min_f: Math.round(night?.temperature ?? period.temperature),
-      precip_prob_pct: Math.round(period.probabilityOfPrecipitation?.value || 0),
+      precip_prob_pct: typeof period.probabilityOfPrecipitation?.value === "number" ? Math.round(period.probabilityOfPrecipitation.value) : null,
       wind_max_mph: maxWind(period.windSpeed),
       shortForecast,
     };
@@ -82,15 +82,17 @@ function recommendationFromDecision(decision: DecisionResult, historical?: Alman
     };
   }
 
-  const advice = [
+  const advice = decision.safety
+    ? [{ tone: "warn", title: decision.safety.title, copy: decision.safety.detail }]
+    : [
     ...decision.reasons.map((copy, index) => ({ tone: "good", title: index === 0 ? "Why this window works" : "Supporting condition", copy })),
     ...decision.cautions.map((copy, index) => ({ tone: "warn", title: index === 0 ? "What could interfere" : "Additional caution", copy })),
   ];
   if (decision.alternateWindow) advice.push({ tone: "good", title: "Second choice", copy: `${decision.alternateWindow.label} is the next-best non-overlapping window.` });
   if (decision.confidence.level !== "high") advice.push({ tone: "warn", title: `${decision.confidence.level[0].toUpperCase()}${decision.confidence.level.slice(1)} confidence`, copy: `The hourly data is missing ${decision.confidence.missing.join(", ") || "some forecast detail"}.` });
   return {
-    score: decision.score,
-    bestWindow: decision.bestWindow?.label || (decision.status === "recommended" ? "Your planned time" : "No responsible window"),
+    score: decision.safety ? null : decision.score,
+    bestWindow: decision.safety ? "Choose another day" : decision.bestWindow?.label || (decision.status === "recommended" ? "Your planned time" : "No responsible window"),
     summary: decision.summary,
     advice: advice.slice(0, 5),
   };
@@ -173,11 +175,13 @@ async function globalForecast(geo: LocationCandidate, date: string) {
 }
 
 function numericOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
   const number = typeof value === "number" ? value : Number.NaN;
   return Number.isFinite(number) ? number : null;
 }
 
 function providerLocalKey(isoTime: string, timezone: string | null) {
+  if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(isoTime)) return isoTime.slice(0, 13);
   if (!timezone) return isoTime.slice(0, 13);
   try {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -216,9 +220,9 @@ export async function POST(request: NextRequest) {
     const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
     const geo = await resolveLocation(location, body.resolvedLocation);
-    let forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date);
+    const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
+    let forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date, precipitation?.timezone || null);
     if (forecast?.source === "met-norway") {
-      const precipitation = await weatherApiPrecipitation(geo, date);
       if (precipitation) {
         const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
         forecast = {
@@ -235,6 +239,8 @@ export async function POST(request: NextRequest) {
               precipitationAmountMm: overlay.amountMm ?? hour.precipitationAmountMm,
               precipitationWindowHours: 1,
               precipitationSource: overlay.source,
+              condition: [hour.condition, overlay.condition].filter(Boolean).join("; ") || undefined,
+              thunderRisk: hour.thunderRisk || /thunder|lightning/i.test(overlay.condition || ""),
             } : hour;
           }),
         };
@@ -250,7 +256,7 @@ export async function POST(request: NextRequest) {
       wind_max_mph: almanac!.averageWindMph,
       shortForecast: almanac!.summary,
     };
-    const decision = buildDecision({ activity, space, hourly: forecast?.hourly || [], historical: Boolean(almanac) });
+    const decision = buildDecision({ activity, space, hourly: forecast?.hourly || [], historical: Boolean(almanac), dayRainProbabilityPct: day.precip_prob_pct });
     const recommendation = recommendationFromDecision(decision, almanac);
     return NextResponse.json({
       ok: true,

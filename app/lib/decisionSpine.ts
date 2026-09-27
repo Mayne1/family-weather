@@ -10,6 +10,10 @@ export type HourlyCondition = {
   /** Length of the precipitation interval represented by precipitationAmountMm. */
   precipitationWindowHours?: number | null;
   precipitationSource?: string | null;
+  /** Positive hazard signal from any provider interval covering this hour. */
+  thunderRisk?: boolean;
+  rainExpected?: boolean;
+  localTimeKnown?: boolean;
   windMph: number | null;
   windGustMph?: number | null;
   humidityPct?: number | null;
@@ -37,6 +41,7 @@ export type DecisionResult = {
   cautions: string[];
   avoidWindows: string[];
   confidence: { level: "high" | "medium" | "low"; missing: string[] };
+  safety?: { kind: "rain-risk" | "thunderstorm" | "insufficient"; title: string; detail: string };
 };
 
 type ActivityProfile = {
@@ -111,8 +116,8 @@ const PROFILES: ActivityProfile[] = [
     label: "beach day",
     patterns: [/beach/i, /swim/i, /pool/i, /water\s*park/i],
     durationHours: 2,
-    preferredHours: [10, 16],
-    usableHours: [8, 19],
+    preferredHours: [9, 17],
+    usableHours: [9, 17],
     daylightOnly: true,
     comfortableTemperature: [68, 88],
     workableTemperature: [60, 94],
@@ -195,7 +200,7 @@ function windowLabel(start: number, end: number) {
 }
 
 function severeCondition(text = "") {
-  return /thunder|tornado|hurricane|blizzard|ice storm|freezing rain|severe/i.test(text);
+  return /thunder|lightning|tornado|hurricane|blizzard|ice storm|freezing rain|severe/i.test(text);
 }
 
 function effectiveTemperature(hourly: HourlyCondition) {
@@ -351,6 +356,7 @@ export function buildDecision(input: {
   space: Space;
   hourly: HourlyCondition[];
   historical?: boolean;
+  dayRainProbabilityPct?: number | null;
 }): DecisionResult {
   const requested = input.activity.trim() || "outdoor activity";
   const profile = profileFor(requested, input.space);
@@ -410,6 +416,56 @@ export function buildDecision(input: {
       avoidWindows: [],
       confidence: { level: "high", missing: [] },
     };
+  }
+
+  // A beach day is a destination outing, not a two-hour gamble. A dry gap
+  // inside a rainy day is not a responsible recommendation when the person
+  // still has to travel, set up, pack up, and return through the same weather.
+  // Evaluate 9 AM–5 PM plus two hours on each side before ranking any gap.
+  if (profile.key === "beach-day" && (input.space === "outdoor" || input.space === "both")) {
+    const daytime = scored.filter((hour) => hour.hour >= 7 && hour.hour < 19);
+    const thunder = daytime.some((hour) => hour.thunderRisk || severeCondition(hour.condition));
+    const hourlyRain = daytime.some((hour) => {
+      const rain = finite(hour.precipitationProbabilityPct);
+      return rain !== null && rain >= 50;
+    });
+    const dailyRain = finite(input.dayRainProbabilityPct);
+    const rainOutsideOuting = scored.some((hour) =>
+      (hour.hour < 7 || hour.hour >= 19) && (finite(hour.precipitationProbabilityPct) ?? 0) >= 50
+    );
+    const covered = new Set(daytime.filter((hour) =>
+      hour.localTimeKnown !== false && finite(hour.precipitationProbabilityPct) !== null
+      && Boolean(hour.condition?.trim())
+    ).map((hour) => hour.hour));
+    const coverageInsufficient = Array.from({ length: 12 }, (_, index) => index + 7).some((hour) => !covered.has(hour));
+    const rainExpected = daytime.some((hour) => hour.rainExpected || /rain|shower|drizzle/i.test(hour.condition || ""));
+    const safety = thunder
+      ? { kind: "thunderstorm" as const, title: "Avoid this beach day", detail: "Thunder or lightning is forecast during the daytime outing window. Choose another day and use an indoor plan." }
+      : dailyRain !== null && dailyRain >= 50 && (coverageInsufficient || !rainOutsideOuting)
+        ? { kind: "rain-risk" as const, title: "Avoid this beach day", detail: `The forecast puts the day's rain risk at ${Math.round(dailyRain)}%. A short dry gap is not enough for a destination beach outing.` }
+        : hourlyRain || rainExpected
+          ? { kind: "rain-risk" as const, title: "Avoid this beach day", detail: hourlyRain ? "Rain reaches 50% or higher between 7 AM and 7 PM, including the buffer around a 9 AM–5 PM beach day. Choose another day or an indoor activity." : "Rain or showers are forecast within the buffered beach-day period, 7 AM–7 PM. Choose another day or an indoor activity rather than relying on a short dry gap." }
+          : coverageInsufficient
+            ? { kind: "insufficient" as const, title: "No responsible beach recommendation", detail: "The forecast does not cover the full daytime outing window well enough to rule out rain. Check another date or choose an indoor plan." }
+            : null;
+    if (safety) {
+      const missing = coverageInsufficient ? ["full daytime rain timing"] : [];
+      return {
+        version: "decision-spine/v1",
+        status: safety.kind === "insufficient" ? "insufficient-data" : "avoid",
+        score: 0,
+        activity: { key: profile.key, label: profile.label, requested },
+        bestWindow: null,
+        alternateWindow: null,
+        goodMostOfDay: false,
+        summary: safety.detail,
+        reasons: [],
+        cautions: [safety.detail],
+        avoidWindows: ["7 AM–7 PM"],
+        confidence: { level: missing.length ? "low" : "high", missing },
+        safety,
+      };
+    }
   }
 
   const candidates: ScoredHour[][] = [];

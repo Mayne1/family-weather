@@ -94,3 +94,85 @@ test("historical data does not pretend it can select an hourly forecast window",
   assert.equal(result.bestWindow, null);
   assert.match(result.summary, /cannot support an hourly recommendation/i);
 });
+
+test("beach day rejects a dry gap inside a 62% afternoon rain period", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[16].precipitationProbabilityPct = 62;
+  const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly, dayRainProbabilityPct: 62 });
+  assert.equal(result.safety?.kind, "rain-risk");
+  assert.equal(result.status, "avoid");
+  assert.equal(result.bestWindow, null);
+  assert.equal(result.alternateWindow, null);
+  assert.equal(result.goodMostOfDay, false);
+});
+
+test("both settings still applies beach safety; 50% is the blocking threshold", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[18].precipitationProbabilityPct = 50;
+  assert.equal(buildDecision({ activity: "Beach day", space: "both", hourly }).status, "avoid");
+});
+
+test("thunder before or after beach hours overrides comfortable weather", () => {
+  for (const hour of [7, 18]) {
+    const hourly = day({ temperatureF: 80 });
+    hourly[hour].condition = "Chance of thunderstorms";
+    const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly });
+    assert.equal(result.safety?.kind, "thunderstorm");
+    assert.equal(result.bestWindow, null);
+  }
+});
+
+test("provider interval hazard cannot be hidden by a clear hourly description", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[12].thunderRisk = true;
+  assert.equal(buildDecision({ activity: "Beach day", space: "outdoor", hourly }).safety?.kind, "thunderstorm");
+});
+
+test("rain forecast symbols block a beach recommendation even with a low percentage", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[14].rainExpected = true;
+  assert.equal(buildDecision({ activity: "Beach day", space: "outdoor", hourly }).safety?.kind, "rain-risk");
+});
+
+test("rain at 10 PM can leave a fully covered daytime beach outing available", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[22].precipitationProbabilityPct = 80;
+  hourly[22].condition = "Rain";
+  const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly, dayRainProbabilityPct: 80 });
+  assert.equal(result.safety, undefined);
+  assert.equal(result.status, "recommended");
+  assert.ok(result.bestWindow);
+});
+
+test("daily 62% with incomplete timing cannot become a beach recommendation", () => {
+  const hourly = day({ temperatureF: 80 });
+  hourly[17].precipitationProbabilityPct = null;
+  const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly, dayRainProbabilityPct: 62 });
+  assert.equal(result.safety?.kind, "rain-risk");
+  assert.equal(result.bestWindow, null);
+});
+
+test("daily high rain cannot be dismissed without evidence it falls outside the outing", () => {
+  const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly: day({ temperatureF: 80 }), dayRainProbabilityPct: 62 });
+  assert.equal(result.safety?.kind, "rain-risk");
+  assert.equal(result.bestWindow, null);
+});
+
+test("missing buffer hours, weather symbols or timezone withhold beach windows", () => {
+  for (const hourly of [
+    day().filter((_, index) => index !== 18),
+    day({ condition: undefined }),
+    day({ localTimeKnown: false }),
+  ]) {
+    const result = buildDecision({ activity: "Beach day", space: "outdoor", hourly });
+    assert.equal(result.status, "insufficient-data");
+    assert.equal(result.bestWindow, null);
+  }
+});
+
+test("indoor and historical choices do not acquire a beach safety override", () => {
+  const indoor = buildDecision({ activity: "indoor pool", space: "indoor", hourly: day({ condition: "Thunderstorm" }), dayRainProbabilityPct: 90 });
+  assert.equal(indoor.safety, undefined);
+  const historical = buildDecision({ activity: "Beach day", space: "outdoor", hourly: [], historical: true, dayRainProbabilityPct: 62 });
+  assert.equal(historical.status, "historical-only");
+});
