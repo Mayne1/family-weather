@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { weatherStories } from "./stories";
+import Image from "next/image";
+import { storyMedia } from "./media";
+import mediaStyles from "../components/weather-media/media.module.css";
 
 export const metadata: Metadata = {
   title: "Weather Stories: When Weather Changes the Plan | Family Weather",
@@ -31,7 +34,7 @@ export default function WeatherStoriesIndex() {
         <section className="destinationGroup eventPlannerIndex">
           <div className="destinationGroupHeading"><h2>When weather changes the story</h2><span>{weatherStories.length} stories</span></div>
           <div className="destinationGrid">
-            {weatherStories.map((story) => <Link href={`/weather-stories/${story.slug}`} key={story.slug}><small>{story.kicker}</small><h3>{story.shortTitle}</h3><p>{story.description}</p><span>Read the story →</span></Link>)}
+            {weatherStories.map((story) => <Link href={`/weather-stories/${story.slug}`} key={story.slug}>{storyMedia[story.slug] && <span className={mediaStyles.indexMedia}>{storyMedia[story.slug].image ? <><Image src={storyMedia[story.slug].image!.src} alt={storyMedia[story.slug].image!.alt} width={1672} height={941} sizes="(max-width: 800px) 90vw, 30vw"/><small>{storyMedia[story.slug].image!.caption}</small></> : <><Image unoptimized src={`https://i.ytimg.com/vi/${storyMedia[story.slug].video!.id}/hqdefault.jpg`} alt="Preview of Reuters reporting from the muddy Burning Man festival" width="480" height="360" loading="lazy"/><small>Watch the Reuters report in this story →</small></>}</span>}<small>{story.kicker}</small><h3>{story.shortTitle}</h3><p>{story.description}</p><span>Read the story →</span></Link>)}
           </div>
         </section>
       </main>

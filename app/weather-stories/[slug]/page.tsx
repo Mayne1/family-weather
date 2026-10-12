@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { weatherStories, weatherStory } from "../stories";
+import StoryVisual from "../../components/weather-media/StoryVisual";
+import { storyMedia } from "../media";
 
 export const dynamicParams = false;
 
@@ -33,7 +35,8 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
     headline: story.title,
     description: story.description,
     datePublished: story.published,
-    dateModified: story.published,
+    dateModified: story.updated || story.published,
+    ...(storyMedia[slug]?.image ? { image: `${siteUrl}${storyMedia[slug].image!.src}` } : {}),
     mainEntityOfPage: pageUrl,
     author: { "@type": "Organization", name: "Family Weather", url: siteUrl },
     publisher: { "@type": "Organization", name: "Family Weather", url: siteUrl },
@@ -52,6 +55,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
           <aside className="destinationCoordinates eventPlanningFocus"><small>WEATHER STORY</small><strong>{story.readTime}</strong><span>Published by Family Weather</span></aside>
         </section>
 
+        <StoryVisual slug={slug} detail />
         <article>
           {story.sections.map((section) => (
             <section className="eventGuideIntro" key={section.heading}>
