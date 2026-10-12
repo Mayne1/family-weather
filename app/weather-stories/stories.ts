@@ -5,6 +5,7 @@ export type WeatherStory = {
   description: string;
   kicker: string;
   published: string;
+  updated?: string;
   readTime: string;
   sections: Array<{ heading: string; paragraphs: string[] }>;
   sources?: Array<{ label: string; url: string }>;
@@ -13,9 +14,10 @@ export type WeatherStory = {
 export const weatherStories: WeatherStory[] = [
   {
     slug: "destination-wedding-weather-disaster",
+    updated: "2026-10-12",
     title: "When a Destination Wedding Meets Weather Nobody Put in the Brochure",
-    shortTitle: "Destination wedding weather disaster",
-    description: "A short story about the rain, wind, heat and seasonal weather that glossy destination-wedding pictures leave outside the frame.",
+    shortTitle: "When the wedding meets the storm",
+    description: "A rain-soaked ceremony, a documented lightning interruption, and the weather questions to ask before booking the view.",
     kicker: "Destination wedding weather",
     published: "2026-09-12",
     readTime: "2 minute read",
@@ -35,6 +37,13 @@ export const weatherStories: WeatherStory[] = [
         ],
       },
       {
+        heading: "A real wedding, interrupted by lightning",
+        paragraphs: [
+          "This opening scene is imagined, but weather interrupting vows is not. Inside Edition reported in August 2020 that Aaron and Denice Sawitsky’s smaller outdoor wedding in Massachusetts was interrupted by lightning in the background. The groom said thunder had already been audible while they were getting ready. The linked report includes footage of the moment.",
+          "The planning lesson is to identify shelter and a stopping point before the ceremony begins. A beautiful view is not a substitute for a weather backup, and a rain percentage does not describe every thunderstorm hazard.",
+        ],
+      },
+      {
         heading: "The expensive mistake can be an ordinary assumption",
         paragraphs: [
           "Most weather stories do not begin with somebody ignoring a dramatic warning. They begin with a familiar sentence: it usually does not rain there. Usually is useful when choosing a season. It is less comforting when deposits are attached to one particular Saturday.",
@@ -42,9 +51,13 @@ export const weatherStories: WeatherStory[] = [
         ],
       },
     ],
+    sources: [
+      { label: "Inside Edition — Watch the actual Massachusetts wedding report (August 26, 2020)", url: "https://www.insideedition.com/lightning-strikes-near-beach-wedding-ceremony-as-couple-exchange-vows-61471" },
+    ],
   },
   {
     slug: "las-vegas-monsoon-desert-wedding",
+    updated: "2026-10-12",
     title: "The Las Vegas Desert Wedding and the Monsoon Nobody Mentioned",
     shortTitle: "Las Vegas monsoon wedding",
     description: "A desert wedding can look weatherproof until Las Vegas monsoon rain, wind and flash flooding enter the picture.",
@@ -76,10 +89,12 @@ export const weatherStories: WeatherStory[] = [
     ],
     sources: [
       { label: "City of Las Vegas — Monsoon Season", url: "https://www.lasvegasnevada.gov/News/Blog/Detail/monsoon-season" },
+      { label: "FOX5 Las Vegas — The September 2023 storms and flood-control response", url: "https://www.fox5vegas.com/2023/09/07/rounds-monsoon-rains-put-vegas-valley-flood-control-system-test/" },
     ],
   },
   {
     slug: "burning-man-rain-desert-mud",
+    updated: "2026-10-12",
     title: "Burning Man, Rain and the Day the Desert Turned to Mud",
     shortTitle: "Burning Man rain and mud",
     description: "Burning Man weather showed how quickly rain can turn Nevada desert ground into mud and change a massive outdoor event.",
@@ -91,7 +106,7 @@ export const weatherStories: WeatherStory[] = [
         heading: "Everybody expects the dust",
         paragraphs: [
           "Burning Man takes place in Nevada's Black Rock Desert, where temporary streets, camps and monumental art rise from a dry lakebed. Dust is part of the event's identity. Rain sounds almost like relief until it reaches the playa.",
-          "In 2023, heavy rain turned the surface into thick mud, closed access and left tens of thousands of attendees waiting for the ground to dry. In 2026, rain and strong wind again interrupted movement at the event and returned Burning Man weather to the news.",
+          "In September 2023, rain turned the surface into thick mud and disrupted access. Reuters reported that attendees were asked to shelter in place and conserve food and water. Its original video, embedded here, shows how different the playa looked once the rain arrived.",
         ],
       },
       {
@@ -111,7 +126,7 @@ export const weatherStories: WeatherStory[] = [
     ],
     sources: [
       { label: "ABC News — Burning Man flooding in 2023", url: "https://abcnews.com/US/burning-man-flooding-happened-stranded-festivalgoers/story?id=102908331" },
-      { label: "SFGATE — Burning Man rain and mud in 2026", url: "https://www.sfgate.com/travel/burningman/article/burning-man-rain-mud-22418072.php" },
+      { label: "Reuters — Original September 3, 2023 video report", url: "https://www.youtube.com/watch?v=euGIg16Zn7c" },
     ],
   },
   {
