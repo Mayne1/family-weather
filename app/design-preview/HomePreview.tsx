@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import SiteTour from "../components/SiteTour";
 import HomeAccount from "../components/HomeAccount";
 import LocationSearchInput from "../components/LocationSearchInput";
 import WeatherWatch from "../components/weather-media/WeatherWatch";
@@ -124,6 +125,6 @@ export default function HomePreview(){
    <section className={styles.intelligence}><div className={styles.intelTitle}><p className={styles.kicker}>FAMILY WEATHER INTELLIGENCE</p><h2>Forecast for now.<br/>History for later.<br/><em>Meaning for both.</em></h2></div>{[["01","sun","Today’s weather","Current conditions and the coming days in one useful view.","/today"],["02","history","Weather memory","Compare the same calendar date across five previous years.","/weather-history"],["03","share","Make it a plan","Build an event and invitation only when other people need to join.","/create-event"]].map((x,i)=><Link href={x[4]} className={`${styles.intelCard} ${i===2?styles.goldCard:""}`} key={x[0]}><span>{x[0]}</span><Icon name={x[1] as "sun"|"history"|"share"}/><h3>{x[2]}</h3><p>{x[3]}</p><strong>OPEN TOOL →</strong></Link>)}</section>
    <WeatherWatch/>
   </main>
-  <footer className={styles.footer}><div className={styles.footerBrand}><strong>Family Weather</strong><span>Weather for what you’re actually doing.</span><span>Air quality estimates: <a href="https://open-meteo.com/">Open-Meteo</a> / <a href="https://atmosphere.copernicus.eu/">CAMS ENSEMBLE and global forecasts</a>.</span></div><div><strong>PLAN</strong><Link href="/today">Today</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link></div><div><strong>USE</strong><Link href="/live">Live weather desk</Link><a href="/create-event">Invitations</a><Link href="/events">My events</Link><Link href="/pricing">Pricing</Link></div><div><strong>COMPANY</strong><Link href="/about">About</Link><Link href="/faq">FAQ</Link><a href="/contact">Contact</a><a href="/privacy">Privacy</a></div></footer>
+  <footer className={styles.footer}><div className={styles.footerBrand}><strong>Family Weather</strong><span>Weather for what you’re actually doing.</span><span>Air quality estimates: <a href="https://open-meteo.com/">Open-Meteo</a> / <a href="https://atmosphere.copernicus.eu/">CAMS ENSEMBLE and global forecasts</a>.</span></div><div><strong>PLAN</strong><Link href="/today">Today</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link></div><div><strong>USE</strong><Link href="/live">Live weather desk</Link><a href="/create-event">Invitations</a><Link href="/events">My events</Link><Link href="/pricing">Pricing</Link></div><div><strong>COMPANY</strong><Link href="/about">About</Link><Link href="/faq">FAQ</Link><SiteTour firstVisit/><a href="/contact">Contact</a><a href="/privacy">Privacy</a></div></footer>
  </div>
 }

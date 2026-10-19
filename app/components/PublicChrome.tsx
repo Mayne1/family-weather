@@ -1,6 +1,7 @@
 /* Intentional full-page navigation keeps advertising scripts out of private and legal routes. */
 /* eslint-disable @next/next/no-html-link-for-pages */
 import Link from "next/link";
+import SiteTour from "./SiteTour";
 import type { ReactNode } from "react";
 
 export function PublicHeader() {
@@ -35,6 +36,7 @@ export function PublicFooter() {
       <nav aria-label="Company and support">
         <Link href="/about">About</Link>
         <Link href="/faq">FAQ</Link>
+        <SiteTour />
         <a href="/contact">Contact</a>
         <Link href="/pricing">Pricing</Link>
         <a href="/privacy">Privacy</a>
