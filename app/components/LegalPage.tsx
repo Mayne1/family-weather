@@ -6,9 +6,10 @@ type LegalPageProps = {
   title: string;
   summary: string;
   children: ReactNode;
+  effectiveDate?: string;
 };
 
-export default function LegalPage({ eyebrow, title, summary, children }: LegalPageProps) {
+export default function LegalPage({ eyebrow, title, summary, children, effectiveDate = "August 30, 2026" }: LegalPageProps) {
   return (
     <main className="legalPage">
       <header className="legalHeader">
@@ -22,7 +23,7 @@ export default function LegalPage({ eyebrow, title, summary, children }: LegalPa
         <p className="eyebrow dark"><span /> {eyebrow}</p>
         <h1>{title}</h1>
         <p className="legalSummary">{summary}</p>
-        <p className="legalEffective"><strong>Effective:</strong> August 30, 2026</p>
+        <p className="legalEffective"><strong>Effective:</strong> {effectiveDate}</p>
         <div className="legalContent">{children}</div>
       </article>
       <footer className="legalFooter">

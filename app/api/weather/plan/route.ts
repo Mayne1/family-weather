@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAlmanac } from "../../../lib/almanac";
+import { summarizeRain } from "../../../lib/rainSummary";
 import { metForecast } from "../../../lib/metForecast";
 import { weatherApiPrecipitation } from "../../../lib/precipitationForecast";
 import type { AlmanacResult } from "../../../lib/almanac";
@@ -265,6 +266,7 @@ export async function POST(request: NextRequest) {
       resolvedLocation: geo,
       day,
       almanac,
+      rainSummary: forecast?.source === "met-norway" && precipitation ? summarizeRain(precipitation.dayProbabilityPct, precipitation.hourly) : null,
       space,
       activity,
       decision,

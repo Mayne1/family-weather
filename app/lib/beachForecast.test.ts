@@ -50,3 +50,18 @@ test("WeatherAPI preserves missing rain probability and surfaces thunder codes",
   assert.equal(result?.hourly[0].amountMm, null);
   assert.equal(result?.dayProbabilityPct, 62);
 });
+
+// Daily and hourly estimates must remain distinct, including missing and zero values.
+import { summarizeRain } from "./rainSummary.ts";
+test("rain summary separates the provider daily estimate from the peak hour", () => {
+  assert.deepEqual(summarizeRain(3, [{ probabilityPct: 0 }, { probabilityPct: 7 }]), {
+    source: "weatherapi", dayProbabilityPct: 3, peakHourlyProbabilityPct: 7,
+  });
+  assert.equal(summarizeRain(62, [{ probabilityPct: 14 }, { probabilityPct: 80 }]).peakHourlyProbabilityPct, 80);
+});
+test("missing or invalid rain probabilities never become zero", () => {
+  assert.equal(summarizeRain(null, []).peakHourlyProbabilityPct, null);
+  assert.equal(summarizeRain(null, [{ probabilityPct: null }, { probabilityPct: NaN }, { probabilityPct: 101 }, { probabilityPct: -1 }]).peakHourlyProbabilityPct, null);
+  assert.equal(summarizeRain(0, [{ probabilityPct: 0 }]).peakHourlyProbabilityPct, 0);
+  assert.equal(summarizeRain(null, []).dayProbabilityPct, null);
+});
