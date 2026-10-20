@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import SiteTour from "../components/SiteTour";
+import RightNowStrip from "../components/RightNowStrip";
 import HomeAccount from "../components/HomeAccount";
 import LocationSearchInput from "../components/LocationSearchInput";
 import WeatherWatch from "../components/weather-media/WeatherWatch";
@@ -12,7 +13,7 @@ import type { Landmark } from "../lib/landmark";
 import styles from "./preview.module.css";
 
 type WeatherDay = { date:string; weather_code:number; temp_max_f:number; temp_min_f:number; precip_prob_pct:number; wind_max_mph:number; shortForecast?:string };
-type Snapshot = { lat?:number;lon?:number;label?:string; current?:{temp_f:number;feels_like_f?:number;wind_mph:number|null;humidity_pct?:number|null;humidity_estimated?:boolean;weather_code:number}|null; days?:WeatherDay[]; air_quality?:{us_aqi:number;category:string;updated_at:string}|null };
+type Snapshot = { timezone?:string;lat?:number;lon?:number;label?:string; current?:{temp_f:number;feels_like_f?:number;wind_mph:number|null;humidity_pct?:number|null;humidity_estimated?:boolean;weather_code:number}|null; days?:WeatherDay[]; air_quality?:{us_aqi:number;category:string;updated_at:string}|null };
 const HOME_LOCATION_STORAGE_KEY = "family-weather-home-location-v2";
 
 function Icon({name}:{name:"sun"|"wind"|"rain"|"history"|"share"|"arrow"}){return <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -110,7 +111,7 @@ export default function HomePreview(){
 
  return <div className={styles.page}>
   <header className={styles.header}><Link className={styles.brand} href="/"><span className={styles.brandOrb}><Icon name="sun"/></span><span><strong>Family</strong> Weather<small>PLAN THE DAY. SHARE THE OUTLOOK.</small></span></Link><nav><Link href="/today">Today</Link><Link href="/plan">Plan an activity</Link><Link href="/weather-history">Weather history</Link><Link href="/live">Live desk</Link><Link href="/weather-stories">Stories</Link><Link href="/events">My events</Link><a href="/announcements">Announcements</a></nav><HomeAccount/></header>
-  <div data-tour="current" className={styles.weatherTicker}><strong>RIGHT NOW</strong><span className={styles.tickerLocation}>{weather?.label||"Local weather"}</span><span><Icon name="sun"/><b>{read(current?.temp_f)}°</b> <i>{condition}</i></span><span>Feels like <b>{read(current?.feels_like_f)}°</b></span><span><Icon name="wind"/><b>{current?.wind_mph == null ? "Unavailable" : `${read(current.wind_mph)} mph`}</b> wind</span><span><Icon name="rain"/><b>{read(day?.precip_prob_pct)}%</b> rain today</span><span>Humidity{current?.humidity_estimated ? " (est.)" : ""} <b>{current?.humidity_pct == null ? "Unavailable" : `${read(current.humidity_pct)}%`}</b></span><span className={styles.airQuality} title={weather?.air_quality ? `Modeled US AQI · ${new Date(weather.air_quality.updated_at).toLocaleString()} · Open-Meteo / CAMS` : "Air quality estimate temporarily unavailable"}>Air quality <b>{weather?.air_quality ? `${weather.air_quality.us_aqi} · ${weather.air_quality.category}` : "Unavailable"}</b>{weather?.air_quality && <i>estimated AQI</i>}</span><button type="button" onClick={useCurrentLocation}>Use my location</button><Link href="/today">Full forecast →</Link></div>
+  <RightNowStrip snapshot={weather} onLocate={useCurrentLocation}/>
   <main>
    <section className={styles.frontPage}>
     <article className={`${styles.leadStory} ${weatherMood(current?.weather_code??day?.weather_code)}`}>{visibleLandmark?<img className={styles.landmarkPhoto} src={visibleLandmark.image} alt={visibleLandmark.title} onError={()=>setFailedImage(visibleLandmark.image)}/>:null}<div className={styles.leadShade}/><div className={styles.leadCopy}><p className={styles.kicker}>WEATHER THAT ANSWERS A REAL QUESTION</p><h1>Don’t just check the weather.<br/><em>Check your plan.</em></h1><p>Tell Family Weather what you want to do, where, and when. Get a weather-fit score, a useful time window, and a plain-language explanation of what could help or interfere.</p><a href="#activity-checker">Check an activity <Icon name="arrow"/></a></div><div className={styles.liveBadge}><span>LIVE CONDITIONS</span><strong>{read(current?.temp_f)}°</strong><small>{condition}</small></div></article>
