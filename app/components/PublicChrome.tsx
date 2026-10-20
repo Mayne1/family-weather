@@ -20,6 +20,7 @@ export function PublicHeader() {
         <Link href="/how-it-works">How it works</Link>
         <Link href="/weather-stories">Stories</Link>
         <a href="/events">My events</a>
+        <a href="/announcements">Announcements</a>
       </nav>
       <a className="publicHeaderCta" href="/create-event">Create event</a>
     </header>
