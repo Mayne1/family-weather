@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lookupAlmanac } from "../../../lib/almanac";
+import { rainTiming } from "../../../lib/rainTiming";
 import { summarizeRain } from "../../../lib/rainSummary";
 import { metForecast } from "../../../lib/metForecast";
 import { weatherApiPrecipitation } from "../../../lib/precipitationForecast";
@@ -14,6 +15,7 @@ const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", 
 
 type NwsPeriod = {
   startTime: string;
+  endTime?: string;
   isDaytime: boolean;
   temperature: number;
   probabilityOfPrecipitation?: { value?: number | null };
@@ -48,6 +50,8 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
     const shortForecast = period.shortForecast || "Forecast available";
     return {
       date,
+      rainPeriodStart: period.startTime,
+      rainPeriodEnd: period.endTime,
       weather_code: weatherCode(shortForecast),
       temp_max_f: Math.round(period.temperature),
       temp_min_f: Math.round(night?.temperature ?? period.temperature),
@@ -59,6 +63,8 @@ function buildDays(periods: NwsPeriod[]): ForecastDay[] {
 }
 
 type ForecastDay = {
+  rainPeriodStart?: string;
+  rainPeriodEnd?: string;
   date: string;
   weather_code: number;
   temp_max_f: number;
@@ -266,6 +272,7 @@ export async function POST(request: NextRequest) {
       resolvedLocation: geo,
       day,
       almanac,
+      rainTiming: forecast ? rainTiming(forecast.hourly, decision.bestWindow) : null,
       rainSummary: forecast?.source === "met-norway" && precipitation ? summarizeRain(precipitation.dayProbabilityPct, precipitation.hourly) : null,
       space,
       activity,
