@@ -19,7 +19,6 @@ cat >"${active_snippet}" <<'NGINX'
 location = /index.html { return 301 /; }
 location = /privacy.html { return 301 /privacy; }
 location = /terms.html { return 301 /terms; }
-location = /sms-consent.html { return 301 /sms-consent; }
 
 location ~ ^/(profile|settings|my-events|create-event|invite|feeds|groups|contacts|contact|rsvp-public)\.html$ { return 410; }
 location ^~ /weather-intel/ { return 410; }

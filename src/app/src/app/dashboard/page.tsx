@@ -18,7 +18,7 @@ export default function DashboardPage() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-white/70">
             <li>Event form (name, date/time, location)</li>
             <li>Event Weather Intelligence panel (forecast + historical trend)</li>
-            <li>Invite list paste + send (email/SMS later)</li>
+            <li>Share invitation links</li>
           </ul>
 
           <div className="mt-5 flex flex-wrap gap-2">

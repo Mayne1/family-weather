@@ -10,7 +10,7 @@ const steps = [
   { target: "planner", title: "Tell us what you’re planning", text: "Enter an activity, a place, and a date here. The planner explains the weather fit, useful hours, and cautions. No account needed.", href: "/plan", link: "Try the planner" },
   { target: "forecast", title: "Look at the days ahead", text: "These cards show the coming days. Open a day for more detail before deciding when to make your plans.", href: "/today", link: "See the full forecast" },
   { target: "history", title: "Planning weeks or months ahead?", text: "Start here to compare your date across five previous years. That shows historical patterns—not a promise of future weather.", href: "/weather-history", link: "Explore weather history" },
-  { target: "announcements", title: "Share a quick update", text: "Create a free announcement and share its link. People can read it and leave a named reply without signing in. Optional text packs let Family Weather send the link for you.", href: "/announcements", link: "Create an announcement" },
+  { target: "announcements", title: "Share a quick update", text: "Create a free announcement and share its link. People can read it and leave a named reply without signing in.", href: "/announcements", link: "Create an announcement" },
   { target: "invitations", title: "Invite people when you’re ready", text: "This opens event creation. Choose an invitation design, then share the link yourself. An account saves your events; pricing explains the paid options.", href: "/create-event", link: "Explore invitations" },
   { target: "help", title: "Come back whenever you need", text: "Show me around is here in the footer. Replay this tour anytime, or open FAQ for more answers.", href: "/faq", link: "Read the FAQ" },
 ];

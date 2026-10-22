@@ -151,30 +151,5 @@ module.exports = function makeInvitesRouter(pool) {
     } finally { client?.release(); }
   });
 
-  router.post("/send-sms", async (req, res) => {
-    try {
-      const { eventId, eventTitle, message, invites } = req.body || {};
-      if (!Array.isArray(invites) || !invites.length) {
-        return res.status(400).json({ ok: false, error: "invites_required" });
-      }
-      const results = invites.map((invite) => {
-        const phone = String(invite?.phone || "").trim();
-        const token = String(invite?.token || "").trim();
-        const link = String(invite?.link || "").trim();
-        if (!phone || !link) return { phone, token, ok: false, error: "invalid_invite_row" };
-        return {
-          phone,
-          token,
-          ok: false,
-          error: "sender_not_wired",
-          preview: String(message || "").trim() || `You're invited to ${eventTitle || "an event"} on Family Weather. RSVP: ${link}`,
-        };
-      });
-      return res.json({ ok: true, eventId: eventId || null, total: results.length, sent: 0, failed: results.length, results });
-    } catch (error) {
-      console.error("invite_sms_failed", error);
-      return res.status(500).json({ ok: false, error: "server_error" });
-    }
-  });
   return router;
 };

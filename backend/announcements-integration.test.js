@@ -1,58 +1,24 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const express=require('express'),request=require('supertest'),{newDb}=require('pg-mem');
-const crypto=require('crypto'),fs=require('fs');
-const router=require('./announcements-router');
-test('announcement privacy, free replies, verified purchases, and SMS accounting',async()=>{
+const fs=require('fs');const router=require('./announcements-router');
+test('free announcements keep private management and replies; retired purchase and send routes cannot act',async()=>{
  const db=newDb();db.public.none(fs.readFileSync(__dirname+'/announcements.sql','utf8'));const {Pool}=db.adapters.createPg();const pool=new Pool();
  const app=express();app.use(express.json());app.use(router(pool,(req,res,next)=>{req.uid=req.headers.authorization;if(!req.uid)return res.status(401).json({error:'Sign in'});next()}));
- const original=global.fetch;const keys=['FW_SMS_ENABLED','FW_SMS_PROVIDER_VERIFIED','BREVO_SMS_WEBHOOK_SECRET','BREVO_API_KEY','BREVO_SMS_SENDER','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET'];const old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));keys.forEach(k=>process.env[k]=['FW_SMS_ENABLED','FW_SMS_PROVIDER_VERIFIED'].includes(k)?'true':k==='BREVO_SMS_WEBHOOK_SECRET'?'a'.repeat(32):'test-only');
- let sends=0,provider='accepted';
- global.fetch=async url=>{if(String(url).includes('brevo')){sends++;if(provider==='timeout')throw Error('timeout');return new Response(JSON.stringify(provider==='accepted'?{messageId:1}:{error:'rejected'}),{status:provider==='accepted'?201:400});}throw Error('Unexpected network request')};
+ const original=global.fetch;let externalCalls=0;global.fetch=async()=>{externalCalls++;throw Error('No external delivery or payment requests expected')};
  try{
   const created=await request(app).post('/announcements').set('Authorization','owner').send({title:'Family update',message:'Private family news',theme:'forest'});assert.equal(created.status,200);const id=created.body.id;
   assert.equal((await request(app).post('/announcements').send({})).status,401);
+  const listing=await request(app).get('/announcements').set('Authorization','owner');assert.equal(listing.body.announcements.length,1);assert.equal(listing.body.balance,undefined);assert.equal(listing.body.sms_ready,undefined);
   const publicPage=await request(app).get('/announcements/'+id);assert.equal(publicPage.status,200);assert.equal(publicPage.body.announcement.owner_uid,undefined);
   assert.equal((await request(app).post(`/announcements/${id}/replies`).send({name:'Auntie',message:'Thinking of you'})).status,200);
   assert.equal((await request(app).get(`/announcements/${id}/manage`).set('Authorization','stranger')).status,404);
-  assert.equal((await request(app).get(`/announcements/${id}/manage`).set('Authorization','owner')).body.replies.length,1);
-  const order=crypto.randomUUID();await pool.query('INSERT INTO fw_sms_orders(id,owner_uid,announcement_id,session_id) VALUES($1,$2,$3,$4)',[order,'owner',id,'cs_test']);
-  const session={id:'cs_test',metadata:{fw_sms_order:order},mode:'payment',payment_status:'paid',currency:'usd',amount_total:99};
-  const payload=JSON.stringify({type:'checkout.session.completed',data:{object:session}});const t=Math.floor(Date.now()/1000);const signature=`t=${t},v1=${crypto.createHmac('sha256','test-only').update(`${t}.${payload}`).digest('hex')}`;
-  assert.equal((await request(app).post('/billing/stripe-webhook').send({payload,signature:'bad'})).status,400);
-  for(let i=0;i<2;i++)assert.equal((await request(app).post('/billing/stripe-webhook').send({payload,signature})).status,200);
-  const balance=async()=>Number((await pool.query('SELECT balance FROM fw_sms_wallets WHERE owner_uid=$1',['owner'])).rows[0].balance);
-  assert.equal(await balance(),10);
-  const send=recipient=>request(app).post(`/announcements/${id}/sms`).set('Authorization','owner').send({recipient,consent:true,request_id:crypto.randomUUID()});
-  assert.equal((await send('2095550123')).status,403);assert.equal(await balance(),10);assert.equal(sends,0);
-  const channel=(await request(app).post('/announcements/sms-channel').set('Authorization','owner').send({name:'Mayne'})).body.channel;
-  const form=(await request(app).get('/announcements/sms-signup/'+channel.token)).body;
-  assert.equal(form.owner_uid,undefined);assert.match(form.disclosure,/Mayne/);
-  const enroll=(number,extra={})=>request(app).post('/announcements/sms-signup/'+channel.token).send({name:'Family member',phone:number,consent:true,version:form.version,...extra});
-  assert.equal((await enroll('2095550123',{consent:false})).status,400);
-  assert.equal((await enroll('2095550123',{version:'old'})).status,400);
-  const joined=await enroll('2095550123');assert.equal(joined.status,200);
-  await enroll('2095550124');await enroll('2095550125');
-  assert.equal((await request(app).get('/announcements/sms-channel')).status,401);
-  const other=(await request(app).post('/announcements').set('Authorization','other').send({title:'Other',message:'No permission',theme:'forest'})).body.id;
-  assert.equal((await request(app).post(`/announcements/${other}/sms`).set('Authorization','other').send({recipient:'2095550123',request_id:crypto.randomUUID()})).status,403);
-  assert.equal((await send('2095550123')).body.status,'accepted');assert.equal(await balance(),9);
-  assert.equal((await send('2095550123')).body.repeated,true);assert.equal(sends,1);assert.equal(await balance(),9);
-  provider='rejected';assert.equal((await send('2095550124')).body.status,'rejected');assert.equal(await balance(),9);
-  provider='timeout';assert.equal((await send('2095550125')).body.status,'unknown');assert.equal(await balance(),8);
-  assert.equal((await send('2095550125')).body.repeated,true);assert.equal(sends,3);
-  // Opt-outs must block new announcements and cannot be undone by resubmission.
-  assert.equal((await request(app).post('/announcements/sms-webhook').send({msg_status:'unsubscribed',to:'12095550124'})).status,401);
-  assert.equal((await request(app).post('/announcements/sms-webhook').set('x-fw-sms-secret','a'.repeat(32)).send({msg_status:'unsubscribed',to:'12095550124'})).status,200);
-  assert.equal((await enroll('2095550124')).status,409);
-  assert.equal((await request(app).post('/announcements/sms-preferences/'+joined.body.revoke_token).send({})).status,200);
-  assert.equal((await send('2095550123')).status,403);assert.equal(sends,3);assert.equal(await balance(),8);
-  assert.equal((await enroll('2095550123')).status,409);
-  const listed=await request(app).get('/announcements/sms-channel').set('Authorization','owner');assert.equal(listed.body.contacts.length,1);
-  const audit=await pool.query('SELECT disclosure,version FROM fw_sms_consents');assert.equal(audit.rowCount,3);assert.equal(audit.rows[0].disclosure,form.disclosure);
-  process.env.FW_SMS_PROVIDER_VERIFIED='false';assert.equal((await send('2095550125')).status,503);
-  await request(app).post(`/announcements/${id}/close`).set('Authorization','owner').send({});
+  const manage=await request(app).get(`/announcements/${id}/manage`).set('Authorization','owner');assert.equal(manage.body.replies.length,1);assert.equal(manage.body.sends,undefined);
+  for(const path of [`${id}/sms`,`${id}/checkout`,'payments/refresh','sms-channel','sms-signup/old-token','sms-preferences/old-token','sms-webhook'])assert.equal((await request(app).post('/announcements/'+path).set('Authorization','owner').send({recipient:'2095550123',consent:true})).status,404);
+  assert.equal(externalCalls,0);
+  assert.equal((await request(app).post(`/announcements/${id}/close`).set('Authorization','stranger').send({})).status,404);
+  assert.equal((await request(app).post(`/announcements/${id}/close`).set('Authorization','owner').send({})).status,200);
   assert.equal((await request(app).get('/announcements/'+id)).status,404);
   assert.equal((await request(app).post(`/announcements/${id}/replies`).send({name:'Late',message:'Hi'})).status,404);
- }finally{global.fetch=original;for(const k of keys)if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k];await pool.end()}
+ }finally{global.fetch=original;await pool.end()}
 });

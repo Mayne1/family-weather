@@ -7,32 +7,3 @@ CREATE TABLE IF NOT EXISTS fw_announcement_replies (
  id bigserial PRIMARY KEY, announcement_id text NOT NULL REFERENCES fw_announcements(id) ON DELETE CASCADE,
  name text NOT NULL, message text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE TABLE IF NOT EXISTS fw_sms_orders (
- id text PRIMARY KEY, owner_uid text NOT NULL, announcement_id text NOT NULL REFERENCES fw_announcements(id),
- session_id text UNIQUE, checkout_url text, paid boolean NOT NULL DEFAULT false,
- created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS fw_sms_wallets (owner_uid text PRIMARY KEY, balance integer NOT NULL DEFAULT 0 CHECK(balance>=0));
-CREATE TABLE IF NOT EXISTS fw_sms_sends (
- id text PRIMARY KEY, owner_uid text NOT NULL, announcement_id text NOT NULL REFERENCES fw_announcements(id),
- recipient text NOT NULL, status text NOT NULL DEFAULT 'pending', provider_id text,
- consent_at timestamptz NOT NULL DEFAULT now(), created_at timestamptz NOT NULL DEFAULT now(),
- UNIQUE(announcement_id,recipient)
-);
-
--- Consent is collected from recipients; sender attestations are not sufficient.
-CREATE TABLE IF NOT EXISTS fw_sms_channels (
- token text PRIMARY KEY, owner_uid text UNIQUE NOT NULL, name text NOT NULL,
- created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS fw_sms_consents (
- id text PRIMARY KEY, owner_uid text NOT NULL, recipient text NOT NULL,
- name text NOT NULL, disclosure text NOT NULL, version text NOT NULL,
- source_url text NOT NULL, user_agent text NOT NULL,
- revoke_hash text UNIQUE NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS fw_sms_consents_recipient ON fw_sms_consents(owner_uid,recipient);
-CREATE TABLE IF NOT EXISTS fw_sms_suppressions (
- recipient text PRIMARY KEY, reason text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE fw_sms_sends ADD COLUMN IF NOT EXISTS consent_id text REFERENCES fw_sms_consents(id);

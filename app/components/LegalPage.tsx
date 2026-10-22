@@ -31,7 +31,6 @@ export default function LegalPage({ eyebrow, title, summary, children, effective
         <nav aria-label="Legal pages">
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
-          <Link href="/sms-consent">SMS consent</Link>
         </nav>
         <a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a>
       </footer>

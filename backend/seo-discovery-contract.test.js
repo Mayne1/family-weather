@@ -49,9 +49,9 @@ test("weather stories publish five editorial discovery pages and include them in
   assert.match(read("app", "weather-stories", "[slug]", "page.tsx"), /"@type": "Article"/);
 });
 
-test("legal and consent pages stay accessible but out of the search index", () => {
+test("legal pages stay accessible but out of the search index", () => {
   const sitemap = read("app", "sitemap.ts");
-  for (const route of ["privacy", "terms", "sms-consent"]) {
+  for (const route of ["privacy", "terms"]) {
     assert.doesNotMatch(sitemap, new RegExp(`origin}/\\${route}`));
     assert.match(read("app", route, "page.tsx"), /robots: \{ index: false, follow: true \}/);
   }
