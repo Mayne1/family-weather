@@ -51,6 +51,6 @@ if ! systemctl restart family-weather-api.service || ! systemctl is-active --qui
 fi
 node <<'JS'
 require('dotenv').config();
-for(const k of ['FW_SMS_ENABLED','BREVO_API_KEY','BREVO_SMS_SENDER','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET'])console.log(k+': '+(k==='FW_SMS_ENABLED'?process.env[k]==='true'?'enabled':'disabled':process.env[k]?'configured':'missing'));
+for(const k of ['FW_SMS_ENABLED','FW_SMS_PROVIDER_VERIFIED','BREVO_SMS_WEBHOOK_SECRET','BREVO_API_KEY','BREVO_SMS_SENDER','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET'])console.log(k+': '+(k.startsWith('FW_SMS_')?process.env[k]==='true'?'enabled':'disabled':process.env[k]?'configured':'missing'));
 JS
 printf 'Announcements backend installed. Backup: %s\n' "$BACKUP"

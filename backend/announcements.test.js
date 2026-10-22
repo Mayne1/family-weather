@@ -6,7 +6,7 @@ test('U.S. numbers normalize; international NANP destinations are rejected',()=>
  assert.throws(()=>phone('+1 416 555 0123'));assert.throws(()=>phone('+1 876 555 0123'));assert.throws(()=>phone('garbage'));
 });
 test('fixed SMS contains only the public link and fits one ASCII segment',()=>{
- const s=smsContent('a'.repeat(32));assert.ok(s.length<=160);assert.match(s,/^[\x20-\x7e]+$/);assert.throws(()=>smsContent('../bad'));
+ const s=smsContent('a'.repeat(32));assert.ok(s.length<=160);assert.match(s,/STOP/);assert.match(s,/HELP/);assert.match(s,/^[\x20-\x7e]+$/);assert.throws(()=>smsContent('../bad'));
 });
 test('only the correct paid 99-cent checkout can grant ten credits',()=>{
  const order={id:'order',session_id:'cs_test'};const s={id:'cs_test',metadata:{fw_sms_order:'order'},mode:'payment',payment_status:'paid',currency:'usd',amount_total:99};

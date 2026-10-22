@@ -8,7 +8,7 @@ function phone(value) {
 }
 function smsContent(id) {
  if(!/^[a-f0-9]{32}$/.test(id)) throw new Error('Invalid announcement');
- return `Family Weather: You have a personal announcement. Read and reply: https://thefamilyweather.com/a/${id}`;
+ return `Family Weather announcement: https://thefamilyweather.com/a/${id} Reply STOP to stop, HELP for help.`;
 }
 function validSignature(payload, signature, secret) {
  const parts=String(signature||'').split(',');const t=parts.find(p=>p.startsWith('t='))?.slice(2);
@@ -19,4 +19,7 @@ function validSignature(payload, signature, secret) {
 function paidOrder(session, order) {
  return Boolean(order&&session.id===order.session_id&&session.metadata?.fw_sms_order===order.id&&session.mode==='payment'&&session.payment_status==='paid'&&session.currency==='usd'&&session.amount_total===99);
 }
-module.exports={phone,smsContent,validSignature,paidOrder};
+const CONSENT_VERSION='2026-10-22';
+function disclosure(name){return `I am the owner of this mobile number and agree to receive automated Family Weather announcement links from ${name}. Message frequency varies, with one text per announcement. No marketing texts. Consent is not a condition of purchase. Message and data rates may apply. Reply STOP to stop or HELP for help. Support: contact@thefamilyweather.com.`;}
+function secretMatches(value,secret){if(!secret||secret.length<32||typeof value!=='string')return false;const a=Buffer.from(value),b=Buffer.from(secret);return a.length===b.length&&crypto.timingSafeEqual(a,b);}
+module.exports={CONSENT_VERSION,disclosure,secretMatches,phone,smsContent,validSignature,paidOrder};
