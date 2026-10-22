@@ -19,5 +19,8 @@ test("device location remains available as an explicit visitor action", () => {
 
   assert.match(explicitLocationFlow, /navigator\.geolocation\.getCurrentPosition/);
   assert.match(explicitLocationFlow, /localStorage\.setItem\(HOME_LOCATION_STORAGE_KEY/);
-  assert.match(page, /onClick=\{useCurrentLocation\}/);
+  assert.match(page, /<RightNowStrip[^>]*onLocate=\{useCurrentLocation\}/);
+  const strip = fs.readFileSync(path.join(__dirname, "..", "app", "components", "RightNowStrip.tsx"), "utf8");
+  assert.match(strip, /onClick=\{locate\}/);
+  assert.match(strip, /if\(onLocate\)\{onLocate\(\);return\}/);
 });
