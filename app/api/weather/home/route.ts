@@ -286,7 +286,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   let days: WeatherDay[] = [];
-  let source = "family-weather-nws";
+  let source = "family-weather";
 
   const forecastUrl = point?.properties?.forecast;
   const [officialForecast, calendar] = await Promise.all([
@@ -313,6 +313,7 @@ export async function GET(request: NextRequest) {
     .sort((left, right) => left.date.localeCompare(right.date))
     .slice(0, 5);
   if (officialDays.length) source = "nws";
+  else if (calendar.days.length) source = "open-meteo";
 
   if (!days.length) {
     days = normalizeFallbackDays(fallbackForecast?.days)
