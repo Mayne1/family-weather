@@ -1,3 +1,4 @@
+import { dailyPeriods } from "../../../lib/forecastDates";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeAirQuality } from "../../../lib/airQuality";
 import { backendUrl } from "../../../lib/serverConfig";
@@ -46,7 +47,7 @@ type NwsStationWeather = {
 type WeatherDay = {
   date: string;
   weather_code: number;
-  temp_max_f: number;
+  temp_max_f: number | null;
   temp_min_f: number;
   precip_prob_pct: number;
   wind_max_mph: number;
@@ -197,8 +198,7 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
 
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
   const nights = periods.filter((period) => !period.isDaytime);
-  return periods
-    .filter((period) => period.isDaytime)
+  return dailyPeriods(periods)
     .slice(0, 5)
     .map((period) => {
       const date = period.startTime.slice(0, 10);
@@ -207,11 +207,11 @@ function buildDays(periods: NwsPeriod[]): WeatherDay[] {
       return {
         date,
         weather_code: weatherCode(shortForecast),
-        temp_max_f: Math.round(period.temperature),
+        temp_max_f: period.isDaytime ? Math.round(period.temperature) : null,
         temp_min_f: Math.round(night?.temperature ?? period.temperature),
         precip_prob_pct: Math.round(period.probabilityOfPrecipitation?.value || 0),
         wind_max_mph: maxWind(period.windSpeed),
-        shortForecast,
+        shortForecast: period.isDaytime ? shortForecast : `Tonight: ${shortForecast}`,
       };
     });
 }
@@ -293,7 +293,7 @@ export async function GET(request: NextRequest) {
     forecastUrl ? jsonOrNull(forecastUrl, NWS_HEADERS) : Promise.resolve(null),
     calendarForecast(lat, lon, point?.properties?.timeZone),
   ]);
-  const timeZone = calendar.timeZone || point?.properties?.timeZone || "UTC";
+  const timeZone = point?.properties?.timeZone || calendar.timeZone || "UTC";
   const localDate = dateInTimezone(timeZone);
   const stationWeather = await nwsStationWeather(point, timeZone);
   const officialCurrent = stationWeather?.current || null;
@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
 
   const currentDay = daysByDate.get(localDate);
   if (currentDay && stationWeather) {
-    if (stationWeather.high_f !== null) currentDay.temp_max_f = Math.max(currentDay.temp_max_f, stationWeather.high_f);
+    if (stationWeather.high_f !== null) currentDay.temp_max_f = Math.max(currentDay.temp_max_f ?? stationWeather.high_f, stationWeather.high_f);
     if (stationWeather.low_f !== null) currentDay.temp_min_f = Math.min(currentDay.temp_min_f, stationWeather.low_f);
   }
 
