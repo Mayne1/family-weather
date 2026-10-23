@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AdvertisingBoundary from "./components/AdvertisingBoundary";
 import AdSenseLoader from "./components/AdSenseLoader";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://thefamilyweather.com").replace(/\/+$/, "");
@@ -79,8 +80,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
-        <AdSenseLoader />
-        {children}
+        <AdvertisingBoundary>
+          <AdSenseLoader />
+          {children}
+        </AdvertisingBoundary>
       </body>
     </html>
   );

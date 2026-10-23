@@ -1,3 +1,4 @@
+import DisplayAdvertisement from "../../components/DisplayAdvertisement";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -64,6 +65,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
             </section>
           ))}
         </article>
+        <DisplayAdvertisement />
 
         {story.sources?.length ? (
           <section className="eventPlanningGuide" aria-label="Sources">

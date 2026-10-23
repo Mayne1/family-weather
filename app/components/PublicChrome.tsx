@@ -1,5 +1,6 @@
 /* Intentional full-page navigation keeps advertising scripts out of private and legal routes. */
 /* eslint-disable @next/next/no-html-link-for-pages */
+import DisplayAdvertisement from "./DisplayAdvertisement";
 import Link from "next/link";
 import RightNowStrip from "./RightNowStrip";
 import SiteTour from "./SiteTour";
@@ -50,5 +51,5 @@ export function PublicFooter() {
 }
 
 export default function PublicChrome({ children }: { children: ReactNode }) {
-  return <div className="publicSite"><PublicHeader /><RightNowStrip/>{children}<PublicFooter /></div>;
+  return <div className="publicSite"><PublicHeader /><RightNowStrip/>{children}<DisplayAdvertisement /><PublicFooter /></div>;
 }

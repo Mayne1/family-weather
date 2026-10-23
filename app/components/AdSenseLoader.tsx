@@ -2,21 +2,11 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-
-const exactPublicPages = new Set([
-  "/",
-  "/today",
-  "/plan",
-  "/weather-history",
-  "/how-it-works",
-  "/about",
-  "/pricing",
-]);
+import { supportsAdvertising } from "../lib/adPolicy";
 
 export default function AdSenseLoader() {
   const pathname = usePathname();
-  const supportsAds = exactPublicPages.has(pathname) || pathname.startsWith("/weather-stories");
-  if (!supportsAds) return null;
+  if (!supportsAdvertising(pathname)) return null;
 
   return (
     <Script

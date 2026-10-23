@@ -16,7 +16,8 @@ test("AdSense loader is installed once and limited to public content routes", ()
   assert.match(loader, new RegExp(`client=${publisherId}`));
   assert.match(loader, /async/);
   assert.match(loader, /crossOrigin="anonymous"/);
-  assert.match(loader, /pathname\.startsWith\("\/weather-stories"\)/);
+  assert.match(loader, /supportsAdvertising\(pathname\)/);
+  assert.match(layout, /<AdvertisingBoundary>/);
   assert.doesNotMatch(loader, /"\/events"/);
   assert.doesNotMatch(loader, /"\/invitation"/);
   assert.equal(loader.match(/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/g)?.length, 1);

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test backend/*.test.js && npm run test:decision",
-    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts"
+    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts",
+    "test:ads": "node --experimental-strip-types --test app/lib/adPolicy.test.ts && node --test backend/adsense-contract.test.js"
   },
   "dependencies": {
     "next": "16.3.3",
