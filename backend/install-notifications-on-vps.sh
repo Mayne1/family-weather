@@ -21,6 +21,13 @@ if mount not in s:
  marker='app.use(makeAnnouncementsRouter(pool, requireFirebaseUser));'
  if marker not in s:raise SystemExit('Announcement router not found; running server left unchanged.')
  s=s.replace(marker,marker+'\n'+mount,1)
+# The legacy API-key gate runs before the Firebase-authenticated routers.
+# Exempt only these endpoints from that gate; makePushRouter still requires auth.
+allow='if ((req.method === "GET" && req.path === "/notifications/config") || (req.method === "POST" && ["/notifications/status", "/notifications/subscribe", "/notifications/unsubscribe"].includes(req.path))) return next();'
+if allow not in s:
+ marker='if (req.method === "OPTIONS") return next();'
+ if marker not in s:raise SystemExit('API-key gate insertion point not found; running server left unchanged.')
+ s=s.replace(marker,marker+'\n    // Notification routes verify Firebase authentication themselves.\n    '+allow,1)
 p.with_name('server.notifications-candidate.js').write_text(s)
 PY
 node --check "$API_DIR/server.notifications-candidate.js"
