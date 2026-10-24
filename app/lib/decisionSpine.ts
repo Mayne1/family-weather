@@ -531,3 +531,14 @@ export function buildDecision(input: {
     confidence,
   };
 }
+
+/** Share of comparable historical days meeting a conservative daily screen.
+ * This is a retrospective count, never a probability or an hourly safety score. */
+export function historicalActivityFit(activity: string, space: Space, years: Array<{high_f:number;low_f:number;rain:boolean;wind_max_mph?:number|null}>) {
+  if (space === 'indoor') return {score:null, explanation:'Outdoor weather does not score an indoor activity. History still helps you plan travel.'};
+  const profile = profileFor(activity, space);
+  const complete = years.filter(y => Number.isFinite(y.high_f) && Number.isFinite(y.low_f) && typeof y.wind_max_mph === 'number' && Number.isFinite(y.wind_max_mph));
+  if (complete.length < 3) return {score:null, explanation:'Not enough complete historical days to calculate an activity-fit score.'};
+  const matched = complete.filter(y => !y.rain && y.low_f >= profile.workableTemperature[0] && y.high_f <= profile.workableTemperature[1] && y.wind_max_mph! <= profile.maximumWindMph).length;
+  return {score:Math.round(100*matched/complete.length), explanation:`${matched} of ${complete.length} comparable past dates met this daily screen for ${profile.label}: no recorded rain, temperatures within ${profile.workableTemperature[0]}–${profile.workableTemperature[1]}°F, and peak wind at or below ${profile.maximumWindMph} mph. This score describes those past days—not the chance of good weather next year. It does not identify an hourly window.`};
+}

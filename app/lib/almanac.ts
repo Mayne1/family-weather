@@ -6,6 +6,7 @@ export type AlmanacYear = {
   high_f: number;
   low_f: number;
   precipitation_in: number;
+  wind_max_mph?: number | null;
   rain: boolean;
   weather_code: number;
   condition: string;
@@ -114,10 +115,14 @@ export async function lookupAlmanac(geo: LocationCandidate, targetDate: string):
   const years = requestedDates.flatMap((date): AlmanacYear[] => {
     const index = indices.get(date);
     if (index === undefined) return [];
+    const required = [daily?.temperature_2m_max?.[index], daily?.temperature_2m_min?.[index], daily?.precipitation_sum?.[index], daily?.weather_code?.[index]];
+    if (required.some(value => value == null || !Number.isFinite(Number(value)))) return [];
+    const wind = daily?.wind_speed_10m_max?.[index];
     const rawCode = Math.round(Number(daily?.weather_code?.[index]) || 0);
     const precipitation = Math.max(0, Number(daily?.precipitation_sum?.[index]) || 0);
     return [{
       year: Number(date.slice(0, 4)),
+      wind_max_mph: wind != null && Number.isFinite(Number(wind)) ? Number(wind) : null,
       date,
       high_f: Math.round(Number(daily?.temperature_2m_max?.[index]) || 0),
       low_f: Math.round(Number(daily?.temperature_2m_min?.[index]) || 0),

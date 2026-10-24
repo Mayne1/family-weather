@@ -176,3 +176,14 @@ test("indoor and historical choices do not acquire a beach safety override", () 
   const historical = buildDecision({ activity: "Beach day", space: "outdoor", hourly: [], historical: true, dayRainProbabilityPct: 62 });
   assert.equal(historical.status, "historical-only");
 });
+
+test('historical fit counts suitable past days without claiming a future probability', async () => {
+ const {historicalActivityFit}=await import('./decisionSpine.ts');
+ const day={high_f:72,low_f:52,rain:false,wind_max_mph:11};
+ const result=historicalActivityFit('yard work','outdoor',[day,day,day,day,{...day,rain:true}]);
+ assert.equal(result.score,80);assert.match(result.explanation,/4 of 5/);
+ assert.equal(historicalActivityFit('yard work','outdoor',[day,day]).score,null);
+ assert.equal(historicalActivityFit('yard work','indoor',[day,day,day]).score,null);
+ assert.equal(historicalActivityFit('yard work','outdoor',[day,day,{...day,wind_max_mph:30},{...day,high_f:110},{...day,rain:true}]).score,40);
+ assert.equal(historicalActivityFit('yard work','outdoor',Array(5).fill({...day,wind_max_mph:null})).score,null);
+});

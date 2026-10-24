@@ -9,7 +9,7 @@ import type { AlmanacResult } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
 import { enforceRateLimit } from "../../../lib/requestSecurity";
-import { buildDecision } from "../../../lib/decisionSpine";
+import { buildDecision, historicalActivityFit } from "../../../lib/decisionSpine";
 import type { DecisionResult, HourlyCondition, Space } from "../../../lib/decisionSpine";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
@@ -75,12 +75,13 @@ type ForecastDay = {
   shortForecast?: string;
 };
 
-function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null) {
+function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null, space: Space = "outdoor") {
   if (historical) {
+    const fit = historicalActivityFit(decision.activity.requested, space, historical.years);
     return {
-      score: null,
+      score: fit.score,
       bestWindow: "Historical pattern only",
-      summary: decision.summary,
+      summary: fit.explanation,
       advice: [
         { tone: historical.rainFrequencyPct >= 40 ? "warn" : "good", title: "Five-year rain pattern", copy: `${historical.rainYears} of ${historical.years.length} matching dates recorded rain. This is history, not a forecast.` },
         { tone: historical.averageHighF >= 90 ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
@@ -270,7 +271,7 @@ export async function POST(request: NextRequest) {
       shortForecast: almanac!.summary,
     };
     const decision = buildDecision({ activity, space, hourly: forecast?.hourly || [], historical: Boolean(almanac), dayRainProbabilityPct: day.precip_prob_pct });
-    const recommendation = recommendationFromDecision(decision, almanac);
+    const recommendation = recommendationFromDecision(decision, almanac, space);
     return NextResponse.json({
       ok: true,
       source: forecast?.source || "almanac",
