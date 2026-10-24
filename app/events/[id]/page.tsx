@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getValidSession } from "../../lib/firebaseAuth";
+import ReplyNotifications from "../../components/ReplyNotifications";
 import NativeShare from "../../components/NativeShare";
 import type { EventEntitlement } from "../../lib/entitlementTypes";
 
@@ -155,6 +156,7 @@ export default function EventDetailPage() {
     <nav className="eventWorkspaceNav" aria-label="Event workspace"><Link className="active" href={`/events/${id}`}>Overview & guests</Link><Link href={`/events/${id}/invitation`}>Invitation design</Link><Link href={`/events/${id}/package`}>Package</Link></nav>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>
     {canvaNotice ? <p className={canvaNotice === "complete" ? "canvaReturnNotice success" : "canvaReturnNotice error"}>{canvaNotice === "complete" ? "Your Canva invitation is saved to this event." : "The Canva invitation could not be saved. Your previous invitation artwork is still safe."}</p> : null}
+    <ReplyNotifications />
     <section className="responseSummary"><article><strong>{counts.yes}</strong><span>Going</span></article><article><strong>{counts.maybe}</strong><span>Maybe</span></article><article><strong>{counts.no}</strong><span>Can’t go</span></article><article><strong>{counts.waiting}</strong><span>Waiting</span></article></section>
     {entitlement && (["free", "paid", "legacy"].includes(entitlement.status)) ? <section className="guestPanel"><div><p className="eyebrow dark"><span /> Invitations</p><h2>Send it directly or share it yourself.</h2><p className="panelIntro">Use Family Weather email delivery for selected guests, and share one invitation link through your own email, Messages, social media, or other communication tools.</p></div>
       <p className="entitlementUsage">{entitlement.status === "legacy" ? "Existing event email access" : `${entitlement.email_remaining} of ${entitlement.email_limit} Family Weather email invitations remaining`}</p><form className="inviteMoreForm" onSubmit={inviteMorePeople}><label className="formField"><span>Email addresses</span><textarea name="recipients" required rows={4} placeholder={"maya@example.com, jordan@example.com\nterry@example.com"} /></label><button className="primaryCta" type="submit" disabled={inviteLoading || (entitlement.status !== "legacy" && entitlement.email_remaining === 0)}>{inviteLoading ? "Sending invitations…" : entitlement.status !== "legacy" && entitlement.email_remaining === 0 ? "Email allowance used" : "Send invitations"}<span>→</span></button></form>

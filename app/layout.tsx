@@ -46,6 +46,9 @@ const structuredData = {
 };
 
 export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Family Weather", statusBarStyle: "default" },
+  icons: { apple: "/notification-icon-192.png" },
   metadataBase: new URL(siteUrl),
   applicationName: "Family Weather",
   title,

@@ -1,5 +1,6 @@
 "use strict";
 const express=require('express');
+const {queueReply}=require('./push-notifications');
 const crypto=require('crypto');
 const uid=()=>crypto.randomBytes(16).toString('hex');
 const error=(res,status,message)=>res.status(status).json({ok:false,error:message});
@@ -25,8 +26,14 @@ module.exports=function makeAnnouncementsRouter(pool,auth){
  r.post('/announcements/:id/replies',limit,wrap(async(req,res)=>{
   const {name,message,website}=req.body||{};if(website)return error(res,400,'Reply could not be saved.');
   if(typeof name!=='string'||!name.trim()||name.length>80||typeof message!=='string'||!message.trim()||message.length>2000)return error(res,400,'Enter your name and a message (up to 2,000 characters).');
-  const q=await pool.query('INSERT INTO fw_announcement_replies(announcement_id,name,message) SELECT id,$2,$3 FROM fw_announcements WHERE id=$1 AND closed=false RETURNING id',[req.params.id,name.trim(),message.trim()]);
-  if(!q.rowCount)return error(res,404,'This announcement is unavailable.');res.json({ok:true});
+  const client=await pool.connect();
+  try {
+  await client.query('BEGIN');
+  const q=await client.query('INSERT INTO fw_announcement_replies(announcement_id,name,message) SELECT id,$2,$3 FROM fw_announcements WHERE id=$1 AND closed=false RETURNING id',[req.params.id,name.trim(),message.trim()]);
+  if(!q.rowCount){await client.query('ROLLBACK');return error(res,404,'This announcement is unavailable.');}
+  await queueReply(client,'announcement',req.params.id);
+  await client.query('COMMIT');res.json({ok:true});
+  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
  }));
  r.get('/announcements/:id/manage',auth,wrap(async(req,res)=>{
   const a=await owned(req);if(!a)return error(res,404,'Announcement not found.');

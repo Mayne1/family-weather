@@ -3,7 +3,7 @@ const test=require('node:test');const assert=require('node:assert/strict');
 const express=require('express'),request=require('supertest'),{newDb}=require('pg-mem');
 const fs=require('fs');const router=require('./announcements-router');
 test('free announcements keep private management and replies; retired purchase and send routes cannot act',async()=>{
- const db=newDb();db.public.none(fs.readFileSync(__dirname+'/announcements.sql','utf8'));const {Pool}=db.adapters.createPg();const pool=new Pool();
+ const db=newDb();db.public.none(fs.readFileSync(__dirname+'/announcements.sql','utf8'));db.public.none(fs.readFileSync(__dirname+'/push-notifications.sql','utf8'));const {Pool}=db.adapters.createPg();const pool=new Pool();
  const app=express();app.use(express.json());app.use(router(pool,(req,res,next)=>{req.uid=req.headers.authorization;if(!req.uid)return res.status(401).json({error:'Sign in'});next()}));
  const original=global.fetch;let externalCalls=0;global.fetch=async()=>{externalCalls++;throw Error('No external delivery or payment requests expected')};
  try{

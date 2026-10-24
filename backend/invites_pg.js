@@ -2,6 +2,7 @@
 
 const express = require("express");
 const crypto = require("crypto");
+const { queueReply } = require("./push-notifications");
 
 module.exports = function makeInvitesRouter(pool) {
   const router = express.Router();
@@ -125,13 +126,15 @@ module.exports = function makeInvitesRouter(pool) {
         if (!current.rowCount && email) current = await client.query("SELECT id,response_key FROM share_link_rsvps WHERE invite_token=$1 AND lower(responder_email)=$2 LIMIT 1", [value, email]);
         if (current.rowCount) {
           await client.query(`UPDATE share_link_rsvps SET responder_email=COALESCE($2,responder_email),responder_name=$3,response=$4,guests_count=$5,message=$6,responded_at=now() WHERE id=$1`, [current.rows[0].id, email, name, answer, guests, note]);
+          await queueReply(client, "invitation", String(eventId));
           await client.query("COMMIT");
           return res.json({ ok: true, token: value, response: answer, responseKey: current.rows[0].response_key, updated: true });
         }
         const newKey = crypto.randomBytes(24).toString("base64url");
         await client.query(`INSERT INTO share_link_rsvps(event_id,invite_token,response_key,responder_email,responder_name,response,guests_count,message) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, [eventId, value, newKey, email, name, answer, guests, note]);
         await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'first_rsvp',$2::jsonb) ON CONFLICT DO NOTHING", [eventId, JSON.stringify({ delivery: "share_link" })]);
-        await client.query("COMMIT");
+        await queueReply(client, "invitation", String(eventId));
+          await client.query("COMMIT");
         return res.json({ ok: true, token: value, response: answer, responseKey: newKey, created: true });
       }
 
@@ -142,7 +145,8 @@ module.exports = function makeInvitesRouter(pool) {
         [value, answer, responderEmail ? String(responderEmail).trim() : null, name, guests, note]
       );
       if (!existing.rows[0].responded_at) await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'first_rsvp',$2::jsonb) ON CONFLICT DO NOTHING", [eventId, JSON.stringify({ delivery: "email" })]);
-      await client.query("COMMIT");
+      await queueReply(client, "invitation", String(eventId));
+          await client.query("COMMIT");
       return res.json({ ok: true, token: value, response: answer });
     } catch (error) {
       if (client) await client.query("ROLLBACK").catch(() => {});
