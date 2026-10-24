@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test backend/*.test.js && npm run test:decision",
-    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts"
+    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts app/lib/plannerForecast.test.ts"
   },
   "dependencies": {
     "next": "16.3.3",

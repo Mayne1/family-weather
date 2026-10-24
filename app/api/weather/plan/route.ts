@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { forecastForDate } from "../../../lib/plannerForecast";
 import { lookupAlmanac } from "../../../lib/almanac";
 import { rainTiming } from "../../../lib/rainTiming";
 import { summarizeRain } from "../../../lib/rainSummary";
@@ -227,32 +228,37 @@ export async function POST(request: NextRequest) {
     const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
     const geo = await resolveLocation(location, body.resolvedLocation);
-    const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
-    let forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date, precipitation?.timezone || null);
-    if (forecast?.source === "met-norway") {
-      if (precipitation) {
-        const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
-        forecast = {
-          ...forecast,
-          day: {
-            ...forecast.day,
-            precip_prob_pct: precipitation.dayProbabilityPct ?? forecast.day.precip_prob_pct,
-          },
-          hourly: forecast.hourly.map((hour) => {
-            const overlay = byTime.get(providerLocalKey(hour.time, precipitation.timezone));
-            return overlay ? {
-              ...hour,
-              precipitationProbabilityPct: overlay.probabilityPct ?? hour.precipitationProbabilityPct,
-              precipitationAmountMm: overlay.amountMm ?? hour.precipitationAmountMm,
-              precipitationWindowHours: 1,
-              precipitationSource: overlay.source,
-              condition: [hour.condition, overlay.condition].filter(Boolean).join("; ") || undefined,
-              thunderRisk: hour.thunderRisk || /thunder|lightning/i.test(overlay.condition || ""),
-            } : hour;
-          }),
-        };
+    const forecastResult = await forecastForDate(date, async () => {
+      const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
+      let forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date, precipitation?.timezone || null);
+      if (forecast?.source === "met-norway") {
+        if (precipitation) {
+          const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
+          forecast = {
+            ...forecast,
+            day: {
+              ...forecast.day,
+              precip_prob_pct: precipitation.dayProbabilityPct ?? forecast.day.precip_prob_pct,
+            },
+            hourly: forecast.hourly.map((hour) => {
+              const overlay = byTime.get(providerLocalKey(hour.time, precipitation.timezone));
+              return overlay ? {
+                ...hour,
+                precipitationProbabilityPct: overlay.probabilityPct ?? hour.precipitationProbabilityPct,
+                precipitationAmountMm: overlay.amountMm ?? hour.precipitationAmountMm,
+                precipitationWindowHours: 1,
+                precipitationSource: overlay.source,
+                condition: [hour.condition, overlay.condition].filter(Boolean).join("; ") || undefined,
+                thunderRisk: hour.thunderRisk || /thunder|lightning/i.test(overlay.condition || ""),
+              } : hour;
+            }),
+          };
+        }
       }
-    }
+      return { forecast, precipitation };
+    });
+    const forecast = forecastResult?.forecast || null;
+    const precipitation = forecastResult?.precipitation || null;
     const almanac = forecast ? null : await lookupAlmanac(geo, date);
     const day: ForecastDay = forecast?.day || {
       date,
