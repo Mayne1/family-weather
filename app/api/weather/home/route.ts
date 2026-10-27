@@ -116,7 +116,7 @@ function dateInTimezone(timeZone: string, value: Date | string = new Date()) {
 async function nwsStationWeather(point: NwsPoint | null, timeZone: string): Promise<NwsStationWeather | null> {
   const stationsUrl = point?.properties?.observationStations;
   if (!stationsUrl) return null;
-  const stations = await jsonOrNull(stationsUrl, NWS_HEADERS);
+  const stations = await jsonOrNull(stationsUrl, NWS_HEADERS, 3600);
   const stationUrl = stations?.features?.[0]?.id;
   if (!stationUrl) return null;
 
@@ -232,11 +232,11 @@ function normalizeFallbackDays(value: unknown): WeatherDay[] {
   }).filter((day) => day.date);
 }
 
-async function jsonOrNull(url: string, headers?: HeadersInit) {
+async function jsonOrNull(url: string, headers?: HeadersInit, revalidate = 60) {
   try {
     const response = await fetch(url, {
       headers,
-      cache: "no-store",
+      next: { revalidate },
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) return null;
@@ -275,29 +275,38 @@ export async function GET(request: NextRequest) {
   const lat = hasCoordinates ? requestedLat : 37.9177;
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
-  const [airQualityReading, currentPayload, fallbackForecast, point] = await Promise.all([
-    airQuality(lat, lon),
-    jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`)),
-    jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`)),
-    jsonOrNull(
-      `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
-      NWS_HEADERS,
-    ),
-  ]);
+  // Start fallbacks now, but do not hold successful NWS results behind them.
+  const airQualityPromise = airQuality(lat, lon);
+  const currentPromise = jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`));
+  const fallbackPromise = jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`));
+  const point = await jsonOrNull(
+    `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
+    NWS_HEADERS, 3600,
+  );
 
   let days: WeatherDay[] = [];
   let source = "family-weather";
-
   const forecastUrl = point?.properties?.forecast;
-  const [officialForecast, calendar] = await Promise.all([
+  // Observations only need the point's timezone, not a completed forecast.
+  const calendarPromise = calendarForecast(lat, lon, point?.properties?.timeZone);
+  const [officialForecast, stationWeather] = await Promise.all([
     forecastUrl ? jsonOrNull(forecastUrl, NWS_HEADERS) : Promise.resolve(null),
-    calendarForecast(lat, lon, point?.properties?.timeZone),
+    nwsStationWeather(point, point?.properties?.timeZone || "UTC"),
   ]);
-  const timeZone = point?.properties?.timeZone || calendar.timeZone || "UTC";
-  const localDate = dateInTimezone(timeZone);
-  const stationWeather = await nwsStationWeather(point, timeZone);
   const officialCurrent = stationWeather?.current || null;
   const officialDays = officialForecast ? buildDays(officialForecast?.properties?.periods || []) : [];
+  const nwsTimeZone = point?.properties?.timeZone;
+  const nwsDate = nwsTimeZone ? dateInTimezone(nwsTimeZone) : null;
+  const completeOfficialDays = nwsDate && officialDays.some(day => day.date === nwsDate)
+    && officialDays.filter(day => day.date >= nwsDate).length >= 5;
+  const officialHumidity = finiteNumberOrNull(officialCurrent?.humidity_pct);
+  const completeOfficialHumidity = officialHumidity !== null && officialHumidity >= 0 && officialHumidity <= 100;
+  // Calendar data fills gaps; it should not delay a complete official reading.
+  const calendar = completeOfficialDays && completeOfficialHumidity
+    ? { days: [] as WeatherDay[], humidity: null, timeZone: nwsTimeZone }
+    : await calendarPromise;
+  const timeZone = nwsTimeZone || calendar.timeZone || "UTC";
+  const localDate = dateInTimezone(timeZone);
 
   const daysByDate = new Map(calendar.days.map((day) => [day.date, day]));
   for (const day of officialDays) daysByDate.set(day.date, day);
@@ -316,12 +325,15 @@ export async function GET(request: NextRequest) {
   else if (calendar.days.length) source = "open-meteo";
 
   if (!days.length) {
+    const fallbackForecast = await fallbackPromise;
     days = normalizeFallbackDays(fallbackForecast?.days)
       .filter((day) => day.date >= localDate)
       .slice(0, 5);
   }
 
+  const currentPayload = officialCurrent ? null : await currentPromise;
   const rawCurrent = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
+  const airQualityReading = await airQualityPromise;
   const observedHumidity = finiteNumberOrNull(rawCurrent?.humidity_pct);
   const validHumidity = observedHumidity !== null && observedHumidity >= 0 && observedHumidity <= 100;
   const current = rawCurrent ? { ...rawCurrent, humidity_pct: validHumidity ? Math.round(observedHumidity) : calendar.humidity, humidity_estimated: !validHumidity && calendar.humidity !== null } : null;
