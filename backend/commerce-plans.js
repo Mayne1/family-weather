@@ -11,6 +11,7 @@ const PLANS = Object.freeze({
 });
 
 function planFor(code) {
+  if (code === "family_access") return require("./family-access").FAMILY_PLAN;
   if (code === "family_weather_launch_event_599") return PLANS.event_plus_599;
   return PLANS[code] || PLANS.free_event;
 }

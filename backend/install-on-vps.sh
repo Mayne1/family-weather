@@ -36,6 +36,7 @@ install -m 0644 \
   "$FRONTEND_DIR/backend/rsvp-details-router.js" \
   "$ROUTES_DIR/rsvp-details-router.js"
 install -m 0644 "$FRONTEND_DIR/backend/event-entitlements-router.js" "$ROUTES_DIR/event-entitlements-router.js"
+install -m 0644 "$FRONTEND_DIR/backend/family-access.js" "$ROUTES_DIR/family-access.js"
 install -m 0644 "$FRONTEND_DIR/backend/commerce-plans.js" "$ROUTES_DIR/commerce-plans.js"
 install -m 0644 "$FRONTEND_DIR/backend/canva-jobs-router.js" "$ROUTES_DIR/canva-jobs-router.js"
 

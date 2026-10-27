@@ -45,6 +45,7 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || "Promotion code could not be applied.");
+      if (data.family_access) { window.location.assign("/family"); return; }
       setMessage(`${data.entitlement.plan_name} is active. Refreshing your event…`);
       window.setTimeout(() => window.location.reload(), 700);
     } catch (reason) {
@@ -66,6 +67,8 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
     }
   }
 
+  if (entitlement.product_code === "family_access") return <section className="launchOffer"><h3>Family Access</h3><p>Your invitations, RSVP tools, full template collection, and ad-free guest presentation are included.</p><p>Share your link through your own messaging app first. Direct email is available when you need it: {entitlement.email_remaining} of {entitlement.email_limit} remaining for this event.</p><a href={continueHref || "/events"}>Open your event →</a><p><a href="/family">Family guides and tools →</a></p></section>;
+
   return <section className="launchOffer" aria-labelledby={`launch-offer-${eventId}`}>
     <div className="launchOfferHeading"><div><p className="launchEyebrow">Your event access</p><h3 id={`launch-offer-${eventId}`}>{entitlement.plan_name}</h3></div><span>{entitlement.status === "free" ? "No card required" : "One event · one payment"}</span></div>
     <p className="launchOfferIntro">Planning, invitation design, your shareable link, and RSVP management are included. Upgrade only for a cleaner guest presentation or more Family Weather email delivery.</p>
@@ -86,7 +89,7 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
       })}
     </div> : <p className="maxPlanNotice">This event already has Family Weather’s largest direct-email allowance.</p>}
 
-    <form className="promoCodeForm" onSubmit={redeemPromo}><label><span>Have a Family Weather promotion code?</span><input name="promo" autoComplete="off" maxLength={15} placeholder="FW-XXXXXXXXXXXX" /></label><button type="submit" disabled={promoLoading}>{promoLoading ? "Applying…" : "Apply code"}</button></form>
+    <form className="promoCodeForm" onSubmit={redeemPromo}><label><span>Have a Family Weather promotion code?</span><input name="promo" autoComplete="off" maxLength={34} placeholder="FW-XXXXXXXXXXXX" /></label><button type="submit" disabled={promoLoading}>{promoLoading ? "Applying…" : "Apply code"}</button></form>
     {message ? <p className="inviteSuccess" role="status">{message}</p> : null}
     {error ? <p className="formError" role="alert">{error}</p> : null}
   </section>;

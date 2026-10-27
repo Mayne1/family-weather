@@ -12,6 +12,7 @@ export type CommercePlanCode = (typeof COMMERCE_PLANS)[number]["code"];
 export type PresentationLevel = (typeof COMMERCE_PLANS)[number]["presentation"] | "legacy";
 
 export function commercePlan(code?: string | null) {
+  if (code === "family_access") return { code: "family_access", name: "Family Access", priceCents: 0, emailLimit: 500, rank: 5, presentation: "unbranded" } as const;
   if (code === "family_weather_launch_event_599") return COMMERCE_PLANS[2];
   return COMMERCE_PLANS.find((plan) => plan.code === code) || COMMERCE_PLANS[0];
 }

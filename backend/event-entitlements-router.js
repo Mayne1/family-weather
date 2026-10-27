@@ -2,6 +2,7 @@
 
 const express = require("express");
 const crypto = require("crypto");
+const { hash: familyHash, membership, redeemFamily, applyFamily } = require("./family-access");
 const { PLANS, planFor, paidPlan } = require("./commerce-plans");
 
 const COMMERCE_EVENTS = new Set(["event_created", "invitation_saved", "share_link_created", "email_invitation_sent", "checkout_started"]);
@@ -63,6 +64,7 @@ async function ensureFreeEntitlement(client, eventId) {
      ON CONFLICT(event_id) DO NOTHING`,
     [eventId],
   );
+  await applyFamily(client, eventId);
 }
 
 function adminUids() {
@@ -209,6 +211,16 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
         await client.query("ROLLBACK");
         return res.status(404).json({ ok: false, error: "event_not_found_or_not_owner" });
       }
+      if (String(req.body?.code || '').trim().toUpperCase().startsWith('FW-FAMILY-')) {
+        if (!await redeemFamily(client, req.uid, req.body.code)) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ok:false,error:'Family code is invalid or closed.'});
+        }
+        await ensureFreeEntitlement(client,id);
+        const familyEvent = await client.query('SELECT * FROM event_entitlements WHERE event_id=$1',[id]);
+        await client.query('COMMIT');
+        return res.json({ok:true,family_access:true,entitlement:normalize(familyEvent.rows[0])});
+      }
       await ensureFreeEntitlement(client, id);
       const codeResult = await client.query("SELECT * FROM promotion_codes WHERE code_hash=$1 FOR UPDATE", [codeHash]);
       if (!codeResult.rowCount || codeResult.rows[0].redeemed_at || codeResult.rows[0].disabled_at) {
@@ -243,6 +255,10 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
   });
 
   router.get("/billing/promo-codes", requireFirebaseUser, async (req, res) => {
+    if (req.query.family === '1') {
+      try { return res.json({ok:true,member:await membership(pool,req.uid),admin:adminUids().has(req.uid)}); }
+      catch { return res.status(503).json({ok:false,error:'Family Access is temporarily unavailable.'}); }
+    }
     if (!adminUids().has(req.uid)) return res.status(403).json({ ok: false, error: "promotion_admin_required" });
     try {
       const result = await pool.query("SELECT code_label,product_code,redeemed_event_id,redeemed_at,disabled_at,created_at FROM promotion_codes ORDER BY created_at DESC LIMIT 500");
@@ -254,6 +270,35 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
   });
 
   router.post("/billing/promo-codes", requireFirebaseUser, async (req, res) => {
+    if (['family_redeem','family_create','family_close'].includes(req.body?.action)) {
+      const action=req.body.action;
+      if (action !== 'family_redeem' && !adminUids().has(req.uid)) return res.status(403).json({ok:false,error:'Administrator access required.'});
+      let client;
+      try {
+        client=await pool.connect(); await client.query('BEGIN');
+        if (action === 'family_redeem') {
+          if (!await redeemFamily(client,req.uid,req.body.code)) {
+            await client.query('ROLLBACK');return res.status(400).json({ok:false,error:'Family code is invalid or closed.'});
+          }
+          const events=await client.query('SELECT id FROM events WHERE owner_uid=$1',[req.uid]);
+          for (const event of events.rows) await ensureFreeEntitlement(client,event.id);
+          await client.query('COMMIT');return res.json({ok:true,member:true});
+        }
+        // Serialize code rotation so concurrent administrator requests cannot leave two active codes.
+        await client.query('LOCK TABLE family_access_codes IN EXCLUSIVE MODE');
+        await client.query('UPDATE family_access_codes SET disabled_at=now() WHERE disabled_at IS NULL');
+        let code;
+        if (action === 'family_create') {
+          code='FW-FAMILY-'+crypto.randomBytes(12).toString('hex').toUpperCase();
+          await client.query('INSERT INTO family_access_codes(code_hash,created_by_uid) VALUES($1,$2)',[familyHash(code),req.uid]);
+        }
+        await client.query('COMMIT');return res.json({ok:true,code});
+      } catch (error) {
+        if(client) await client.query('ROLLBACK').catch(()=>{});
+        console.error('family_access_failed',error);
+        return res.status(503).json({ok:false,error:'Family Access is temporarily unavailable.'});
+      } finally { client?.release(); }
+    }
     if (!adminUids().has(req.uid)) return res.status(403).json({ ok: false, error: "promotion_admin_required" });
     if (req.body?.action === "disable") {
       const code = String(req.body?.code || "").trim().toUpperCase();

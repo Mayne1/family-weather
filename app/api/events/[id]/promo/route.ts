@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const { id } = await context.params;
     const body = await request.json();
     const code = String(body.code || "").trim().toUpperCase();
-    if (!/^FW-[A-F0-9]{12}$/.test(code)) return NextResponse.json({ ok: false, error: "That promotion code is not valid." }, { status: 400 });
+    if (!/^FW-(?:[A-F0-9]{12}|FAMILY-[A-F0-9]{24})$/.test(code)) return NextResponse.json({ ok: false, error: "That promotion code is not valid." }, { status: 400 });
     const response = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement/promo`), {
       method: "POST",
       headers: { Authorization: authorization, "Content-Type": "application/json" },
