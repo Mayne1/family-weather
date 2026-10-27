@@ -17,7 +17,7 @@ module.exports=function makeAnnouncementsRouter(pool,auth){
  }));
  r.post('/announcements',auth,limit,wrap(async(req,res)=>{
   const {title,message,theme}=req.body||{};
-  if(typeof title!=='string'||!title.trim()||title.length>120||typeof message!=='string'||!message.trim()||message.length>4000||!['forest','sunrise','evening'].includes(theme))return error(res,400,'Add a title and message, and choose a design.');
+  if(typeof title!=='string'||!title.trim()||title.length>120||typeof message!=='string'||!message.trim()||message.length>4000||!['forest','sunrise','evening','blush','rainbow','autumn','golden','coastal','meadow'].includes(theme))return error(res,400,'Add a title and message, and choose a design.');
   const id=uid();await pool.query('INSERT INTO fw_announcements(id,owner_uid,title,message,theme) VALUES($1,$2,$3,$4,$5)',[id,req.uid,title.trim(),message.trim(),theme]);res.json({ok:true,id});
  }));
  r.get('/announcements/:id',wrap(async(req,res)=>{

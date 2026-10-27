@@ -11,3 +11,18 @@
 /* Artwork from the invitation collection, with room for long personal messages. */
 .card{min-height:570px;display:flex;align-items:center;justify-content:center;padding:100px 56px;background:#eee7d9 url('/invitations/designs/outdoor-garden.webp') center/100% 100% no-repeat;color:#17372e;border-radius:18px;box-shadow:0 24px 60px #183b322b,0 3px 12px #183b321a;border:1px solid #cebb8d}.card::before,.card::after{display:none}.cardContent{width:100%;padding:12px 0}.card h2{font-size:42px;line-height:1.15;letter-spacing:-.8px;text-shadow:0 1px 8px #fff9}.card p{font-size:20px;line-height:1.8;font-family:Georgia,serif;text-shadow:0 1px 6px #fff9}.cardSeal{font:44px/1 Georgia,serif;margin:0 auto 26px;color:#8d6b31}.cardDivider{color:#8d6b31}.sunrise{background-image:url('/invitations/designs/general-sunlit.webp');background-color:#eff4f0;color:#283f48}.evening{background-image:url('/invitations/designs/baby-celestial-night.webp');background-color:#03192b;color:#fff0d1}.evening .cardSeal,.evening .cardDivider{color:#e4c990}.evening h2,.evening p{text-shadow:0 2px 10px #00121f}.page .emojiTabs button{font-size:12px;line-height:1.3;min-height:36px;padding:6px 9px;min-width:0}.page .emojiTabs button[aria-pressed=true]{background:#234e3e;color:white;border-color:#234e3e}.emojiTabs{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #cbd3c5}
 @media(max-width:720px){.card{min-height:480px;padding:80px 38px}.card h2{font-size:34px}.card p{font-size:18px}.cardSeal{font-size:36px}}
+
+/* Additional announcement looks use the same project artwork as invitations. */
+.blush{background-image:url('/invitations/designs/baby-blush-bloom.webp');background-color:#faf5ec;color:#533e3e}
+.rainbow{background-image:url('/invitations/designs/baby-rainbow-day.webp');background-color:#fff5e0;color:#384651}
+.autumn{background-image:url('/invitations/designs/outdoor-autumn.webp');background-color:#f6e8cc;color:#513a24}
+.golden{background-image:url('/invitations/designs/birthday-golden-milestone.webp');background-color:#080f1b;color:#fff0cf}
+.coastal{background-image:url('/invitations/designs/outdoor-beach.webp');background-color:#f7edd8;color:#214d4a}
+.meadow{background-image:url('/invitations/designs/outdoor-meadow.webp');background-color:#fff8e3;color:#344a2f}
+.blush .cardSeal,.blush .cardDivider{color:#8c5761}
+.rainbow .cardSeal,.rainbow .cardDivider{color:#9a6328}
+.autumn .cardSeal,.autumn .cardDivider{color:#92551f}
+.coastal .cardSeal,.coastal .cardDivider{color:#326b66}
+.meadow .cardSeal,.meadow .cardDivider{color:#607334}
+.golden .cardSeal,.golden .cardDivider{color:#e4c990}
+.golden h2,.golden p{text-shadow:0 2px 10px #00121f}
