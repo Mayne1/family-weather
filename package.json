@@ -10,6 +10,8 @@
     "test": "node --test backend/*.test.js && npm run test:decision",
     "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts app/lib/plannerForecast.test.ts",
     "mobile:sync": "cap sync",
+    "mobile:build": "vite build --config mobile/vite.config.mts && cap sync",
+    "mobile:dev": "vite --config mobile/vite.config.mts",
     "mobile:ios": "cap open ios",
     "mobile:android": "cap open android",
     "mobile:run:ios": "cap run ios",
@@ -34,12 +36,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "express": "5.3.0",
     "pg-mem": "3.0.14",
     "supertest": "7.3.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.5"
   }
 }
