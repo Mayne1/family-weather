@@ -84,7 +84,21 @@ async function weatherRequest(query = "") {
 }
 
 function BrandMark() {
-  return <span className="brandMark" aria-hidden="true"><span>☀</span></span>;
+  return <span className="brandMark" aria-hidden="true"><Icon name="sun" /></span>;
+}
+
+function Icon({ name }: { name: Tab | "sun" | "location" | "refresh" }) {
+  const paths: Record<string, React.ReactNode> = {
+    home: <><path d="M3.5 10.8 12 3.8l8.5 7"/><path d="M5.7 9.8v10h12.6v-10M9.5 19.8v-6.3h5v6.3"/></>,
+    plan: <><circle cx="12" cy="12" r="3.6"/><path d="M12 2.7v2.1M12 19.2v2.1M2.7 12h2.1M19.2 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></>,
+    events: <><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3v5M16.5 3v5M3.5 10h17M8 14h2M14 14h2M8 17.5h2"/></>,
+    announcements: <><path d="M4 5.5h16v11H9l-5 4v-15Z"/><path d="M8 9h8M8 13h5"/></>,
+    account: <><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.7-4.3 3.2-6.5 7.5-6.5s6.8 2.2 7.5 6.5"/></>,
+    sun: <><circle cx="12" cy="12" r="3.7"/><path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></>,
+    location: <><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></>,
+    refresh: <><path d="M19.5 8.5A8 8 0 1 0 20 15"/><path d="M19.5 3.5v5h-5"/></>,
+  };
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
 }
 
 function App() {
@@ -151,13 +165,14 @@ function App() {
   return <div className="appShell">
     <header className="topBar">
       <div className="brand"><BrandMark/><span><strong>Family Weather</strong><small>Plan the day.</small></span></div>
-      <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location">⌖</button>
+      <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
     </header>
 
     <main>
       {activeTab === "home" ? <>
       <section className="heroCard" aria-busy={busy}>
-        <div className="heroTop"><div><p className="eyebrow">RIGHT NOW</p><h1>{weather?.label || "Family Weather"}</h1><p className="status">{status}</p></div><button className="refresh" type="button" onClick={() => void load(weather ? `?lat=${weather.lat}&lon=${weather.lon}` : "")} disabled={busy} aria-label="Refresh weather">↻</button></div>
+        <div className="heroGlow" aria-hidden="true" />
+        <div className="heroTop"><div><p className="eyebrow">RIGHT NOW</p><h1>{weather?.label || "Family Weather"}</h1><p className="status">{status}</p></div><button className="refresh" type="button" onClick={() => void load(weather ? `?lat=${weather.lat}&lon=${weather.lon}` : "")} disabled={busy} aria-label="Refresh weather"><Icon name="refresh" /></button></div>
         <div className="temperatureRow"><strong>{round(weather?.current?.temp_f)}°</strong><span className="conditionIcon" aria-hidden="true">{currentCondition.icon}</span></div>
         <p className="conditionLabel">{currentCondition.label}</p>
         <div className="weatherFacts">
@@ -199,12 +214,12 @@ function App() {
 
     <nav className="bottomNav" aria-label="Primary navigation">
       {([
-        ["home", "⌂", "Home"],
-        ["plan", "☀", "Plan"],
-        ["events", "□", "Events"],
-        ["announcements", "◇", "News"],
-        ["account", "○", "Account"],
-      ] as [Tab, string, string][]).map(([tab, icon, label]) => <button type="button" className={activeTab === tab ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true">{icon}</span><small>{label}</small></button>)}
+        ["home", "Home"],
+        ["plan", "Plan"],
+        ["events", "Events"],
+        ["announcements", "News"],
+        ["account", "Account"],
+      ] as [Tab, string][]).map(([tab, label]) => <button type="button" className={activeTab === tab ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>)}
     </nav>
   </div>;
 }
