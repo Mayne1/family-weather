@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App as NativeApp } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { getValidSession, SITE_URL, type AuthSession } from "./api";
+import { AccountScreen, AnnouncementsScreen, EventsScreen, PlanScreen } from "./screens";
 import "./styles.css";
 
-const SITE_URL = "https://thefamilyweather.com";
 const LOCATION_KEY = "family-weather-native-location-v1";
 
 type WeatherDay = {
@@ -39,13 +39,6 @@ type Snapshot = {
 };
 
 type Tab = "home" | "plan" | "events" | "announcements" | "account";
-
-const tabRoutes: Record<Exclude<Tab, "home">, string> = {
-  plan: "/plan",
-  events: "/events",
-  announcements: "/announcements",
-  account: "/?account=signin",
-};
 
 function condition(code?: number) {
   if (code == null) return { label: "Checking conditions", icon: "◌" };
@@ -90,15 +83,6 @@ async function weatherRequest(query = "") {
   return data as Snapshot;
 }
 
-async function openWeb(path: string) {
-  void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
-  await Browser.open({
-    url: `${SITE_URL}${path}`,
-    presentationStyle: "popover",
-    toolbarColor: "#0b3a31",
-  });
-}
-
 function BrandMark() {
   return <span className="brandMark" aria-hidden="true"><span>☀</span></span>;
 }
@@ -108,6 +92,7 @@ function App() {
   const [status, setStatus] = useState("Loading your weather desk…");
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [session, setSession] = useState<AuthSession | null>(null);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -124,6 +109,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    void getValidSession().then(setSession);
     let query = "";
     try {
       const saved = JSON.parse(localStorage.getItem(LOCATION_KEY) || "null") as { lat?: number; lon?: number } | null;
@@ -158,11 +144,8 @@ function App() {
   }
 
   async function selectTab(tab: Tab) {
+    void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
     setActiveTab(tab);
-    if (tab !== "home") {
-      await openWeb(tabRoutes[tab]);
-      setActiveTab("home");
-    }
   }
 
   return <div className="appShell">
@@ -172,6 +155,7 @@ function App() {
     </header>
 
     <main>
+      {activeTab === "home" ? <>
       <section className="heroCard" aria-busy={busy}>
         <div className="heroTop"><div><p className="eyebrow">RIGHT NOW</p><h1>{weather?.label || "Family Weather"}</h1><p className="status">{status}</p></div><button className="refresh" type="button" onClick={() => void load(weather ? `?lat=${weather.lat}&lon=${weather.lon}` : "")} disabled={busy} aria-label="Refresh weather">↻</button></div>
         <div className="temperatureRow"><strong>{round(weather?.current?.temp_f)}°</strong><span className="conditionIcon" aria-hidden="true">{currentCondition.icon}</span></div>
@@ -186,11 +170,11 @@ function App() {
 
       <section className="actionCard">
         <div><p className="eyebrow dark">YOUR DAY, BETTER PLANNED</p><h2>What are you trying to do?</h2><p>Check the activity, place, and date. Family Weather will find the useful window and explain why it works.</p></div>
-        <button className="primaryButton" type="button" onClick={() => void openWeb("/plan")}>Check a plan <span>→</span></button>
+        <button className="primaryButton" type="button" onClick={() => setActiveTab("plan")}>Check a plan <span>→</span></button>
       </section>
 
       <section className="sectionBlock">
-        <div className="sectionHeading"><div><p className="eyebrow dark">THE DAYS AHEAD</p><h2>Five-day desk</h2></div><button type="button" onClick={() => void openWeb("/today")}>Full forecast</button></div>
+        <div className="sectionHeading"><div><p className="eyebrow dark">THE DAYS AHEAD</p><h2>Five-day desk</h2></div></div>
         <div className="forecastRail">
           {(weather?.days || []).slice(0, 5).map((day) => {
             const dayCondition = condition(day.weather_code);
@@ -204,8 +188,13 @@ function App() {
       <section className="responsesCard">
         <span className="responseBell" aria-hidden="true">♢</span>
         <div><p className="eyebrow dark">RESPONSES</p><h2>RSVPs and announcement replies</h2><p>Sign in to see who responded and turn on native phone notifications.</p></div>
-        <button type="button" onClick={() => void openWeb("/?account=signin")}>Sign in <span>→</span></button>
+        <button type="button" onClick={() => setActiveTab(session ? "announcements" : "account")}>{session ? "Open replies" : "Sign in"} <span>→</span></button>
       </section>
+      </> : null}
+      {activeTab === "plan" ? <PlanScreen /> : null}
+      {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} /> : null}
+      {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} /> : null}
+      {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} /> : null}
     </main>
 
     <nav className="bottomNav" aria-label="Primary navigation">
