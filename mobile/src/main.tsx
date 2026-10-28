@@ -44,7 +44,7 @@ const tabRoutes: Record<Exclude<Tab, "home">, string> = {
   plan: "/plan",
   events: "/events",
   announcements: "/announcements",
-  account: "/login.html",
+  account: "/?account=signin",
 };
 
 function condition(code?: number) {
@@ -92,7 +92,11 @@ async function weatherRequest(query = "") {
 
 async function openWeb(path: string) {
   void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
-  await Browser.open({ url: `${SITE_URL}${path}`, presentationStyle: "popover" });
+  await Browser.open({
+    url: `${SITE_URL}${path}`,
+    presentationStyle: "popover",
+    toolbarColor: "#0b3a31",
+  });
 }
 
 function BrandMark() {
@@ -200,7 +204,7 @@ function App() {
       <section className="responsesCard">
         <span className="responseBell" aria-hidden="true">♢</span>
         <div><p className="eyebrow dark">RESPONSES</p><h2>RSVPs and announcement replies</h2><p>Sign in to see who responded and turn on native phone notifications.</p></div>
-        <button type="button" onClick={() => void openWeb("/login.html")}>Sign in <span>→</span></button>
+        <button type="button" onClick={() => void openWeb("/?account=signin")}>Sign in <span>→</span></button>
       </section>
     </main>
 

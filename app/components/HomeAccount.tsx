@@ -17,6 +17,16 @@ export default function HomeAccount() {
   const [error, setError] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const requestedMode = url.searchParams.get("account");
+    if (requestedMode !== "signin" && requestedMode !== "signup") return;
+    setMode(requestedMode);
+    setError("");
+    dialog.current?.showModal();
+    url.searchParams.delete("account");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+  useEffect(() => {
     let active = true;
     const sync = () => { void getValidSession().then(value => { if (active) { setSession(value); setReady(true); } }); };
     sync();
@@ -44,7 +54,7 @@ export default function HomeAccount() {
       <button type="button" className={styles.dialogClose} aria-label="Close account box" onClick={() => dialog.current?.close()}>×</button>
       <p className={styles.kicker}>FAMILY WEATHER ACCOUNT</p>
       <h2 id="home-account-title">{session ? "You’re signed in." : mode === "signin" ? "Welcome back." : "Make yourself at home."}</h2>
-      {session ? <div className={styles.accountDetails}><p>Signed in as <strong>{session.email}</strong></p><a className={styles.planButton} href="/events">Open My Events →</a><a className={styles.planButton} href="/family">Family Access →</a><button type="button" onClick={() => { signOut(); setSession(null); setMode("signin"); setError(""); }}>Sign out</button></div> : <form onSubmit={authenticate}>
+      {session ? <div className={styles.accountDetails}><p>Signed in as <strong>{session.email}</strong></p><a className={styles.planButton} href="/events">Open My Events →</a><button type="button" onClick={() => { signOut(); setSession(null); setMode("signin"); setError(""); }}>Sign out</button></div> : <form onSubmit={authenticate}>
         <p>{mode === "signin" ? "Sign in to your saved events and invitations." : "Create your account to save events and manage replies."}</p>
         <label htmlFor="home-auth-email">Email address</label><input id="home-auth-email" name="email" type="email" autoComplete="email" required disabled={busy}/>
         <label htmlFor="home-auth-password">Password</label><input id="home-auth-password" name="password" type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={mode === "signup" ? 6 : undefined} required disabled={busy}/>
