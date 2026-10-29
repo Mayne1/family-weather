@@ -81,6 +81,7 @@ function weatherMood(code: number | undefined, timeZone?: string) {
   if (code != null && code >= 200 && code < 300) return "storm";
   if (code != null && code >= 300 && code < 600) return "rain";
   if (code != null && code >= 600 && code < 700) return "snow";
+  if (code != null && (code === 801 || code === 802)) return "partly";
   if (code != null && (code >= 700 || code > 802)) return "cloudy";
   return "sunny";
 }
@@ -138,6 +139,7 @@ function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [eventDraft, setEventDraft] = useState<PlanHandoff | null>(null);
   const [announcementDraft, setAnnouncementDraft] = useState<PlanHandoff | null>(null);
+  const [selectedForecastDate, setSelectedForecastDate] = useState<string | null>(null);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -171,6 +173,7 @@ function App() {
   const currentCode = weather?.current?.weather_code ?? today?.weather_code;
   const currentCondition = condition(currentCode);
   const mood = weatherMood(currentCode, weather?.timezone);
+  const selectedForecastDay = weather?.days?.find((day) => day.date === selectedForecastDate) || null;
 
   async function useLocation() {
     setBusy(true);
@@ -232,10 +235,19 @@ function App() {
               const low = typeof day.temp_min_f === "number" ? day.temp_min_f : 0;
               const high = typeof day.temp_max_f === "number" ? day.temp_max_f : low;
               const width = Math.max(18, Math.min(100, 28 + (high - low) * 3));
-              return <article key={day.date}><strong>{label}</strong><span className="forecastIcon" aria-hidden="true">{dayCondition.icon}<small>{day.precip_prob_pct >= 20 ? `${round(day.precip_prob_pct)}%` : ""}</small></span><b className="lowTemp">{round(day.temp_min_f)}°</b><i><em style={{ width: `${width}%` }}/></i><b>{round(day.temp_max_f)}°</b></article>;
+              const selected = selectedForecastDate === day.date;
+              return <button className={`forecastRowButton ${selected ? "selected" : ""}`} type="button" key={day.date} aria-expanded={selected} onClick={() => {
+                setSelectedForecastDate(selected ? null : day.date);
+                void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
+              }}><strong>{label}</strong><span className="forecastIcon" aria-hidden="true">{dayCondition.icon}<small>{day.precip_prob_pct >= 20 ? `${round(day.precip_prob_pct)}%` : ""}</small></span><b className="lowTemp">{round(day.temp_min_f)}°</b><i><em style={{ width: `${width}%` }}/></i><b>{round(day.temp_max_f)}°</b><span className="forecastChevron" aria-hidden="true">›</span></button>;
             })}
-            {!weather ? Array.from({ length: 5 }, (_, index) => <article className="skeleton" key={index}><strong>Day</strong><span>◌</span><b>—</b><i/><b>—</b></article>) : null}
+            {!weather ? Array.from({ length: 5 }, (_, index) => <div className="forecastRowButton skeleton" key={index}><strong>Day</strong><span>◌</span><b>—</b><i/><b>—</b><span/></div>) : null}
           </div>
+          {selectedForecastDay ? <div className="forecastDayDetail">
+            <div><span className="forecastDetailIcon" aria-hidden="true">{condition(selectedForecastDay.weather_code).icon}</span><p><strong>{new Date(`${selectedForecastDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</strong><small>{selectedForecastDay.shortForecast || condition(selectedForecastDay.weather_code).label}</small></p></div>
+            <p>High near {round(selectedForecastDay.temp_max_f)}° and low around {round(selectedForecastDay.temp_min_f)}°. Rain chance {round(selectedForecastDay.precip_prob_pct)}%. Peak wind around {round(selectedForecastDay.wind_max_mph)} mph.</p>
+            <button type="button" onClick={() => setActiveTab("plan")}>Plan for this day <span>→</span></button>
+          </div> : null}
         </section>
 
         <section className="plannerSpotlight">
