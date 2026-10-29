@@ -70,6 +70,21 @@ function round(value?: number | null) {
   return typeof value === "number" && Number.isFinite(value) ? Math.round(value) : "—";
 }
 
+function localHour(timeZone?: string) {
+  try { return Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(new Date())); }
+  catch { return new Date().getHours(); }
+}
+
+function weatherMood(code: number | undefined, timeZone?: string) {
+  const hour = localHour(timeZone);
+  if (hour < 6 || hour >= 19) return "night";
+  if (code != null && code >= 200 && code < 300) return "storm";
+  if (code != null && code >= 300 && code < 600) return "rain";
+  if (code != null && code >= 600 && code < 700) return "snow";
+  if (code != null && (code >= 700 || code > 802)) return "cloudy";
+  return "sunny";
+}
+
 async function weatherRequest(query = "") {
   const path = `/api/weather/home${query}`;
   if (Capacitor.isNativePlatform()) {
@@ -141,6 +156,7 @@ function App() {
   const today = useMemo(() => weather?.days?.find((day) => day.date === localDate(weather?.timezone)) || weather?.days?.[0], [weather]);
   const currentCode = weather?.current?.weather_code ?? today?.weather_code;
   const currentCondition = condition(currentCode);
+  const mood = weatherMood(currentCode, weather?.timezone);
 
   async function useLocation() {
     setBusy(true);
@@ -172,7 +188,8 @@ function App() {
 
     <main>
       {activeTab === "home" ? <>
-      <section className="heroCard" aria-busy={busy}>
+      <section className={`heroCard mood-${mood}`} aria-busy={busy}>
+        <div className="weatherScene" aria-hidden="true"><span className="sceneOrb">{mood === "night" ? "☾" : mood === "storm" ? "ϟ" : mood === "snow" ? "✦" : ""}</span><i className="sceneCloud cloudOne"/><i className="sceneCloud cloudTwo"/><i className="sceneHill hillBack"/><i className="sceneHill hillFront"/><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
         <div className="heroGlow" aria-hidden="true" />
         <div className="heroTop"><div><p className="eyebrow">RIGHT NOW</p><h1>{weather?.label || "Family Weather"}</h1><p className="status">{status}</p></div><button className="refresh" type="button" onClick={() => void load(weather ? `?lat=${weather.lat}&lon=${weather.lon}` : "")} disabled={busy} aria-label="Refresh weather"><Icon name="refresh" /></button></div>
         <div className="temperatureRow"><strong>{round(weather?.current?.temp_f)}°</strong><span className="conditionIcon" aria-hidden="true">{currentCondition.icon}</span></div>
