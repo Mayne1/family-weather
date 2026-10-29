@@ -20,14 +20,14 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
     const response = await CapacitorHttp.request({
       url: `${SITE_URL}${path}`,
       method,
-      headers: options.headers,
+      headers: { "Content-Type": "application/json", ...options.headers },
       data: options.data,
       connectTimeout: 15000,
       readTimeout: 65000,
     });
     const data = response.data;
     if (response.status < 200 || response.status >= 300 || data?.ok === false) {
-      throw new Error(data?.error || "Family Weather could not complete that request.");
+      throw new Error(data?.error || (typeof data === "string" && data.trim() ? data : "Family Weather could not complete that request."));
     }
     return data as T;
   }
