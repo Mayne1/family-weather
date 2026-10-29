@@ -22,7 +22,7 @@ function timeFromWindow(window: string) {
 }
 function designUrl(design: Design) { return design.artwork; }
 
-export function PlanScreen({ continueWith }: { continueWith: (kind: "event" | "announcement", draft: PlanHandoff) => void }) {
+export function PlanScreen({ continueWith, initialDate }: { continueWith: (kind: "event" | "announcement", draft: PlanHandoff) => void; initialDate?: string | null }) {
   const [activity, setActivity] = useState("yard work");
   const [location, setLocation] = useState("Stockton, CA");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -30,6 +30,7 @@ export function PlanScreen({ continueWith }: { continueWith: (kind: "event" | "a
   const [result, setResult] = useState<PlanResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => { if (initialDate) setDate(initialDate); }, [initialDate]);
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try { setResult(await apiRequest<PlanResult>("/api/weather/plan", { method: "POST", data: { activity, location, date, space } })); }

@@ -140,6 +140,7 @@ function App() {
   const [eventDraft, setEventDraft] = useState<PlanHandoff | null>(null);
   const [announcementDraft, setAnnouncementDraft] = useState<PlanHandoff | null>(null);
   const [selectedForecastDate, setSelectedForecastDate] = useState<string | null>(null);
+  const [planDate, setPlanDate] = useState<string | null>(null);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -246,13 +247,13 @@ function App() {
           {selectedForecastDay ? <div className="forecastDayDetail">
             <div><span className="forecastDetailIcon" aria-hidden="true">{condition(selectedForecastDay.weather_code).icon}</span><p><strong>{new Date(`${selectedForecastDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</strong><small>{selectedForecastDay.shortForecast || condition(selectedForecastDay.weather_code).label}</small></p></div>
             <p>High near {round(selectedForecastDay.temp_max_f)}° and low around {round(selectedForecastDay.temp_min_f)}°. Rain chance {round(selectedForecastDay.precip_prob_pct)}%. Peak wind around {round(selectedForecastDay.wind_max_mph)} mph.</p>
-            <button type="button" onClick={() => setActiveTab("plan")}>Plan for this day <span>→</span></button>
+            <button type="button" onClick={() => { setPlanDate(selectedForecastDay.date); setActiveTab("plan"); }}>Plan for this day <span>→</span></button>
           </div> : null}
         </section>
 
         <section className="plannerSpotlight">
           <div><p className="eyebrow">ONLY FAMILY WEATHER</p><h2>Don’t just check it.<br/>Plan around it.</h2><p>Choose what you’re doing. We’ll find the best weather window and explain why it works.</p></div>
-          <button type="button" onClick={() => setActiveTab("plan")}><span>Check a plan</span><b>→</b></button>
+          <button type="button" onClick={() => { setPlanDate(null); setActiveTab("plan"); }}><span>Check a plan</span><b>→</b></button>
         </section>
       </section>
 
@@ -262,7 +263,7 @@ function App() {
         <button type="button" onClick={() => setActiveTab(session ? "announcements" : "account")}>{session ? "Open replies" : "Sign in"} <span>→</span></button>
       </section>
       </> : null}
-      {activeTab === "plan" ? <PlanScreen continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
+      {activeTab === "plan" ? <PlanScreen initialDate={planDate} continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
       {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} draft={eventDraft} clearDraft={() => setEventDraft(null)} /> : null}
       {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} draft={announcementDraft} clearDraft={() => setAnnouncementDraft(null)} /> : null}
       {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} switchTab={setActiveTab} /> : null}
