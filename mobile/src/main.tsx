@@ -117,6 +117,48 @@ function BrandMark() {
   return <span className="brandMark" aria-hidden="true"><Icon name="sun" /></span>;
 }
 
+function WeatherArtwork({ mood }: { mood: string }) {
+  return <svg className={`weatherArtwork artwork-${mood}`} viewBox="0 0 430 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <radialGradient id="fwSunCore" cx="38%" cy="32%" r="68%"><stop offset="0" stopColor="#fff9ca"/><stop offset=".42" stopColor="#ffd95f"/><stop offset="1" stopColor="#f4a92f"/></radialGradient>
+      <radialGradient id="fwSunHalo"><stop offset="0" stopColor="#ffe78b" stopOpacity=".62"/><stop offset=".54" stopColor="#ffd25d" stopOpacity=".2"/><stop offset="1" stopColor="#ffd25d" stopOpacity="0"/></radialGradient>
+      <linearGradient id="fwCloud" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff"/><stop offset=".52" stopColor="#edf5f7"/><stop offset="1" stopColor="#bed3dc"/></linearGradient>
+      <linearGradient id="fwCloudShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#dbe9ed" stopOpacity=".18"/><stop offset="1" stopColor="#7297a6" stopOpacity=".55"/></linearGradient>
+      <linearGradient id="fwMoon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fffde8"/><stop offset="1" stopColor="#c6dce4"/></linearGradient>
+      <filter id="fwSunGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="fwCloudShadow" x="-30%" y="-40%" width="180%" height="210%"><feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#234e61" floodOpacity=".24"/></filter>
+      <filter id="fwSoftGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5"/></filter>
+    </defs>
+    <g className="artSun">
+      <circle cx="348" cy="91" r="92" fill="url(#fwSunHalo)"/>
+      <g className="sunRays" stroke="#ffe58a" strokeWidth="3" strokeLinecap="round" opacity=".7">
+        <path d="M348 17v-17M348 182v17M274 91h-17M439 91h17M296 39l-13-13M400 143l13 13M400 39l13-13M296 143l-13 13"/>
+      </g>
+      <circle cx="348" cy="91" r="48" fill="url(#fwSunCore)" filter="url(#fwSunGlow)"/>
+      <ellipse cx="332" cy="73" rx="18" ry="11" fill="#fff" opacity=".26" transform="rotate(-28 332 73)"/>
+    </g>
+    <g className="artMoon">
+      <circle cx="348" cy="91" r="49" fill="url(#fwMoon)" filter="url(#fwSunGlow)"/>
+      <circle cx="368" cy="72" r="48" fill="#18364d"/>
+      <circle cx="311" cy="52" r="2" fill="#fff" opacity=".8"/><circle cx="284" cy="92" r="1.6" fill="#fff" opacity=".7"/><circle cx="402" cy="37" r="1.8" fill="#fff" opacity=".8"/>
+    </g>
+    <g className="artClouds" filter="url(#fwCloudShadow)">
+      <g className="premiumCloud cloudRear" opacity=".72" transform="translate(-46 56) scale(.72)">
+        <path d="M45 205c0-27 22-49 50-49 8-34 39-59 76-59 42 0 76 31 80 71 29 2 52 25 52 54 0 30-25 55-56 55H99c-31 0-56-24-56-55 0-6 1-12 2-17Z" fill="url(#fwCloud)"/>
+        <path d="M54 226c28 12 60 10 86-2 42-19 82-5 112-10 22-3 37-12 49-25 2 6 3 13 3 20 0 31-25 56-56 56H99c-22 0-39-12-45-39Z" fill="url(#fwCloudShade)"/>
+      </g>
+      <g className="premiumCloud cloudFront" transform="translate(168 62) scale(.86)">
+        <path d="M22 188c0-31 25-56 57-56 11-39 47-67 90-67 49 0 89 36 94 82 35 1 63 29 63 64 0 36-29 65-66 65H84c-37 0-67-29-67-65 0-8 2-16 5-23Z" fill="url(#fwCloud)"/>
+        <path d="M28 225c36 13 71 10 103-4 47-20 91-4 128-9 28-4 50-17 65-35 4 10 6 20 6 31 0 37-30 67-68 67H83c-28 0-50-17-55-50Z" fill="url(#fwCloudShade)"/>
+        <path d="M77 140c19-32 55-54 93-54 33 0 63 16 81 41-25-15-54-20-78-13-20 6-32 19-50 24-15 5-31 5-46 2Z" fill="#fff" opacity=".38"/>
+      </g>
+    </g>
+    <g className="artLightning" filter="url(#fwSunGlow)"><path d="m319 205-39 69h31l-18 62 67-88h-34l28-43Z" fill="#ffd55f"/></g>
+    <g className="artSnow" fill="#fff"><path d="m313 211 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/><circle cx="373" cy="245" r="5"/><circle cx="270" cy="276" r="4"/></g>
+    <path className="artHaze" d="M-20 445c67-55 138-69 211-32 78 40 155 31 259-35v182H-20Z" fill="rgba(45,107,103,.18)"/>
+  </svg>;
+}
+
 function Icon({ name }: { name: Tab | "sun" | "location" | "refresh" }) {
   const paths: Record<string, React.ReactNode> = {
     home: <><path d="M3.5 10.8 12 3.8l8.5 7"/><path d="M5.7 9.8v10h12.6v-10M9.5 19.8v-6.3h5v6.3"/></>,
@@ -207,7 +249,7 @@ function App() {
     <main className={activeTab === "home" ? "homeMain" : ""}>
       {activeTab === "home" ? <>
       <section className="weatherStage" aria-busy={busy}>
-        <div className="weatherScene" aria-hidden="true"><span className="sceneOrb">{mood === "night" ? "☾" : mood === "storm" ? "ϟ" : mood === "snow" ? "✦" : ""}</span><i className="sceneCloud cloudOne"/><i className="sceneCloud cloudTwo"/><i className="sceneCloud cloudThree"/><i className="sceneHill hillBack"/><i className="sceneHill hillFront"/><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
+        <div className="weatherScene" aria-hidden="true"><WeatherArtwork mood={mood}/><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
         <div className="weatherFocus">
           <div className="locationLine"><Icon name="location"/><span>HOME</span></div>
           <h1>{weather?.label || "Family Weather"}</h1>
