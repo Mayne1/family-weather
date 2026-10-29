@@ -20,7 +20,7 @@ function timeFromWindow(window: string) {
   if (match[3].toUpperCase() === "PM") hour += 12;
   return `${String(hour).padStart(2, "0")}:${match[2] || "00"}`;
 }
-function designUrl(design: Design) { return `${SITE_URL}${design.artwork}`; }
+function designUrl(design: Design) { return design.artwork; }
 
 export function PlanScreen({ continueWith }: { continueWith: (kind: "event" | "announcement", draft: PlanHandoff) => void }) {
   const [activity, setActivity] = useState("yard work");
