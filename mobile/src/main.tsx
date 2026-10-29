@@ -5,7 +5,7 @@ import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { getValidSession, SITE_URL, type AuthSession } from "./api";
-import { AccountScreen, AnnouncementsScreen, EventsScreen, PlanScreen } from "./screens";
+import { AccountScreen, AnnouncementsScreen, EventsScreen, PlanScreen, type PlanHandoff } from "./screens";
 import "./styles.css";
 
 const LOCATION_KEY = "family-weather-native-location-v1";
@@ -107,6 +107,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [eventDraft, setEventDraft] = useState<PlanHandoff | null>(null);
+  const [announcementDraft, setAnnouncementDraft] = useState<PlanHandoff | null>(null);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -206,9 +208,9 @@ function App() {
         <button type="button" onClick={() => setActiveTab(session ? "announcements" : "account")}>{session ? "Open replies" : "Sign in"} <span>→</span></button>
       </section>
       </> : null}
-      {activeTab === "plan" ? <PlanScreen /> : null}
-      {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} /> : null}
-      {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} /> : null}
+      {activeTab === "plan" ? <PlanScreen continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
+      {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} draft={eventDraft} clearDraft={() => setEventDraft(null)} /> : null}
+      {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} draft={announcementDraft} clearDraft={() => setAnnouncementDraft(null)} /> : null}
       {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} /> : null}
     </main>
 
