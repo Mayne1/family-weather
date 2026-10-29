@@ -211,7 +211,7 @@ function App() {
       {activeTab === "plan" ? <PlanScreen continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
       {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} draft={eventDraft} clearDraft={() => setEventDraft(null)} /> : null}
       {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} draft={announcementDraft} clearDraft={() => setAnnouncementDraft(null)} /> : null}
-      {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} /> : null}
+      {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} switchTab={setActiveTab} /> : null}
     </main>
 
     <nav className="bottomNav" aria-label="Primary navigation">
@@ -219,8 +219,8 @@ function App() {
         ["home", "Home"],
         ["plan", "Plan"],
         ["events", "Events"],
-        ["announcements", "News"],
-        ["account", "Account"],
+        ["announcements", "Announcements"],
+        ["account", session ? "Account" : "Sign in"],
       ] as [Tab, string][]).map(([tab, label]) => <button type="button" className={activeTab === tab ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>)}
     </nav>
   </div>;
