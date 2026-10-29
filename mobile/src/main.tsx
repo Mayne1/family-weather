@@ -85,6 +85,20 @@ function weatherMood(code: number | undefined, timeZone?: string) {
   return "sunny";
 }
 
+function weatherBrief(label: string, rain?: number | null, wind?: number | null) {
+  const rainChance = typeof rain === "number" ? Math.round(rain) : null;
+  const windSpeed = typeof wind === "number" ? Math.round(wind) : null;
+  const rainCopy = rainChance == null
+    ? ""
+    : rainChance >= 60
+      ? ` Rain is likely, with a ${rainChance}% daytime chance.`
+      : rainChance >= 25
+        ? ` Keep an eye on a ${rainChance}% chance of rain.`
+        : ` Rain stays limited at ${rainChance}%.`;
+  const windCopy = windSpeed == null ? "" : ` Peak wind is around ${windSpeed} mph.`;
+  return `${label} set the tone for today.${rainCopy}${windCopy}`;
+}
+
 async function weatherRequest(query = "") {
   const path = `/api/weather/home${query}`;
   if (Capacitor.isNativePlatform()) {
@@ -180,43 +194,54 @@ function App() {
     setActiveTab(tab);
   }
 
-  return <div className="appShell">
-    <header className="topBar">
+  return <div className={`appShell ${activeTab === "home" ? `homeActive mood-${mood}` : ""}`}>
+    <header className={`topBar ${activeTab === "home" ? "homeTopBar" : ""}`}>
       <div className="brand"><BrandMark/><span><strong>Family Weather</strong><small>Plan the day.</small></span></div>
       <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
     </header>
 
-    <main>
+    <main className={activeTab === "home" ? "homeMain" : ""}>
       {activeTab === "home" ? <>
-      <section className={`heroCard mood-${mood}`} aria-busy={busy}>
-        <div className="weatherScene" aria-hidden="true"><span className="sceneOrb">{mood === "night" ? "☾" : mood === "storm" ? "ϟ" : mood === "snow" ? "✦" : ""}</span><i className="sceneCloud cloudOne"/><i className="sceneCloud cloudTwo"/><i className="sceneHill hillBack"/><i className="sceneHill hillFront"/><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
-        <div className="heroGlow" aria-hidden="true" />
-        <div className="heroTop"><div><p className="eyebrow">RIGHT NOW</p><h1>{weather?.label || "Family Weather"}</h1><p className="status">{status}</p></div><button className="refresh" type="button" onClick={() => void load(weather ? `?lat=${weather.lat}&lon=${weather.lon}` : "")} disabled={busy} aria-label="Refresh weather"><Icon name="refresh" /></button></div>
-        <div className="temperatureRow"><strong>{round(weather?.current?.temp_f)}°</strong><span className="conditionIcon" aria-hidden="true">{currentCondition.icon}</span></div>
-        <p className="conditionLabel">{currentCondition.label}</p>
-        <div className="weatherFacts">
-          <span><small>FEELS LIKE</small><b>{round(weather?.current?.feels_like_f)}°</b></span>
-          <span><small>HIGH / LOW</small><b>{round(today?.temp_max_f)}° / {round(today?.temp_min_f)}°</b></span>
-          <span><small>RAIN</small><b>{round(today?.precip_prob_pct)}%</b></span>
-          <span><small>WIND</small><b>{round(weather?.current?.wind_mph ?? today?.wind_max_mph)} mph</b></span>
+      <section className="weatherStage" aria-busy={busy}>
+        <div className="weatherScene" aria-hidden="true"><span className="sceneOrb">{mood === "night" ? "☾" : mood === "storm" ? "ϟ" : mood === "snow" ? "✦" : ""}</span><i className="sceneCloud cloudOne"/><i className="sceneCloud cloudTwo"/><i className="sceneCloud cloudThree"/><i className="sceneHill hillBack"/><i className="sceneHill hillFront"/><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
+        <div className="weatherFocus">
+          <div className="locationLine"><Icon name="location"/><span>HOME</span></div>
+          <h1>{weather?.label || "Family Weather"}</h1>
+          <strong className="stageTemperature">{round(weather?.current?.temp_f)}°</strong>
+          <p className="stageCondition">{currentCondition.label}</p>
+          <p className="stageRange">H:{round(today?.temp_max_f)}° <span>L:{round(today?.temp_min_f)}°</span></p>
+          <p className="stageStatus">{status}</p>
         </div>
-      </section>
 
-      <section className="actionCard">
-        <div><p className="eyebrow dark">YOUR DAY, BETTER PLANNED</p><h2>What are you trying to do?</h2><p>Check the activity, place, and date. Family Weather will find the useful window and explain why it works.</p></div>
-        <button className="primaryButton" type="button" onClick={() => setActiveTab("plan")}>Check a plan <span>→</span></button>
-      </section>
+        <section className="glassPanel todayBrief">
+          <div className="briefHeading"><span>{currentCondition.icon}</span><p>{weatherBrief(currentCondition.label, today?.precip_prob_pct, weather?.current?.wind_mph ?? today?.wind_max_mph)}</p></div>
+          <div className="metricStrip">
+            <span><small>FEELS</small><b>{round(weather?.current?.feels_like_f)}°</b></span>
+            <span><small>RAIN</small><b>{round(today?.precip_prob_pct)}%</b></span>
+            <span><small>WIND</small><b>{round(weather?.current?.wind_mph ?? today?.wind_max_mph)} mph</b></span>
+            <span><small>AIR</small><b>{weather?.air_quality?.us_aqi != null ? round(weather.air_quality.us_aqi) : "—"}</b></span>
+          </div>
+        </section>
 
-      <section className="sectionBlock">
-        <div className="sectionHeading"><div><p className="eyebrow dark">THE DAYS AHEAD</p><h2>Five-day desk</h2></div></div>
-        <div className="forecastRail">
-          {(weather?.days || []).slice(0, 5).map((day) => {
-            const dayCondition = condition(day.weather_code);
-            const label = day.date === localDate(weather?.timezone) ? "Today" : new Date(`${day.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" });
-            return <article className="dayCard" key={day.date}><span>{label}</span><i aria-hidden="true">{dayCondition.icon}</i><strong>{round(day.temp_max_f)}°</strong><small>{round(day.temp_min_f)}° low</small><em>{round(day.precip_prob_pct)}% rain</em></article>;
-          })}
-          {!weather ? Array.from({ length: 5 }, (_, index) => <article className="dayCard skeleton" key={index}><span>DAY</span><i>◌</i><strong>—</strong><small>Loading</small></article>) : null}
-        </div>
+        <section className="glassPanel forecastList">
+          <div className="glassTitle"><span>▦</span><strong>5-DAY FORECAST</strong></div>
+          <div className="forecastRows">
+            {(weather?.days || []).slice(0, 5).map((day) => {
+              const dayCondition = condition(day.weather_code);
+              const label = day.date === localDate(weather?.timezone) ? "Today" : new Date(`${day.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" });
+              const low = typeof day.temp_min_f === "number" ? day.temp_min_f : 0;
+              const high = typeof day.temp_max_f === "number" ? day.temp_max_f : low;
+              const width = Math.max(18, Math.min(100, 28 + (high - low) * 3));
+              return <article key={day.date}><strong>{label}</strong><span className="forecastIcon" aria-hidden="true">{dayCondition.icon}<small>{day.precip_prob_pct >= 20 ? `${round(day.precip_prob_pct)}%` : ""}</small></span><b className="lowTemp">{round(day.temp_min_f)}°</b><i><em style={{ width: `${width}%` }}/></i><b>{round(day.temp_max_f)}°</b></article>;
+            })}
+            {!weather ? Array.from({ length: 5 }, (_, index) => <article className="skeleton" key={index}><strong>Day</strong><span>◌</span><b>—</b><i/><b>—</b></article>) : null}
+          </div>
+        </section>
+
+        <section className="plannerSpotlight">
+          <div><p className="eyebrow">ONLY FAMILY WEATHER</p><h2>Don’t just check it.<br/>Plan around it.</h2><p>Choose what you’re doing. We’ll find the best weather window and explain why it works.</p></div>
+          <button type="button" onClick={() => setActiveTab("plan")}><span>Check a plan</span><b>→</b></button>
+        </section>
       </section>
 
       <section className="responsesCard">
