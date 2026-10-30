@@ -64,7 +64,7 @@ const PROFILES: ActivityProfile[] = [
     key: "trick-or-treating",
     label: "trick-or-treating",
     patterns: [
-      /trick\s*(?:or|[-&])\s*treat/i,
+      /trick[\s-]*(?:or|&)[\s-]*treat/i,
       /trick\s*treat/i,
       /halloween/i,
       /costume.*(?:walk|candy)/i,
