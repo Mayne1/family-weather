@@ -52,3 +52,16 @@ main.homeMain{max-width:720px;padding-top:0}
 .homeMain>.responsesCard{position:relative;z-index:3;margin-top:0;border-color:rgba(255,255,255,.28);background:rgba(249,249,244,.89);box-shadow:0 20px 48px rgba(18,51,51,.15);backdrop-filter:blur(22px)}
 .homeActive .bottomNav{border-color:rgba(255,255,255,.3);background:rgba(245,248,244,.84);box-shadow:0 18px 48px rgba(0,28,32,.3),inset 0 1px 0 rgba(255,255,255,.7);backdrop-filter:blur(28px) saturate(130%)}
 @media(max-width:390px){.weatherStage{margin-right:-12px;margin-left:-12px;padding-right:12px;padding-left:12px}.weatherFocus{min-height:360px;padding-top:26px}.weatherFocus h1{font-size:34px}.stageTemperature{font-size:112px}.forecastRowButton{grid-template-columns:54px 40px 30px 1fr 30px 12px;gap:5px}.plannerSpotlight h2{font-size:31px}}
+
+/* Cinematic live-sky plates: generated for Family Weather and bundled locally. */
+.appShell.homeActive{background-position:center top;background-repeat:no-repeat;background-size:100% 100%,100% auto}
+.appShell.homeActive.mood-sunny{background-image:linear-gradient(180deg,rgba(5,36,67,.08) 0,rgba(26,84,108,.12) 390px,#f3ead6 920px),url("/mobile-weather-scenes/sunny.webp")}
+.appShell.homeActive.mood-partly{background-image:linear-gradient(180deg,rgba(3,29,51,.1) 0,rgba(20,67,83,.18) 410px,#f1eadc 920px),url("/mobile-weather-scenes/partly.webp")}
+.appShell.homeActive.mood-cloudy{background-image:linear-gradient(180deg,rgba(9,29,41,.18) 0,rgba(41,65,72,.2) 410px,#e8e8df 920px),url("/mobile-weather-scenes/cloudy.webp")}
+.appShell.homeActive.mood-rain{background-image:linear-gradient(180deg,rgba(5,18,29,.34) 0,rgba(28,50,59,.3) 420px,#d9dcda 920px),url("/mobile-weather-scenes/cloudy.webp")}
+.appShell.homeActive.mood-storm{background-image:linear-gradient(180deg,rgba(2,8,17,.26) 0,rgba(22,29,44,.35) 430px,#cecbd0 920px),url("/mobile-weather-scenes/storm.webp")}
+.appShell.homeActive.mood-snow{background-image:linear-gradient(180deg,rgba(45,76,93,.08) 0,rgba(105,133,144,.12) 420px,#f7f5ed 920px),url("/mobile-weather-scenes/snow.webp")}
+.appShell.homeActive.mood-night{background-image:linear-gradient(180deg,rgba(0,7,18,.1) 0,rgba(4,20,36,.2) 430px,#738c94 920px),url("/mobile-weather-scenes/night.webp")}
+.weatherStage .weatherScene{background:none}.weatherStage .weatherScene:after{background:linear-gradient(180deg,rgba(1,14,24,.03),rgba(1,14,24,.08) 52%,rgba(2,24,30,.23) 100%)}
+.homeActive.mood-rain .sceneRain,.homeActive.mood-storm .sceneRain{z-index:2}
+@media(prefers-reduced-motion:no-preference){.appShell.homeActive{animation:liveSkyDrift 18s ease-in-out infinite alternate}}@keyframes liveSkyDrift{from{background-position:50% 0,50% 0}to{background-position:51.5% 0,51.5% -8px}}
