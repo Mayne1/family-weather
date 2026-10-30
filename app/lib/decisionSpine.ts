@@ -58,6 +58,7 @@ type ActivityProfile = {
   maximumRainPct: number;
 };
 
+// Time-specific traditions belong ahead of broad activity matches.
 const PROFILES: ActivityProfile[] = [
   {
     key: "trick-or-treating",
