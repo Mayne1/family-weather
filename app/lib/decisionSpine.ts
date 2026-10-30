@@ -60,6 +60,24 @@ type ActivityProfile = {
 
 const PROFILES: ActivityProfile[] = [
   {
+    key: "trick-or-treating",
+    label: "trick-or-treating",
+    patterns: [
+      /trick\s*(?:or|[-&])\s*treat/i,
+      /trick\s*treat/i,
+      /halloween/i,
+      /costume.*(?:walk|candy)/i,
+    ],
+    durationHours: 3,
+    preferredHours: [17, 21],
+    usableHours: [16, 22],
+    daylightOnly: false,
+    comfortableTemperature: [45, 72],
+    workableTemperature: [32, 82],
+    maximumWindMph: 18,
+    maximumRainPct: 20,
+  },
+  {
     key: "tree-work",
     label: "tree work",
     patterns: [/tree\s*(work|trim|cut|prun)/i, /(trim|cut|prun).*(tree|branch)/i, /(tree|branch).*(trim|cut|prun)/i, /arbor/i],
