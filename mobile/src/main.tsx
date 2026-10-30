@@ -77,7 +77,7 @@ function localHour(timeZone?: string) {
 
 function weatherMood(code: number | undefined, timeZone?: string) {
   const hour = localHour(timeZone);
-  if (hour < 6 || hour >= 19) return "night";
+  if (hour < 6 || hour >= 18) return "night";
   if (code != null && code >= 200 && code < 300) return "storm";
   if (code != null && code >= 300 && code < 600) return "rain";
   if (code != null && code >= 600 && code < 700) return "snow";
