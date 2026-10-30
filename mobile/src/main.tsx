@@ -5,7 +5,7 @@ import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { getValidSession, SITE_URL, type AuthSession } from "./api";
-import { AccountScreen, AnnouncementsScreen, EventsScreen, PlanScreen, type PlanHandoff } from "./screens";
+import { AccountScreen, AnnouncementsScreen, EventsScreen, HistoryScreen, MoreScreen, PlanScreen, type PlanHandoff } from "./screens";
 import "./styles.css";
 
 const LOCATION_KEY = "family-weather-native-location-v1";
@@ -38,7 +38,7 @@ type Snapshot = {
   days: WeatherDay[];
 };
 
-type Tab = "home" | "plan" | "events" | "announcements" | "account";
+type Tab = "home" | "plan" | "history" | "events" | "announcements" | "account" | "more";
 
 function condition(code?: number) {
   if (code == null) return { label: "Checking conditions", icon: "◌" };
@@ -121,9 +121,11 @@ function Icon({ name }: { name: Tab | "sun" | "location" | "refresh" }) {
   const paths: Record<string, React.ReactNode> = {
     home: <><path d="M3.5 10.8 12 3.8l8.5 7"/><path d="M5.7 9.8v10h12.6v-10M9.5 19.8v-6.3h5v6.3"/></>,
     plan: <><circle cx="12" cy="12" r="3.6"/><path d="M12 2.7v2.1M12 19.2v2.1M2.7 12h2.1M19.2 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></>,
+    history: <><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M7.5 2.8v5M16.5 2.8v5M3.5 10h17M7.5 14h3M13.5 14h3M7.5 17.2h3"/></>,
     events: <><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M7.5 3v5M16.5 3v5M3.5 10h17M8 14h2M14 14h2M8 17.5h2"/></>,
     announcements: <><path d="M4 5.5h16v11H9l-5 4v-15Z"/><path d="M8 9h8M8 13h5"/></>,
     account: <><circle cx="12" cy="8" r="4"/><path d="M4.5 21c.7-4.3 3.2-6.5 7.5-6.5s6.8 2.2 7.5 6.5"/></>,
+    more: <><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></>,
     sun: <><circle cx="12" cy="12" r="3.7"/><path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></>,
     location: <><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></>,
     refresh: <><path d="M19.5 8.5A8 8 0 1 0 20 15"/><path d="M19.5 3.5v5h-5"/></>,
@@ -141,6 +143,7 @@ function App() {
   const [announcementDraft, setAnnouncementDraft] = useState<PlanHandoff | null>(null);
   const [selectedForecastDate, setSelectedForecastDate] = useState<string | null>(null);
   const [planDate, setPlanDate] = useState<string | null>(null);
+  const [planLocation, setPlanLocation] = useState<string | null>(null);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -247,13 +250,13 @@ function App() {
           {selectedForecastDay ? <div className="forecastDayDetail">
             <div><span className="forecastDetailIcon" aria-hidden="true">{condition(selectedForecastDay.weather_code).icon}</span><p><strong>{new Date(`${selectedForecastDay.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</strong><small>{selectedForecastDay.shortForecast || condition(selectedForecastDay.weather_code).label}</small></p></div>
             <p>High near {round(selectedForecastDay.temp_max_f)}° and low around {round(selectedForecastDay.temp_min_f)}°. Rain chance {round(selectedForecastDay.precip_prob_pct)}%. Peak wind around {round(selectedForecastDay.wind_max_mph)} mph.</p>
-            <button type="button" onClick={() => { setPlanDate(selectedForecastDay.date); setActiveTab("plan"); }}>Plan for this day <span>→</span></button>
+            <button type="button" onClick={() => { setPlanDate(selectedForecastDay.date); setPlanLocation(weather?.label || null); setActiveTab("plan"); }}>Plan for this day <span>→</span></button>
           </div> : null}
         </section>
 
         <section className="plannerSpotlight">
           <div><p className="eyebrow">ONLY FAMILY WEATHER</p><h2>Don’t just check it.<br/>Plan around it.</h2><p>Choose what you’re doing. We’ll find the best weather window and explain why it works.</p></div>
-          <button type="button" onClick={() => { setPlanDate(null); setActiveTab("plan"); }}><span>Check a plan</span><b>→</b></button>
+          <button type="button" onClick={() => { setPlanDate(null); setPlanLocation(weather?.label || null); setActiveTab("plan"); }}><span>Check a plan</span><b>→</b></button>
         </section>
       </section>
 
@@ -263,20 +266,22 @@ function App() {
         <button type="button" onClick={() => setActiveTab(session ? "announcements" : "account")}>{session ? "Open replies" : "Sign in"} <span>→</span></button>
       </section>
       </> : null}
-      {activeTab === "plan" ? <PlanScreen initialDate={planDate} continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
+      {activeTab === "plan" ? <PlanScreen initialDate={planDate} initialLocation={planLocation} continueWith={(kind, draft) => { if (kind === "event") { setEventDraft(draft); setActiveTab("events"); } else { setAnnouncementDraft(draft); setActiveTab("announcements"); } }} /> : null}
+      {activeTab === "history" ? <HistoryScreen planFor={(date, location) => { setPlanDate(date); setPlanLocation(location); setActiveTab("plan"); }} /> : null}
       {activeTab === "events" ? <EventsScreen session={session} switchTab={setActiveTab} draft={eventDraft} clearDraft={() => setEventDraft(null)} /> : null}
       {activeTab === "announcements" ? <AnnouncementsScreen session={session} switchTab={setActiveTab} draft={announcementDraft} clearDraft={() => setAnnouncementDraft(null)} /> : null}
       {activeTab === "account" ? <AccountScreen session={session} setSession={setSession} switchTab={setActiveTab} /> : null}
+      {activeTab === "more" ? <MoreScreen session={session} switchTab={setActiveTab} /> : null}
     </main>
 
     <nav className="bottomNav" aria-label="Primary navigation">
       {([
         ["home", "Home"],
         ["plan", "Plan"],
+        ["history", "History"],
         ["events", "Events"],
-        ["announcements", "Announcements"],
-        ["account", session ? "Account" : "Sign in"],
-      ] as [Tab, string][]).map(([tab, label]) => <button type="button" className={activeTab === tab ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>)}
+        ["more", "More"],
+      ] as [Tab, string][]).map(([tab, label]) => { const active = activeTab === tab || (tab === "more" && (activeTab === "announcements" || activeTab === "account")); return <button type="button" className={active ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>; })}
     </nav>
   </div>;
 }

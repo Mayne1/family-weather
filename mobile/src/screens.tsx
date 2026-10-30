@@ -3,9 +3,21 @@ import { Browser } from "@capacitor/browser";
 import { apiRequest, authenticate, authHeaders, signOut, SITE_URL, type AuthSession } from "./api";
 import { getInvitationDesign, invitationCategoryForActivity, invitationDesigns } from "../../app/invitations/catalog";
 
-type SwitchTab = (tab: "home" | "plan" | "events" | "announcements" | "account") => void;
+type SwitchTab = (tab: "home" | "plan" | "history" | "events" | "announcements" | "account" | "more") => void;
 type PlanResult = { source: string; location: string; activity: string; score: number | null; bestWindow: string; summary: string; day: { temp_max_f: number; temp_min_f: number; precip_prob_pct: number | null; wind_max_mph: number }; advice?: Array<{ tone: string; title: string; copy: string }> };
 export type PlanHandoff = { activity: string; location: string; date: string; space: string; bestWindow: string; summary: string };
+type LocationSuggestion = { label: string; lat: number; lon: number; timezone?: string };
+type AlmanacResult = {
+  location: string;
+  averageHighF: number;
+  averageLowF: number;
+  averageWindMph: number;
+  rainYears: number;
+  rainFrequencyPct: number;
+  typicalWeatherCode: number;
+  summary: string;
+  years: Array<{ year: number; date: string; condition: string; high_f: number; low_f: number; rain: boolean; precipitation_in: number; weather_code: number }>;
+};
 
 type Design = (typeof invitationDesigns)[number];
 type FamilyEvent = { id: string; title: string; description?: string; location?: string; starts_at?: string; ends_at?: string };
@@ -21,8 +33,70 @@ function timeFromWindow(window: string) {
   return `${String(hour).padStart(2, "0")}:${match[2] || "00"}`;
 }
 function designUrl(design: Design) { return design.artwork; }
+function historyGlyph(code?: number) {
+  if (code == null) return "◌";
+  if (code >= 200 && code < 300) return "ϟ";
+  if (code >= 300 && code < 600) return "☂";
+  if (code >= 600 && code < 700) return "❄";
+  if (code >= 700 && code < 800) return "≋";
+  if (code === 800) return "☀";
+  if (code <= 802) return "◒";
+  return "☁";
+}
 
-export function PlanScreen({ continueWith, initialDate }: { continueWith: (kind: "event" | "announcement", draft: PlanHandoff) => void; initialDate?: string | null }) {
+export function HistoryScreen({ planFor }: { planFor: (date: string, location: string) => void }) {
+  const [location, setLocation] = useState("Stockton, CA");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [resolvedLocation, setResolvedLocation] = useState<LocationSuggestion | null>(null);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [result, setResult] = useState<AlmanacResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event?: React.FormEvent) {
+    event?.preventDefault(); setBusy(true); setError(""); setResult(null);
+    try {
+      const data = await apiRequest<{ resolvedLocation: LocationSuggestion; almanac: AlmanacResult }>("/api/weather/almanac", { method: "POST", data: { location, resolvedLocation, date } });
+      setResolvedLocation(data.resolvedLocation); setLocation(data.resolvedLocation?.label || location); setSuggestions([]); setResult(data.almanac);
+    } catch (reason: any) {
+      setSuggestions(Array.isArray(reason?.suggestions) ? reason.suggestions : []);
+      const message = reason instanceof Error ? reason.message : "Weather history could not be loaded.";
+      setError(/abort|timeout/i.test(message) ? "The history service took too long. Try the lookup again." : message);
+    } finally { setBusy(false); }
+  }
+
+  return <div className="nativeScreen historyScreen">
+    <section className="screenMast historyMast"><span className="mastMark">▦</span><div><p className="eyebrow">FIVE-YEAR WEATHER MEMORY</p><h1>Weather history.</h1><p>Compare the same calendar date across five previous years before a live forecast reaches it.</p></div></section>
+    <form className="nativeForm historyFormNative" onSubmit={submit}>
+      <p className="eyebrow dark">01 · CHOOSE THE PLACE AND DATE</p>
+      <label>Where?<input value={location} onChange={event => { setLocation(event.target.value); setResolvedLocation(null); setSuggestions([]); }} placeholder="City, address, venue, or ZIP code" required /></label>
+      {suggestions.length ? <div className="locationSuggestionsNative">{suggestions.map(item => <button type="button" key={`${item.lat}-${item.lon}`} onClick={() => { setLocation(item.label); setResolvedLocation(item); setSuggestions([]); }}>{item.label}<span>→</span></button>)}</div> : null}
+      <label>Date to compare<input type="date" value={date} onChange={event => setDate(event.target.value)} required /></label>
+      <button className="primaryButton" disabled={busy}>{busy ? "Looking through five years…" : "Compare five years"}<span>→</span></button>
+      <p className="historyFinePrint">The selected year determines which five previous matching dates are compared.</p>
+      {error ? <p className="nativeError">{error}</p> : null}
+    </form>
+    {!result ? <section className="nativePanel historyWelcome"><p className="eyebrow dark">02 · READ THE PATTERN</p><h2>A calendar with a memory.</h2><p>See whether rain was common, how wide the temperature range was, and whether wind repeatedly showed up. History gives context; it does not promise future weather.</p><div><span><b>5</b><small>YEARS SIDE BY SIDE</small></span><span><b>1</b><small>PLANNING CLUE</small></span></div></section> : <section className="nativeResult almanacResult">
+      <div className="almanacHeading"><div><p className="eyebrow dark">{result.location}</p><h2>{new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })} across five years</h2></div><span>{historyGlyph(result.typicalWeatherCode)}</span></div>
+      <div className="resultGrid almanacSummary"><span><small>AVG HIGH</small><b>{result.averageHighF}°</b></span><span><small>AVG LOW</small><b>{result.averageLowF}°</b></span><span><small>RAIN YEARS</small><b>{result.rainYears}/{result.years.length}</b></span><span><small>AVG WIND</small><b>{result.averageWindMph} mph</b></span></div>
+      <p className="almanacCopy">{result.summary} The individual years below show the evidence behind that summary.</p>
+      <p className="historyNoticeNative"><strong>Historical pattern only—not a forecast.</strong></p>
+      <div className="almanacYearsNative">{result.years.map(year => <article key={year.date}><div><strong>{year.year}</strong><span>{historyGlyph(year.weather_code)}</span></div><h3>{year.condition}</h3><b>{year.high_f}° / {year.low_f}°</b><p>{year.rain ? `${year.precipitation_in.toFixed(2)} inches of rain` : "No rain recorded"}</p></article>)}</div>
+      <div className="historyNextNative"><h3>Apply the pattern to a real plan.</h3><p>The planner adds your activity and explains whether the weather fits.</p><button className="primaryButton" type="button" onClick={() => planFor(date, result.location || location)}>Check a complete plan<span>→</span></button></div>
+    </section>}
+  </div>;
+}
+
+export function MoreScreen({ session, switchTab }: { session: AuthSession | null; switchTab: SwitchTab }) {
+  return <div className="nativeScreen moreScreen">
+    <section className="screenMast moreMast"><span className="mastMark">✦</span><div><p className="eyebrow">THE REST OF FAMILY WEATHER</p><h1>More tools.</h1><p>Announcements, replies, your account, and a quick map of how the whole system fits together.</p></div></section>
+    <section className="nativePanel moreHub"><p className="eyebrow dark">COMMUNICATE</p><h2>Keep everybody together.</h2><button className="moreToolButton" type="button" onClick={() => switchTab("announcements")}><span className="moreToolIcon">✎</span><span><b>Announcements & replies</b><small>Send one link, collect messages, and see who answered.</small></span><strong>→</strong></button><button className="moreToolButton" type="button" onClick={() => switchTab("events")}><span className="moreToolIcon">◇</span><span><b>Invitations & RSVPs</b><small>Open your event workspace, share invitations, and check responses.</small></span><strong>→</strong></button></section>
+    <section className="nativePanel moreHub"><p className="eyebrow dark">YOUR ACCESS</p><h2>{session ? "Your Family Weather account" : "Sign in when you need to save"}</h2><p>{session ? `Signed in as ${session.email}` : "Weather, planning, and history work without an account. Sign in for saved events, invitations, announcements, and notifications."}</p><button className="moreToolButton" type="button" onClick={() => switchTab("account")}><span className="moreToolIcon">○</span><span><b>{session ? "Account & notifications" : "Sign in or create an account"}</b><small>Manage the account connected to this phone.</small></span><strong>→</strong></button></section>
+    <section className="nativePanel nativeHow"><p className="eyebrow dark">HOW FAMILY WEATHER WORKS</p><h2>Forecast → decision → invitation</h2><ol><li><b>Ask a practical question.</b><span>What are you doing, where, and on which date?</span></li><li><b>Use the right weather evidence.</b><span>Near dates use forecasts. Later dates use five-year history.</span></li><li><b>Turn a good day into a shared plan.</b><span>Create an invitation or announcement only when other people need to join.</span></li></ol></section>
+  </div>;
+}
+
+export function PlanScreen({ continueWith, initialDate, initialLocation }: { continueWith: (kind: "event" | "announcement", draft: PlanHandoff) => void; initialDate?: string | null; initialLocation?: string | null }) {
   const [activity, setActivity] = useState("yard work");
   const [location, setLocation] = useState("Stockton, CA");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -31,6 +105,7 @@ export function PlanScreen({ continueWith, initialDate }: { continueWith: (kind:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { if (initialDate) setDate(initialDate); }, [initialDate]);
+  useEffect(() => { if (initialLocation) setLocation(initialLocation); }, [initialLocation]);
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try { setResult(await apiRequest<PlanResult>("/api/weather/plan", { method: "POST", data: { activity, location, date, space } })); }

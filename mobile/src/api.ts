@@ -27,7 +27,9 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
     });
     const data = response.data;
     if (response.status < 200 || response.status >= 300 || data?.ok === false) {
-      throw new Error(data?.error || (typeof data === "string" && data.trim() ? data : "Family Weather could not complete that request."));
+      const error = new Error(data?.error || (typeof data === "string" && data.trim() ? data : "Family Weather could not complete that request."));
+      Object.assign(error, { status: response.status, suggestions: data?.suggestions || [] });
+      throw error;
     }
     return data as T;
   }
@@ -38,7 +40,11 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
     cache: "no-store",
   });
   const data = await response.json();
-  if (!response.ok || data?.ok === false) throw new Error(data?.error || "Family Weather could not complete that request.");
+  if (!response.ok || data?.ok === false) {
+    const error = new Error(data?.error || "Family Weather could not complete that request.");
+    Object.assign(error, { status: response.status, suggestions: data?.suggestions || [] });
+    throw error;
+  }
   return data as T;
 }
 
