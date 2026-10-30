@@ -202,3 +202,16 @@ test('historical fit counts suitable past days without claiming a future probabi
  assert.equal(historicalActivityFit('yard work','outdoor',[day,day,{...day,wind_max_mph:30},{...day,high_f:110},{...day,rain:true}]).score,40);
  assert.equal(historicalActivityFit('yard work','outdoor',Array(5).fill({...day,wind_max_mph:null})).score,null);
 });
+
+test("trick-or-treating spelling variants retain evening hours even when morning is dry", () => {
+  const hourly = day({ temperatureF: 61, windMph: 4 }).map((item, hour) => ({
+    ...item, precipitationProbabilityPct: hour >= 16 ? 40 : 0,
+  }));
+  for (const activity of ["trick-or-treating", "trick or treating", "trick-or treating", "trick & treating"]) {
+    const result = buildDecision({ activity, space: "outdoor", hourly });
+    assert.equal(result.activity.key, "trick-or-treating", activity);
+    assert.ok(result.bestWindow, activity);
+    assert.ok(Number(result.bestWindow.start.match(/T(\d{2}):/)![1]) >= 16, activity);
+    assert.ok(result.cautions.some(text => /rain/i.test(text)), activity);
+  }
+});
