@@ -38,6 +38,22 @@ test("activity timing matters: a cookout favors late afternoon", () => {
   assert.equal(result.bestWindow?.label, "4 PM–7 PM");
 });
 
+test("Halloween gets an evening profile and practical advice from the same decision spine", () => {
+  const hourly = day().map((item, hour) => ({
+    ...item,
+    temperatureF: hour < 17 ? 68 : hour === 17 ? 64 : hour === 18 ? 61 : hour === 19 ? 58 : 55,
+    precipitationProbabilityPct: hour >= 20 ? 22 : hour >= 17 ? 17 : 5,
+  }));
+  const result = buildDecision({ activity: "Halloween.", space: "outdoor", hourly });
+
+  assert.equal(result.activity.key, "halloween");
+  assert.equal(result.activity.requested, "Halloween");
+  assert.equal(result.bestWindow?.label, "5 PM–8 PM");
+  assert.match(result.guidance?.copy || "", /light layer/i);
+  assert.match(result.guidance?.copy || "", /finish by 8 PM.*22%/i);
+  assert.doesNotMatch(result.summary, /practical day/i);
+});
+
 test("dangerous conditions are not turned into a cheerful recommendation", () => {
   const result = buildDecision({
     activity: "outdoor wedding",

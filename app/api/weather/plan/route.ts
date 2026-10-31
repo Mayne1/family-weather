@@ -92,6 +92,7 @@ function recommendationFromDecision(decision: DecisionResult, historical?: Alman
   const advice = decision.safety
     ? [{ tone: "warn", title: decision.safety.title, copy: decision.safety.detail }]
     : [
+    ...(decision.guidance ? [{ tone: decision.status === "avoid" ? "warn" : "good", title: decision.guidance.title, copy: decision.guidance.copy }] : []),
     ...decision.reasons.map((copy, index) => ({ tone: "good", title: index === 0 ? "Why this window works" : "Supporting condition", copy })),
     ...decision.cautions.map((copy, index) => ({ tone: "warn", title: index === 0 ? "What could interfere" : "Additional caution", copy })),
   ];

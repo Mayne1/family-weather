@@ -9,6 +9,7 @@ import type { LocationCandidate } from "../lib/location";
 import { clockLabel } from "../lib/rainTiming";
 import type { RainTiming } from "../lib/rainTiming";
 import type { RainSummary } from "../lib/rainSummary";
+import DecisionEyeMark from "../components/DecisionEyeMark";
 
 type Advice = { tone: string; title: string; copy: string };
 type Result = { rainTiming?: RainTiming | null; rainSummary?: RainSummary | null; source: string; location: string; resolvedLocation: LocationCandidate; day: { rainPeriodStart?: string; rainPeriodEnd?: string; date: string; temp_max_f: number; temp_min_f: number; precip_prob_pct: number | null; wind_max_mph: number; shortForecast?: string }; almanac?: { summary: string; rainYears: number; years: unknown[] } | null; space: string; activity: string; score: number | null; bestWindow: string; summary: string; advice: Advice[]; decision?: { safety?: { kind: "clear" | "rain-risk" | "thunderstorm" | "insufficient"; title: string; detail: string } } };
@@ -79,7 +80,7 @@ export default function PlannerTool({ initialActivity, initialLocation, initialD
             <small>Times are local to the destination. Only available forecast periods are shown; missing data is not zero risk. These are forecast chances, not an exact rain arrival time or a guaranteed dry buffer.</small>
           </section> : null}
           <p className="resultSummary">{result.summary}</p>
-          <div className="adviceList">{result.advice?.map((item) => <article key={item.title} className={item.tone === "warn" ? "warning" : ""}><span>{item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
+          <div className="adviceList">{result.advice?.map((item) => <article key={item.title} className={`${item.tone === "warn" ? "warning" : ""}${item.title === "The Eye says" ? " eyeGuidance" : ""}`}><span>{item.title === "The Eye says" ? <DecisionEyeMark /> : item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div>
           <div className="publicActionRow">{result.decision?.safety ? <button className="publicPrimary asButton" type="button" onClick={() => { setResult(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Choose another date <span>→</span></button> : <a className="publicPrimary" href={createHref}>Create an event from this plan <span>→</span></a>}<button className="publicSecondary asButton" type="button" onClick={() => { setResult(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Check another plan</button></div>
         </>}
       </div>
