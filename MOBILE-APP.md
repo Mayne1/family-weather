@@ -31,20 +31,23 @@ Studio. Store signing identities are intentionally not committed to Git.
 
 ## iPhone test builds alongside Android
 
-The `Family Weather iOS test build` GitHub Actions workflow builds on macOS.
+The iOS preview and device-test GitHub Actions workflows build on macOS.
 It rebuilds the same `mobile/src` screens used by Android, synchronizes the
 iOS plugins and bundled assets, and checks the version and build number
 against `android/app/build.gradle`.
 
-The workflow compiles and launches an iPhone simulator app and saves its
-screenshot. It also compiles an unsigned device archive and IPA. Download
-the `family-weather-ios-test` artifact from the workflow run for:
+The preview workflow compiles and launches an iPhone simulator app and saves
+its screenshot. Download its `family-weather-ios-test` artifact for:
 
 - `Family-Weather-iPhone.png`: the app running in the iPhone simulator.
 - `Family-Weather-iOS-Simulator.zip`: the simulator app, for a Mac simulator.
-- `Family-Weather-iOS-unsigned.ipa`: device code requiring Apple signing
-  before installation. It is not directly installable or TestFlight-ready.
-- Simulator and device build logs.
+- Simulator build logs.
+
+The independent device workflow builds the Debug configuration, matching the
+Android APK's testing stage, without keeping a simulator running. Its
+`family-weather-ios-device-debug` artifact contains device build logs and
+`Family-Weather-iOS-v10-unsigned.ipa`. This IPA needs Apple signing before
+installation; it is not directly installable or TestFlight-ready.
 
 On-device testing and TestFlight distribution require a separate signed
 build using the owner's Apple development team. No signing credentials are
