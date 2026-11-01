@@ -34,7 +34,13 @@ than two hours when rendered. No background location permission is needed.
 
 ## Verification and deployment
 
-The Android workflow builds an APK with the existing stable test-signing key.
+The saved Android v10 APK’s signing certificate differs from the repository’s
+current debug signing certificate. The widget test APK therefore uses a separate
+`widgetPreview` build type: application ID `com.thefamilyweather.app.widgetpreview`,
+label “Family Weather Widgets Test”. It installs alongside the existing app.
+Do not uninstall v10 to test these widgets. Updating the original app in place
+requires its original signing key; it cannot be recovered from an APK.
+The workflow uses the repository’s stable test-signing key for this separate app.
 The iOS workflows compile device and simulator builds and assert the WidgetKit
 extension is embedded. Build numbers match at 11, marketing version 2.0.
 Do not merge unless native builds pass. Physical-device widget placement and

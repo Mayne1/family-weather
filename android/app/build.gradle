@@ -9,6 +9,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 11
         versionName "2.0"
+        manifestPlaceholders = [appLabel: "Family Weather"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,6 +18,13 @@ android {
         }
     }
     buildTypes {
+        widgetPreview {
+            initWith debug
+            applicationIdSuffix ".widgetpreview"
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['debug']
+            manifestPlaceholders = [appLabel: "Family Weather Widgets Test"]
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

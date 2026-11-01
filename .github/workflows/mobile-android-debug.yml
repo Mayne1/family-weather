@@ -51,11 +51,11 @@ jobs:
 
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew testDebugUnitTest assembleDebug
+        run: ./gradlew testWidgetPreviewUnitTest assembleWidgetPreview
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: family-weather-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: family-weather-android-widget-preview
+          path: android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk
           if-no-files-found: error
