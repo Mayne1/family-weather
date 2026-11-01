@@ -41,6 +41,10 @@
         <activity android:name=".WeatherWidgetConfigureActivity" android:exported="true" android:theme="@style/AppTheme">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" /></intent-filter>
         </activity>
+        <receiver android:name=".ResponseWidgetProvider" android:label="Announcements &amp; RSVPs" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/response_widget_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->

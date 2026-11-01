@@ -122,7 +122,6 @@ struct WeatherWidgetView: View {
         .widgetURL(URL(string: "familyweather://home"))
     }
 }
-@main
 struct FamilyWeatherWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: "FamilyWeatherConditions", intent: WeatherWidgetIntent.self, provider: WeatherProvider()) { WeatherWidgetView(entry: $0) }
@@ -130,4 +129,78 @@ struct FamilyWeatherWidget: Widget {
             .description("Local temperature, today’s high and low, and rain chance. Choose a city for each widget.")
             .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .systemSmall])
     }
+}
+
+
+struct ResponseSnapshot: Decodable {
+    var signedIn: Bool
+    var announcements: Int?
+    var announcementReplies: Int?
+    var going: Int?
+    var maybe: Int?
+    var declined: Int?
+    var partial: Bool?
+    var checkedAt: Double?
+    var checked: Date? { checkedAt.map { Date(timeIntervalSince1970: $0 / 1000) } }
+}
+struct ResponsesEntry: TimelineEntry {
+    var date: Date
+    var snapshot: ResponseSnapshot?
+    var fresh: Bool {
+        guard let checked = snapshot?.checked, snapshot?.signedIn == true else { return false }
+        return max(date, Date()).timeIntervalSince(checked) < 86400 && checked.timeIntervalSince(Date()) <= 300
+    }
+}
+struct ResponsesProvider: TimelineProvider {
+    func placeholder(in context: Context) -> ResponsesEntry { ResponsesEntry(date: .now) }
+    func getSnapshot(in context: Context, completion: @escaping (ResponsesEntry) -> Void) { completion(read()) }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<ResponsesEntry>) -> Void) {
+        let entry = read()
+        var expired = entry
+        expired.date = max(Date().addingTimeInterval(60), (entry.snapshot?.checked ?? Date()).addingTimeInterval(86400))
+        completion(Timeline(entries: [entry, expired], policy: .after(Date().addingTimeInterval(1800))))
+    }
+    func read() -> ResponsesEntry {
+        let data = UserDefaults(suiteName: "group.com.thefamilyweather.app")?.data(forKey: "responses-snapshot")
+        return ResponsesEntry(date: .now, snapshot: data.flatMap { try? JSONDecoder().decode(ResponseSnapshot.self, from: $0) })
+    }
+}
+struct ResponsesWidgetView: View {
+    @Environment(\.widgetFamily) var family
+    var entry: ResponsesEntry
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Family Weather · Replies").font(.caption2.weight(.semibold)).lineLimit(1)
+            if entry.fresh, let s = entry.snapshot {
+                if family == .systemMedium {
+                    Link(destination: URL(string: "familyweather://announcements")!) { Text("\(s.announcements ?? 0) announcements · \(s.announcementReplies ?? 0) replies").font(.headline) }
+                    Link(destination: URL(string: "familyweather://events")!) { Text("Invitations: \(s.going ?? 0) going · \(s.maybe ?? 0) maybe · \(s.declined ?? 0) no").font(.subheadline) }
+                } else {
+                    Text("\(s.announcementReplies ?? 0) announcement replies").font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                    Text("RSVPs \(s.going ?? 0) yes · \(s.maybe ?? 0) maybe · \(s.declined ?? 0) no").font(.caption2).lineLimit(1).minimumScaleFactor(0.7)
+                }
+                if let checked = s.checked {
+                    HStack(spacing: 3) { Text(s.partial == true ? "Partial · Checked" : "Checked"); Text(checked, style: .time) }.font(.system(size: 9))
+                }
+            } else {
+                Text(entry.snapshot?.signedIn == true ? "Open app to sync replies" : "Sign in inside the app").font(.caption)
+                Text("Announcements & invitation responses").font(.caption2).lineLimit(2)
+            }
+        }
+        .foregroundStyle(.white)
+        .containerBackground(for: .widget) { Color(red: 0.04, green: 0.23, blue: 0.19) }
+        .widgetURL(URL(string: "familyweather://announcements"))
+    }
+}
+struct ResponsesWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "FamilyWeatherResponses", provider: ResponsesProvider()) { ResponsesWidgetView(entry: $0) }
+            .configurationDisplayName("Announcements & RSVPs")
+            .description("Saved announcement replies and invitation response counts. Open Family Weather to refresh.")
+            .supportedFamilies([.accessoryRectangular, .systemMedium])
+    }
+}
+@main
+struct FamilyWeatherWidgets: WidgetBundle {
+    var body: some Widget { FamilyWeatherWidget(); ResponsesWidget() }
 }

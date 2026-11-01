@@ -62,3 +62,29 @@ No server weather-provider configuration was changed by the widget work.
 Current temperature additionally requires a parseable observation timestamp less
 than two hours old. Unstamped backend current values are withheld even when
 a verified forecast is available. A valid 0°F observation remains valid.
+
+## Build 12 — screenshot feedback
+
+- Fixed clear weather code 800 incorrectly selecting the cloudy plate (`>=700`
+  previously also matched 800). One tested mood selector now handles day/night
+  and keeps rain/storm/snow scenes during the night. Main layout/CSS unchanged.
+- Replaced Capacitor placeholder launcher artwork with the green bars-and-dot
+  mark from Mayne’s reference. Vector masters are in `branding/`.
+- Added a separate **Announcements & RSVPs** widget on both platforms. Counts
+  include announcement totals/replies and invitation yes/maybe/no totals. They
+  are totals, not unread counts. Large accounts show a partial marker.
+- Sign in to the test app to sync. Uses existing owner-only APIs. No passwords,
+  authentication tokens, guest names, or message text are sent to widget storage.
+  Sign-out/account changes clear the prior snapshot. Fetch failures preserve
+  its original checked time rather than publish false zero counts.
+- **Refresh limit:** this version syncs on opening/resuming the app and every
+  five minutes while visible. It does not fetch new account replies while the
+  app remains closed. Native widgets display a saved snapshot/checked time;
+  after a day they request an app refresh. Independent push/background account
+  refresh is still outstanding. Weather widgets continue their separate schedule.
+- iPhone account widget sharing uses App Group `group.com.thefamilyweather.app`
+  on the app and extension. Signing/provisioning must include this capability.
+  The earlier build-11 statement about no shared entitlements applies to the
+  weather-only build, not this account summary widget.
+- Android build 12 uses the same separate widget-test package/key as build 11,
+  allowing an update without removing the main app or its saved data.
