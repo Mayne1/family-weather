@@ -53,6 +53,40 @@ test("Halloween by itself is recognized as an evening plan", () => {
   assert.match(result.summary, /5 PM–8 PM/);
 });
 
+test("Halloween gets an evening profile and practical advice from the same decision spine", () => {
+  const hourly = day().map((item, hour) => ({
+    ...item,
+    temperatureF: hour < 17 ? 68 : hour === 17 ? 64 : hour === 18 ? 61 : hour === 19 ? 58 : 55,
+    precipitationProbabilityPct: hour >= 20 ? 22 : hour >= 17 ? 17 : 5,
+  }));
+  const result = buildDecision({ activity: "Halloween.", space: "outdoor", hourly });
+
+  assert.equal(result.activity.key, "trick-or-treating");
+  assert.equal(result.activity.requested, "Halloween");
+  assert.equal(result.bestWindow?.label, "5 PM–8 PM");
+  assert.match(result.guidance?.copy || "", /light layer/i);
+  assert.match(result.guidance?.copy || "", /finish by 8 PM.*22%/i);
+  assert.doesNotMatch(result.summary, /practical day/i);
+});
+
+test("Eye does not invent falling temperatures or rising rain on a steady cold evening", () => {
+  const result = buildDecision({ activity: "Halloween", space: "outdoor", hourly: day({ temperatureF: 50, precipitationProbabilityPct: 25 }) });
+  assert.match(result.guidance?.copy || "", /warm layer/i);
+  assert.doesNotMatch(result.guidance?.copy || "", /temperatures fall|rain risk rises/i);
+});
+
+test("Eye does not recommend a coat for a warm cooling evening", () => {
+  const hourly = day().map((item, hour) => ({ ...item, temperatureF: hour === 17 ? 80 : 74 }));
+  const result = buildDecision({ activity: "cookout", space: "outdoor", hourly });
+  assert.doesNotMatch(result.guidance?.copy || "", /bring a.*layer/i);
+});
+
+test("Eye does not endorse an avoid-rated window", () => {
+  const result = buildDecision({ activity: "Halloween", space: "outdoor", hourly: day({ precipitationProbabilityPct: 95 }) });
+  assert.equal(result.status, "avoid");
+  assert.equal(result.guidance, null);
+});
+
 test("dangerous conditions are not turned into a cheerful recommendation", () => {
   const result = buildDecision({
     activity: "outdoor wedding",

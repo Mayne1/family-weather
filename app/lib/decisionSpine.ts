@@ -39,6 +39,7 @@ export type DecisionResult = {
   summary: string;
   reasons: string[];
   cautions: string[];
+  guidance: { title: string; copy: string } | null;
   avoidWindows: string[];
   confidence: { level: "high" | "medium" | "low"; missing: string[] };
   safety?: { kind: "rain-risk" | "thunderstorm" | "insufficient"; title: string; detail: string };
@@ -370,6 +371,45 @@ function strongestMessages(block: ScoredHour[], field: "reasons" | "cautions", l
   return unique(block.flatMap((hour) => hour[field])).slice(0, limit);
 }
 
+function practicalGuidance(profile: ActivityProfile, bestBlock: ScoredHour[], scored: ScoredHour[]) {
+  if (!bestBlock.length || windowFrom(bestBlock).score < 50) return null;
+
+  const window = windowFrom(bestBlock);
+  const windowRain = bestBlock.map((hour) => finite(hour.precipitationProbabilityPct)).filter((value): value is number => value !== null);
+  const windowWind = bestBlock.map((hour) => finite(hour.windGustMph) ?? finite(hour.windMph)).filter((value): value is number => value !== null);
+  const startTemperature = finite(bestBlock[0].temperatureF);
+  const endTemperature = finite(bestBlock[bestBlock.length - 1].temperatureF);
+  const after = scored.filter((hour) => hour.hour >= bestBlock[bestBlock.length - 1].hour + 1 && hour.hour <= bestBlock[bestBlock.length - 1].hour + 3);
+  const afterRain = after.map((hour) => finite(hour.precipitationProbabilityPct)).filter((value): value is number => value !== null);
+  const peakWindowRain = windowRain.length ? Math.max(...windowRain) : null;
+  const peakAfterRain = afterRain.length ? Math.max(...afterRain) : null;
+  const peakWind = windowWind.length ? Math.max(...windowWind) : null;
+  const actions: string[] = [`Use ${window.label}.`];
+
+  if (startTemperature !== null && endTemperature !== null && startTemperature - endTemperature >= 4 && endTemperature < 65) {
+    actions.push(`Bring a light layer; temperatures fall from about ${Math.round(startTemperature)}° to ${Math.round(endTemperature)}° during the window.`);
+  } else if (endTemperature !== null && endTemperature < profile.comfortableTemperature[0] + 8) {
+    actions.push(`Bring a warm layer; the forecast is about ${Math.round(endTemperature)}° toward the end of the window.`);
+  } else if (endTemperature !== null && endTemperature > profile.comfortableTemperature[1]) {
+    actions.push("Plan for heat and bring water.");
+  }
+
+  if (peakAfterRain !== null && peakWindowRain !== null && peakAfterRain >= peakWindowRain + 5) {
+    actions.push(`Try to finish by ${clock(bestBlock[bestBlock.length - 1].hour + 1)} because rain risk rises to ${Math.round(peakAfterRain)}% afterward.`);
+  } else if (peakWindowRain !== null && peakWindowRain > profile.maximumRainPct) {
+    actions.push(`Keep rain cover nearby; the chance reaches ${Math.round(peakWindowRain)}% while the activity is underway.`);
+  }
+
+  if (profile.key === "trick-or-treating" && peakWind !== null && peakWind > 10) {
+    actions.push("Secure lightweight costumes and outdoor decorations.");
+  }
+
+  if (actions.length === 1) actions.push(bestBlock.some(hour => hour.missing.length)
+    ? "Some forecast details are missing; check again before heading out."
+    : "Review the conditions below before heading out.");
+  return { title: "The Eye says", copy: actions.join(" ") };
+}
+
 export function buildDecision(input: {
   activity: string;
   space: Space;
@@ -377,7 +417,7 @@ export function buildDecision(input: {
   historical?: boolean;
   dayRainProbabilityPct?: number | null;
 }): DecisionResult {
-  const requested = input.activity.trim() || "outdoor activity";
+  const requested = input.activity.trim().replace(/[.!?]+$/g, "").trim() || "outdoor activity";
   const profile = profileFor(requested, input.space);
 
   if (input.historical) {
@@ -392,6 +432,7 @@ export function buildDecision(input: {
       summary: "Historical patterns can describe the date, but they cannot support an hourly recommendation.",
       reasons: [],
       cautions: ["Use a live forecast closer to the date before choosing a time."],
+      guidance: null,
       avoidWindows: [],
       confidence: { level: "low", missing: ["hourly forecast"] },
     };
@@ -415,6 +456,7 @@ export function buildDecision(input: {
       summary: "There is not enough hourly forecast data to choose a responsible time.",
       reasons: [],
       cautions: ["Try again when an hourly forecast is available."],
+      guidance: null,
       avoidWindows: [],
       confidence: { level: "low", missing: ["hourly forecast"] },
     };
@@ -432,6 +474,7 @@ export function buildDecision(input: {
       summary: "The activity is indoors, so use your planned time and check weather mainly for travel and access.",
       reasons: ["Outdoor temperature, rain, and wind do not determine the indoor activity time."],
       cautions: [],
+      guidance: { title: "The Eye says", copy: "Keep your planned time and check the forecast for travel, parking, and getting people safely inside." },
       avoidWindows: [],
       confidence: { level: "high", missing: [] },
     };
@@ -480,6 +523,7 @@ export function buildDecision(input: {
         summary: safety.detail,
         reasons: [],
         cautions: [safety.detail],
+        guidance: { title: "The Eye says", copy: safety.detail },
         avoidWindows: ["7 AM–7 PM"],
         confidence: { level: missing.length ? "low" : "high", missing },
         safety,
@@ -513,11 +557,12 @@ export function buildDecision(input: {
 
   const practicalHours = scored.filter((hour) => hour.usable);
   const strongHours = practicalHours.filter((hour) => hour.score >= 70);
-  const goodMostOfDay = practicalHours.length >= 6 && strongHours.length / practicalHours.length >= 0.7;
+  const goodMostOfDay = profile.key !== "trick-or-treating" && practicalHours.length >= 6 && strongHours.length / practicalHours.length >= 0.7;
   const score = bestWindow?.score ?? 0;
   const status = score >= 75 ? "recommended" : score >= 50 ? "caution" : "avoid";
   const reasons = bestBlock.length ? strongestMessages(bestBlock, "reasons") : [];
   const cautions = bestBlock.length ? strongestMessages(bestBlock, "cautions") : unique(scored.flatMap((hour) => hour.cautions)).slice(0, 3);
+  const guidance = practicalGuidance(profile, bestBlock, scored);
   const avoidWindows = scored
     .filter((hour) => hour.usable && hour.score < 45)
     .map((hour) => windowLabel(hour.hour, hour.hour + 1));
@@ -546,6 +591,7 @@ export function buildDecision(input: {
     summary,
     reasons,
     cautions,
+    guidance,
     avoidWindows: unique(avoidWindows).slice(0, 6),
     confidence,
   };
