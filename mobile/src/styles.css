@@ -70,3 +70,54 @@ main.homeMain{max-width:720px;padding-top:0}
 .historyMast{background:linear-gradient(145deg,#183c4d,#327b7e 58%,#7b9a83)}
 .moreMast{background:linear-gradient(145deg,#3e283f,#69516f 55%,#88745f)}
 .historyFormNative .primaryButton{margin-top:6px}.historyFinePrint{margin:12px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.locationSuggestionsNative{display:grid;gap:7px;margin:-5px 0 15px}.locationSuggestionsNative button{width:100%;display:flex;justify-content:space-between;gap:8px;padding:11px 12px;border:1px solid #c8d7d0;border-radius:12px;background:#edf5f1;color:var(--green);font-size:11px;font-weight:800;text-align:left}.historyWelcome h2,.moreHub h2,.nativeHow h2,.almanacHeading h2,.historyNextNative h3{margin:0;font-family:Georgia,serif;line-height:1.08}.historyWelcome h2{font-size:29px}.historyWelcome>p:not(.eyebrow){color:var(--muted);font-size:13px;line-height:1.6}.historyWelcome>div{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:17px}.historyWelcome>div span{padding:15px;border-radius:16px;background:linear-gradient(145deg,#0b3a31,#176450);color:#fff;text-align:center}.historyWelcome b,.historyWelcome small{display:block}.historyWelcome b{color:var(--gold);font:34px Georgia,serif}.historyWelcome small{margin-top:4px;color:#c7d9d4;font-size:8px;font-weight:900;letter-spacing:.08em}.almanacHeading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.almanacHeading h2{font-size:27px}.almanacHeading>span{width:64px;height:64px;display:grid;place-items:center;flex:0 0 auto;border-radius:50%;background:linear-gradient(145deg,#dcefe8,#f8eed0);box-shadow:inset 0 1px 0 #fff;color:#bd8314;font-size:32px}.almanacCopy{color:#45635b;font-size:13px;line-height:1.6}.historyNoticeNative{padding:11px 12px;border-left:4px solid #a64b3e;border-radius:10px;background:#fff0ed;color:#892f27;font-size:11px}.almanacYearsNative{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}.almanacYearsNative article{padding:14px;border:1px solid #d4dfd9;border-radius:16px;background:linear-gradient(145deg,#fffdf8,#eef4f0);box-shadow:0 9px 22px rgba(30,65,55,.07)}.almanacYearsNative article>div{display:flex;align-items:center;justify-content:space-between}.almanacYearsNative article>div strong{color:#317468;font-size:12px}.almanacYearsNative article>div span{color:#bd8314;font-size:22px}.almanacYearsNative h3{min-height:32px;margin:8px 0 4px;font-size:13px}.almanacYearsNative article>b{font-size:14px}.almanacYearsNative article>p{margin:7px 0 0;color:var(--muted);font-size:10px}.historyNextNative{margin-top:18px;padding-top:18px;border-top:1px solid #d8e1dc}.historyNextNative h3{font-size:23px}.historyNextNative>p{margin:8px 0;color:var(--muted);font-size:12px;line-height:1.5}.moreHub h2,.nativeHow h2{font-size:28px}.moreHub>p:not(.eyebrow){color:var(--muted);font-size:13px;line-height:1.55}.moreToolButton{width:100%;display:grid;grid-template-columns:45px 1fr auto;align-items:center;gap:12px;margin-top:10px;padding:13px;border:1px solid #cbd8d2;border-radius:16px;background:linear-gradient(145deg,#fffdf9,#edf4ef);color:var(--green);text-align:left;box-shadow:0 8px 20px rgba(28,60,50,.06)}.moreToolButton:active{transform:scale(.985)}.moreToolButton>span:nth-child(2),.moreToolButton b,.moreToolButton small{display:block}.moreToolIcon{width:45px;height:45px;display:grid;place-items:center;border-radius:15px;background:#dcece5;color:var(--green);font:23px Georgia,serif}.moreToolButton b{font-size:14px}.moreToolButton small{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.4}.moreToolButton>strong{font-size:21px}.nativeHow ol{display:grid;gap:13px;margin:18px 0 0;padding:0;counter-reset:steps}.nativeHow li{position:relative;display:grid;gap:4px;padding-left:44px;list-style:none;counter-increment:steps}.nativeHow li:before{content:counter(steps);position:absolute;left:0;top:0;width:31px;height:31px;display:grid;place-items:center;border-radius:10px;background:var(--green);color:var(--gold);font-weight:900}.nativeHow li b{font-size:13px}.nativeHow li span{color:var(--muted);font-size:11px;line-height:1.5}@media(max-width:370px){.almanacYearsNative{grid-template-columns:1fr}.almanacSummary{grid-template-columns:1fr 1fr}}
+
+/* Home refinement: weather at a glance, planning within reach. */
+.homeActive .homeTopBar{padding:calc(14px + env(safe-area-inset-top)) 24px 14px}
+.homeTopBar .brand strong{font-size:22px;letter-spacing:-.035em}
+.homeTopBar .brandMark{border-radius:14px;width:40px;height:40px}
+.homeActive .homeMain{padding:0 20px 28px}
+.homeActive .weatherStage{margin:0 -20px;padding:0 20px 22px}
+.homeActive .weatherFocus{min-height:0;align-items:flex-start;padding:22px 4px 26px;text-align:left;text-shadow:0 2px 24px rgba(0,15,26,.45)}
+.homeActive .locationLine{margin-bottom:9px;color:#e4ecef;font-size:9px;letter-spacing:.18em}
+.homeActive .weatherFocus h1{font-size:clamp(27px,7.5vw,38px);font-weight:650;letter-spacing:-.045em;line-height:1.13}
+.homeActive .stageTemperature{margin:9px 0 0;font-size:110px;line-height:1;font-weight:250;letter-spacing:-.08em}
+.homeActive .stageCondition{margin-top:5px;font-size:19px;font-weight:550}
+.homeActive .stageRange{margin-top:9px;font-size:12px;font-weight:600;color:#fff}
+.homeActive .stageRange span{margin-left:12px;color:#dae5eb}
+.homeActive .stageStatus{margin-top:12px;font-size:10px;color:#e0e8ec}
+.homeActive .glassPanel{border-radius:22px;background:rgba(9,36,48,.78);border-color:rgba(233,244,248,.22);box-shadow:0 12px 32px rgba(0,19,28,.16);backdrop-filter:blur(22px)}
+.homeActive .todayBrief{margin-top:0;padding:16px}
+.homeActive .briefHeading{grid-template-columns:30px 1fr;gap:11px}
+.homeActive .briefHeading>span{width:30px;height:30px;border:0;background:transparent;font-size:24px}
+.homeActive .briefHeading p{font-size:12px;line-height:1.6;font-weight:500;color:#eff5f6}
+.homeActive .metricStrip{gap:4px;margin-top:13px;padding-top:13px}
+.homeActive .metricStrip span+span{border-left:1px solid rgba(255,255,255,.14)}
+.homeActive .metricStrip small{font-size:8px;color:#c4d8df;letter-spacing:.12em}
+.homeActive .metricStrip b{margin-top:6px;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.homeActive .plannerSpotlight{margin-top:16px;padding:22px;border-radius:24px;background:linear-gradient(120deg,#fff9e9,#f4ebd7);border:1px solid #fff3cc;color:#153d34;box-shadow:0 12px 32px rgba(3,26,29,.16);backdrop-filter:none}
+.homeActive .plannerSpotlight:after{content:"↗";right:14px;bottom:45px;font:100px system-ui;color:rgba(24,75,59,.07);letter-spacing:0}
+.homeActive .plannerSpotlight .eyebrow{color:#6e572b;font-size:8px;letter-spacing:.16em;margin-bottom:12px}
+.homeActive .plannerSpotlight h2{font-size:35px;line-height:1.04;letter-spacing:-.045em;font-weight:400}
+.homeActive .plannerSpotlight>div>p:not(.eyebrow){max-width:270px;margin-top:10px;color:#4b6258;font-size:12px;line-height:1.6}
+.homeActive .plannerSpotlight button{margin-top:18px;padding:14px 17px;border-radius:13px;background:#174b3d;box-shadow:none;color:#fff7df;font-size:13px;font-weight:700;min-height:48px}
+.homeActive .plannerSpotlight button b{color:#f6ce73}
+.homeActive .forecastList{margin-top:16px;padding:17px 16px 8px}
+.homeActive .glassTitle{justify-content:space-between;flex-direction:row-reverse;padding-bottom:12px;color:#d2e1e7;font-size:9px;letter-spacing:.13em}
+.homeActive .forecastRowButton{min-height:57px}
+.homeActive .forecastRowButton>strong{font-size:13px;font-weight:600}
+.homeActive .forecastRowButton>b{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.homeActive .forecastRows .lowTemp{color:#c2d4de}
+.homeActive .forecastIcon small{color:#a1dfff}
+.homeActive .forecastRowButton>i{height:4px;background:rgba(255,255,255,.14)}
+.homeActive .forecastRowButton>i>em{background:linear-gradient(90deg,#a1c9ba,#eac980);box-shadow:none}
+.homeActive .forecastChevron{color:#bacfd8}
+.homeMain>.responsesCard{padding:19px;border-radius:22px;background:#faf8f0;box-shadow:none;border-color:#e6e9df}
+.homeMain>.responsesCard h2{font-size:23px;line-height:1.12;letter-spacing:-.025em}
+.homeMain>.responsesCard p:not(.eyebrow){font-size:12px}
+.bottomNav{min-height:68px}
+.homeActive .bottomNav{background:rgba(250,250,244,.97);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 28px rgba(4,26,34,.25)}
+.bottomNav button{min-height:48px}
+.bottomNav button.active{background:#e0ebe2;border-radius:16px;color:#164b3c}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #d99a24;outline-offset:4px}
+@media(max-width:360px){.homeActive .homeMain{padding-right:14px;padding-left:14px}.homeActive .weatherStage{margin-right:-14px;margin-left:-14px;padding-right:14px;padding-left:14px}.homeActive .homeTopBar{padding-right:18px;padding-left:18px}.homeActive .stageTemperature{font-size:96px}.homeActive .plannerSpotlight h2{font-size:32px}.homeActive .metricStrip b{font-size:14px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
