@@ -88,3 +88,18 @@ a verified forecast is available. A valid 0°F observation remains valid.
   weather-only build, not this account summary widget.
 - Android build 12 uses the same separate widget-test package/key as build 11,
   allowing an update without removing the main app or its saved data.
+
+
+### Test-signing correction
+
+The build-11 widget test APK was signed with an ephemeral default Android debug
+key, despite the workflow restoring a key under HOME. Build 12 explicitly binds
+its widgetTest signing configuration to a decoded repository test keystore in
+`android/family-weather-widget-test.keystore`. CI verifies the packaged signer
+fingerprint before publishing. That keystore is for public test builds only.
+
+The installed build-11 **Family Weather Widgets Test** must be removed once
+before this corrected build can install. Keep the original Family Weather app.
+Removing only the test app clears its local login/location/widget placement;
+server-side events, announcements and replies remain in the account. Subsequent
+widget-test builds must retain the fixed certificate to update in place.

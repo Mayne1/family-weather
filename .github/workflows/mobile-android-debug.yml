@@ -48,10 +48,18 @@ jobs:
           mkdir -p "$HOME/.android"
           base64 --decode .github/debug/family-weather-debug.keystore.b64 > "$HOME/.android/debug.keystore"
           chmod 600 "$HOME/.android/debug.keystore"
+          base64 --decode .github/debug/family-weather-debug.keystore.b64 > android/family-weather-widget-test.keystore
+          chmod 600 android/family-weather-widget-test.keystore
 
       - name: Build Android debug app
         working-directory: android
         run: ./gradlew testWidgetPreviewUnitTest assembleWidgetPreview
+
+      - name: Verify the fixed widget-test signing identity
+        run: |
+          signing_tool="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
+          fingerprint="$($signing_tool verify --print-certs android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+          test "$fingerprint" = "52d0acd237d956e1cc3feeaa2b387d75a68e015117fd0bdc51dcb12f0df7d39b"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4

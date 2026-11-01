@@ -17,11 +17,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        widgetTest {
+            storeFile rootProject.file('family-weather-widget-test.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
         widgetPreview {
             initWith debug
             applicationIdSuffix ".widgetpreview"
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.widgetTest
             matchingFallbacks = ['debug']
             manifestPlaceholders = [appLabel: "Family Weather Widgets Test"]
         }
