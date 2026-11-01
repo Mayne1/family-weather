@@ -1,0 +1,108 @@
+name: Family Weather iOS test build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/reply-notifications, codex/ios-android-parity]
+    paths:
+      - "mobile/**"
+      - "ios/**"
+      - "public/**"
+      - "app/invitations/**"
+      - "capacitor.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/mobile-ios-build.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - "ios/**"
+      - "capacitor.config.ts"
+      - ".github/workflows/mobile-ios-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install shared app dependencies
+        run: npm ci
+      - name: Build the same app screens as Android and sync Apple project
+        run: |
+          npx vite build --config mobile/vite.config.mts
+          npx cap sync ios
+      - name: Check matching Android and iOS versions
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const android = fs.readFileSync('android/app/build.gradle', 'utf8');
+          const ios = fs.readFileSync('ios/App/App.xcodeproj/project.pbxproj', 'utf8');
+          const build = android.match(/versionCode\s+(\d+)/)[1];
+          const version = android.match(/versionName\s+"([^"]+)"/)[1];
+          if (![...ios.matchAll(/CURRENT_PROJECT_VERSION = ([^;]+);/g)].every(m => m[1] === build)
+              || ![...ios.matchAll(/MARKETING_VERSION = ([^;]+);/g)].every(m => m[1] === version)) {
+            throw new Error('Android and Apple versions must match.');
+          }
+          const config = JSON.parse(fs.readFileSync('ios/App/App/capacitor.config.json', 'utf8'));
+          if (config.server?.url) throw new Error('Development server must not be bundled.');
+          console.log(`Family Weather ${version}, build ${build}, bundled local app assets.`);
+          JS
+      - name: Select and boot an available iPhone simulator
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available --json > /tmp/ios-devices.json
+          simulator_id="$(node -e 'const d=require("/tmp/ios-devices.json"); const p=Object.entries(d.devices).filter(([k])=>k.includes("iOS")).flatMap(([,v])=>v).find(x=>x.isAvailable && x.name.startsWith("iPhone")); if(!p)process.exit(1); process.stdout.write(p.udid)')"
+          echo "SIMULATOR_UDID=$simulator_id" >> "$GITHUB_ENV"
+          xcrun simctl boot "$simulator_id"
+          xcrun simctl bootstatus "$simulator_id" -b
+      - name: Compile iPhone simulator app
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Debug -sdk iphonesimulator \
+            -destination "id=$SIMULATOR_UDID" -derivedDataPath build/ios-simulator \
+            CODE_SIGNING_ALLOWED=NO build | tee build/ios-simulator.log
+      - name: Launch app and capture real iPhone preview
+        run: |
+          xcrun simctl install "$SIMULATOR_UDID" build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app
+          xcrun simctl status_bar "$SIMULATOR_UDID" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+          xcrun simctl launch "$SIMULATOR_UDID" com.thefamilyweather.app
+          sleep 20
+          xcrun simctl io "$SIMULATOR_UDID" screenshot build/Family-Weather-iPhone.png
+          ditto -c -k --sequesterRsrc --keepParent build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app build/Family-Weather-iOS-Simulator.zip
+      - name: Compile Apple device archive for later signing
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/Family-Weather.xcarchive \
+            CODE_SIGNING_ALLOWED=NO archive | tee build/ios-device.log
+          mkdir -p build/unsigned/Payload
+          ditto build/Family-Weather.xcarchive/Products/Applications/App.app build/unsigned/Payload/App.app
+          cd build/unsigned
+          zip -qr ../Family-Weather-iOS-unsigned.ipa Payload
+      - name: Save Apple build outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-weather-ios-test
+          path: |
+            build/Family-Weather-iPhone.png
+            build/Family-Weather-iOS-Simulator.zip
+            build/Family-Weather-iOS-unsigned.ipa
+            build/*.log
+          if-no-files-found: warn
+          retention-days: 30
