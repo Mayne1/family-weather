@@ -98,16 +98,16 @@ struct WeatherWidgetView: View {
             switch family {
             case .accessoryCircular:
                 VStack(spacing: 1) {
-                    Image(systemName: entry.weather?.symbol ?? "thermometer.medium").font(.caption)
+                    Image(systemName: entry.expired ? "thermometer.medium" : (entry.weather?.symbol ?? "thermometer.medium")).font(.caption)
                     Text(entry.temperature).font(.system(.title3, design: .rounded, weight: .semibold)).minimumScaleFactor(0.7)
                 }.accessibilityLabel("\(entry.city.label), \(entry.temperature), \(entry.footer)")
             case .accessoryInline:
-                Label("\(entry.city.label) \(entry.temperature)", systemImage: entry.weather?.symbol ?? "thermometer.medium")
+                Label("\(entry.city.label) \(entry.temperature)", systemImage: entry.expired ? "thermometer.medium" : (entry.weather?.symbol ?? "thermometer.medium"))
             default:
                 VStack(alignment: .leading, spacing: 3) {
                     Text(entry.city.label).font(.caption.weight(.semibold)).lineLimit(1)
                     HStack(spacing: 5) {
-                        Image(systemName: entry.weather?.symbol ?? "thermometer.medium")
+                        Image(systemName: entry.expired ? "thermometer.medium" : (entry.weather?.symbol ?? "thermometer.medium"))
                         Text(entry.temperature).font(.title2.weight(.semibold))
                         if !entry.expired { Text("H \(number(entry.weather?.today?.temp_max_f, suffix: "°")) · L \(number(entry.weather?.today?.temp_min_f, suffix: "°"))").font(.caption2).lineLimit(1).minimumScaleFactor(0.7) }
                     }

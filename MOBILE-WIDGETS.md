@@ -25,7 +25,7 @@ Resizable weather widget, with Home Screen and keyguard category support.
 Actual Lock Screen placement depends on Android version and manufacturer widget
 host support; availability on every Android phone is not promised. Select a city
 from search results during setup; tap its name to change it later. Tap the rest
-to open the app. Minimum advertised size is 3 × 2 cells.
+to open the app. Minimum advertised size is 3 × 3 cells.
 
 Network work runs through JobScheduler, not inside the broadcast receiver.
 Widget refreshes request a 30-minute interval; Android may delay them. The widget
