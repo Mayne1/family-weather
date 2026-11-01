@@ -37,7 +37,7 @@ public class WeatherWidgetProvider extends AppWidgetProvider {
     static String number(JSONObject obj, String key, String suffix) {
         if (obj == null || obj.isNull(key)) return "—";
         double value = obj.optDouble(key, Double.NaN);
-        return Double.isFinite(value) ? Math.round(value) + suffix : "—";
+        return WeatherWidgetValues.number(value, suffix);
     }
     static void render(Context c, AppWidgetManager manager, int id, boolean offline) {
         SharedPreferences p = prefs(c);
@@ -45,7 +45,7 @@ public class WeatherWidgetProvider extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(c.getPackageName(), R.layout.weather_widget);
         views.setTextViewText(R.id.widget_city, city);
         long time = p.getLong("time" + id, 0);
-        boolean expired = time == 0 || System.currentTimeMillis() - time >= 7200000;
+        boolean expired = WeatherWidgetValues.expired(time, System.currentTimeMillis());
         views.setTextViewText(R.id.widget_temperature, "—");
         views.setTextViewText(R.id.widget_details, "Open app for weather");
         views.setTextViewText(R.id.widget_status, "Tap the city to set up");

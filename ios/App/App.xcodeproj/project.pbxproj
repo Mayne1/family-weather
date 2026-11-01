@@ -27,6 +27,7 @@ F0A10000000000000000000F = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 F0A100000000000000000004 = {isa = PBXBuildFile; fileRef = F0A100000000000000000003; };
 F0A100000000000000000010 = {isa = PBXBuildFile; fileRef = F0A100000000000000000002; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+F0A100000000000000000011 = {isa = PBXBuildFile; fileRef = F0A100000000000000000012; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@ F0A100000000000000000010 = {isa = PBXBuildFile; fileRef = F0A1000000000000000000
 F0A100000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyWeatherWidgets.swift; sourceTree = "<group>"; };
 F0A100000000000000000005 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 F0A100000000000000000002 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FamilyWeatherWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+F0A100000000000000000012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,7 +96,7 @@ F0A100000000000000000008 = {isa = PBXFrameworksBuildPhase; buildActionMask = 214
 			path = App;
 			sourceTree = "<group>";
 		};
-F0A100000000000000000006 = {isa = PBXGroup; children = (F0A100000000000000000003, F0A100000000000000000005, ); path = FamilyWeatherWidgets; sourceTree = "<group>"; };
+F0A100000000000000000006 = {isa = PBXGroup; children = (F0A100000000000000000012, F0A100000000000000000003, F0A100000000000000000005, ); path = FamilyWeatherWidgets; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -186,7 +188,7 @@ F0A100000000000000000009 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-F0A100000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (F0A100000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+F0A100000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (F0A100000000000000000011, F0A100000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */

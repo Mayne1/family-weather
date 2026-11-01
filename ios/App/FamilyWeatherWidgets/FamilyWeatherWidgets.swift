@@ -41,39 +41,13 @@ struct WeatherWidgetIntent: WidgetConfigurationIntent {
     static var description = IntentDescription("Choose the city to show on this widget.")
     @Parameter(title: "City") var city: WidgetCity?
 }
-struct WidgetWeather: Codable {
-    struct Current: Codable { var temp_f: Double?; var weather_code: Int?; var observed_at: String? }
-    struct Day: Codable { var date: String; var temp_max_f: Double?; var temp_min_f: Double?; var precip_prob_pct: Double? }
-    var ok: Bool
-    var label: String
-    var timezone: String?
-    var current: Current?
-    var days: [Day]
-    var today: Day? {
-        let formatter = DateFormatter(); formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: timezone ?? "America/Los_Angeles")
-        return days.first { $0.date == formatter.string(from: Date()) }
-    }
-    var symbol: String {
-        switch current?.weather_code ?? -1 {
-        case 200..<300: return "cloud.bolt.rain.fill"
-        case 300..<600: return "cloud.rain.fill"
-        case 600..<700: return "cloud.snow.fill"
-        case 700..<800: return "cloud.fog.fill"
-        case 800: return "sun.max.fill"
-        case 801...802: return "cloud.sun.fill"
-        case 803...899: return "cloud.fill"
-        default: return "thermometer.medium"
-        }
-    }
-}
 struct WeatherEntry: TimelineEntry, Codable {
     var date: Date
     var city: WidgetCity
     var weather: WidgetWeather?
     var fetchedAt: Date?
     var offline = false
-    var expired: Bool { fetchedAt.map { max(Date(), date).timeIntervalSince($0) >= 7200 } ?? true }
+    var expired: Bool { fetchedAt.map { max(Date(), date).timeIntervalSince($0) >= 7200 || $0.timeIntervalSince(Date()) > 300 } ?? true }
     var temperature: String {
         guard !expired, let value = weather?.current?.temp_f, value.isFinite else { return "—" }
         return "\(Int(value.rounded()))°"
@@ -100,7 +74,7 @@ struct WeatherProvider: AppIntentTimelineProvider {
             let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url.url!, timeoutInterval: 15))
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
             let weather = try JSONDecoder().decode(WidgetWeather.self, from: data)
-            guard weather.ok else { throw URLError(.badServerResponse) }
+            guard weather.verified else { throw URLError(.badServerResponse) }
             let entry = WeatherEntry(date: .now, city: city, weather: weather, fetchedAt: .now)
             UserDefaults.standard.set(try JSONEncoder().encode(entry), forKey: key)
             return entry

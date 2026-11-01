@@ -39,6 +39,8 @@ jobs:
           test -n "$xcode_app"
           export DEVELOPER_DIR="$xcode_app/Contents/Developer"
           xcodebuild -version
+          swiftc ios/App/FamilyWeatherWidgets/WeatherModel.swift ios/Tests/WeatherModelChecks.swift -o /tmp/widget-model-checks
+          /tmp/widget-model-checks
           mkdir -p build
           xcodebuild -project ios/App/App.xcodeproj -scheme App \
             -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \

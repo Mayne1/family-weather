@@ -40,3 +40,15 @@ extension is embedded. Build numbers match at 11, marketing version 2.0.
 Do not merge unless native builds pass. Physical-device widget placement and
 background refresh timing still need testing. Website deployment is unnecessary
 for these widgets because they use existing endpoints.
+
+## Health-check finding
+
+November 1 live checks: homepage, Today and How It Works return HTTP 200.
+Stockton home weather returns NWS observations and forecasts, and the planner
+returns live MET Norway advice including The Eye. AQI can legitimately be null.
+London/Tokyo home requests fall back to `source: family-weather`, with no current
+observation timestamp and UTC timezone even for Tokyo. This fallback's provenance
+and timezone need investigation before calling international home weather ready.
+Widgets currently reject unverified `family-weather` forecast responses and show
+unavailable/saved data instead of presenting them as verified local weather.
+No server weather-provider configuration was changed by the widget work.

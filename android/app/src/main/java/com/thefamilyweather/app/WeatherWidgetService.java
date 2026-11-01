@@ -42,7 +42,7 @@ public class WeatherWidgetService extends JobService {
                 boolean offline = false;
                 try {
                     JSONObject data = get("https://thefamilyweather.com/api/weather/home?lat=" + Double.parseDouble(lat) + "&lon=" + Double.parseDouble(lon));
-                    if (!data.optBoolean("ok")) throw new java.io.IOException("Weather unavailable");
+                    if (!data.optBoolean("ok") || !WeatherWidgetValues.trusted(data.optString("source"))) throw new java.io.IOException("Weather unavailable");
                     if (!stopped && lat.equals(prefs.getString("lat"+id,"")) && lon.equals(prefs.getString("lon"+id,""))) prefs.edit().putString("data"+id,data.toString()).putLong("time"+id,System.currentTimeMillis()).apply();
                 } catch (Exception e) { offline = true; }
                 if (!stopped) WeatherWidgetProvider.render(this,manager,id,offline);
