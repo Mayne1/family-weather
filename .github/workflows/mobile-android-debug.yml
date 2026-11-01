@@ -55,11 +55,32 @@ jobs:
         working-directory: android
         run: ./gradlew testWidgetPreviewUnitTest assembleWidgetPreview
 
-      - name: Verify the fixed widget-test signing identity
+      - name: Normalize and verify the fixed widget-test signing identity
         run: |
+          set -o pipefail
           signing_tool="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
-          fingerprint="$($signing_tool verify --print-certs android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
-          test "$fingerprint" = "52d0acd237d956e1cc3feeaa2b387d75a68e015117fd0bdc51dcb12f0df7d39b"
+          apk=android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk
+          "$signing_tool" sign --ks android/family-weather-widget-test.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --v2-signing-enabled true --out /tmp/widget-signed.apk "$apk"
+          "$signing_tool" verify --print-certs /tmp/widget-signed.apk
+          mv /tmp/widget-signed.apk "$apk"
+          python3 <<'PYCODE'
+          import pathlib, struct, hashlib
+          b=pathlib.Path('android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk').read_bytes()
+          end=b.rfind(b'PK\x05\x06'); cd=struct.unpack_from('<I',b,end+16)[0]
+          pos=cd-struct.unpack_from('<Q',b,cd-24)[0]
+          def take(data,p):
+              n=struct.unpack_from('<I',data,p)[0]; return data[p+4:p+4+n],p+4+n
+          while pos<cd-24:
+              n=struct.unpack_from('<Q',b,pos)[0]
+              if struct.unpack_from('<I',b,pos+8)[0]==0x7109871a:
+                  a,_=take(b[pos+12:pos+8+n],0); a,_=take(a,0); a,_=take(a,0)
+                  _,i=take(a,0); a,_=take(a,i); cert,_=take(a,0)
+                  digest=hashlib.sha256(cert).hexdigest(); print('Packaged certificate:',digest)
+                  assert digest=='52d0acd237d956e1cc3feeaa2b387d75a68e015117fd0bdc51dcb12f0df7d39b'
+                  break
+              pos+=8+n
+          else: raise AssertionError('No APK v2 signature')
+          PYCODE
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
