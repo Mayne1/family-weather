@@ -167,10 +167,13 @@ function App() {
       if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lon)) query = `?lat=${saved?.lat}&lon=${saved?.lon}`;
     } catch { /* Ignore malformed local preferences. */ }
     void load(query);
+    const widgetLink = NativeApp.addListener("appUrlOpen", ({ url }) => {
+      if (url.startsWith("familyweather://home")) setActiveTab("home");
+    });
     const listener = NativeApp.addListener("appStateChange", ({ isActive }) => {
       if (isActive) void load(query);
     });
-    return () => { void listener.then((handle) => handle.remove()); };
+    return () => { void listener.then((handle) => handle.remove()); void widgetLink.then((handle) => handle.remove()); };
   }, [load]);
 
   const today = useMemo(() => weather?.days?.find((day) => day.date === localDate(weather?.timezone)) || weather?.days?.[0], [weather]);

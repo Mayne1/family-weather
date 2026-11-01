@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - codex/reply-notifications
+      - codex/lock-screen-widgets
     paths:
       - "mobile/**"
       - "mobile-shell/**"
@@ -50,7 +51,7 @@ jobs:
 
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew testDebugUnitTest assembleDebug
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
