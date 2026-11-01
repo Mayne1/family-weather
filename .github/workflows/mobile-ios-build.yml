@@ -13,23 +13,17 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/mobile-ios-build.yml"
-  pull_request:
-    paths:
-      - "mobile/**"
-      - "ios/**"
-      - "capacitor.config.ts"
-      - ".github/workflows/mobile-ios-build.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ios-${{ github.ref }}
+  group: ios-preview-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-ios:
-    runs-on: macos-26
+    runs-on: macos-15-intel
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +56,10 @@ jobs:
       - name: Select and boot an available iPhone simulator
         timeout-minutes: 10
         run: |
+          xcode_app="$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' | sort | tail -1)"
+          test -n "$xcode_app"
+          export DEVELOPER_DIR="$xcode_app/Contents/Developer"
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           xcodebuild -version
           xcrun simctl list devices available --json > /tmp/ios-devices.json
           simulator_id="$(node -e 'const d=require("/tmp/ios-devices.json"); const p=Object.entries(d.devices).filter(([k])=>k.includes("iOS")).flatMap(([,v])=>v).find(x=>x.isAvailable && x.name.startsWith("iPhone")); if(!p)process.exit(1); process.stdout.write(p.udid)')"
