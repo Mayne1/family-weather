@@ -49,7 +49,7 @@ struct WeatherEntry: TimelineEntry, Codable {
     var offline = false
     var expired: Bool { fetchedAt.map { max(Date(), date).timeIntervalSince($0) >= 7200 || $0.timeIntervalSince(Date()) > 300 } ?? true }
     var temperature: String {
-        guard !expired, let value = weather?.current?.temp_f, value.isFinite else { return "—" }
+        guard !expired, let value = weather?.currentTemperature(asOf: max(Date(), date)), value.isFinite else { return "—" }
         return "\(Int(value.rounded()))°"
     }
     var footer: String { expired ? "Open app to update" : offline ? "Saved weather" : "Today’s forecast" }

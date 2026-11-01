@@ -16,6 +16,15 @@ public class WeatherWidgetValuesTest {
         assertTrue(WeatherWidgetValues.expired(now-7200000,now));
         assertTrue(WeatherWidgetValues.expired(now+600000,now));
     }
+    @Test public void onlyRecentTimestampedObservationsBecomeCurrentTemperature() throws Exception {
+        long now=new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",java.util.Locale.US).parse("2026-11-01T12:00:00Z").getTime();
+        assertFalse(WeatherWidgetValues.freshObservation(null,now));
+        assertFalse(WeatherWidgetValues.freshObservation("bad",now));
+        assertTrue(WeatherWidgetValues.freshObservation("2026-11-01T11:00:00+00:00",now));
+        assertTrue(WeatherWidgetValues.freshObservation("2026-11-01T11:00:00.000Z",now));
+        assertFalse(WeatherWidgetValues.freshObservation("2026-11-01T10:00:00Z",now));
+        assertFalse(WeatherWidgetValues.freshObservation("2026-11-01T13:00:00Z",now));
+    }
     @Test public void unverifiedFallbackDoesNotBecomeConfirmedWidgetWeather() {
         assertTrue(WeatherWidgetValues.trusted("nws"));
         assertTrue(WeatherWidgetValues.trusted("open-meteo"));

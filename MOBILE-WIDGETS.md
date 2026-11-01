@@ -58,3 +58,7 @@ and timezone need investigation before calling international home weather ready.
 Widgets currently reject unverified `family-weather` forecast responses and show
 unavailable/saved data instead of presenting them as verified local weather.
 No server weather-provider configuration was changed by the widget work.
+
+Current temperature additionally requires a parseable observation timestamp less
+than two hours old. Unstamped backend current values are withheld even when
+a verified forecast is available. A valid 0°F observation remains valid.

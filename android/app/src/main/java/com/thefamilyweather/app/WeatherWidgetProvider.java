@@ -52,7 +52,8 @@ public class WeatherWidgetProvider extends AppWidgetProvider {
         try {
             JSONObject data = new JSONObject(p.getString("data" + id, "{}"));
             if (!expired && data.optBoolean("ok")) {
-                views.setTextViewText(R.id.widget_temperature, number(data.optJSONObject("current"), "temp_f", "°"));
+                JSONObject current = data.optJSONObject("current");
+                if (current != null && WeatherWidgetValues.freshObservation(current.optString("observed_at"),System.currentTimeMillis())) views.setTextViewText(R.id.widget_temperature, number(current, "temp_f", "°"));
                 SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
                 date.setTimeZone(TimeZone.getTimeZone(data.optString("timezone", "America/Los_Angeles")));
                 String today = date.format(new Date()); JSONObject day = null;

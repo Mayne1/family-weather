@@ -9,6 +9,14 @@ struct WidgetWeather: Codable {
     var timezone: String?
     var current: Current?
     var days: [Day]
+    func currentTemperature(asOf now: Date = Date()) -> Double? {
+        guard let value = current?.temp_f, value.isFinite, let stamp = current?.observed_at else { return nil }
+        let formatter = ISO8601DateFormatter()
+        let plain = formatter.date(from: stamp)
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        guard let observed = plain ?? formatter.date(from: stamp), now.timeIntervalSince(observed) < 7200, observed.timeIntervalSince(now) <= 300 else { return nil }
+        return value
+    }
     var verified: Bool { ok && ["nws", "open-meteo"].contains(source ?? "") }
     var today: Day? {
         let formatter = DateFormatter(); formatter.dateFormat = "yyyy-MM-dd"

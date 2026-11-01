@@ -9,6 +9,11 @@ import Foundation
         precondition(missing.symbol == "thermometer.medium")
         let thunder = try decoder.decode(WidgetWeather.self, from: Data(#"{"ok":true,"label":"Test","source":"nws","current":{"temp_f":0,"weather_code":211},"days":[]}"#.utf8))
         precondition(thunder.verified)
+        precondition(thunder.currentTemperature() == nil, "Unstamped backend values are not observations")
+        let reference = ISO8601DateFormatter().date(from: "2026-11-01T12:00:00Z")!
+        let observed = try decoder.decode(WidgetWeather.self, from: Data(#"{"ok":true,"label":"Test","source":"nws","current":{"temp_f":0,"observed_at":"2026-11-01T11:00:00+00:00"},"days":[]}"#.utf8))
+        precondition(observed.currentTemperature(asOf: reference) == 0)
+        precondition(observed.currentTemperature(asOf: reference.addingTimeInterval(3600)) == nil)
         precondition(thunder.current?.temp_f == 0, "Freezing zero is a valid temperature")
         precondition(thunder.symbol == "cloud.bolt.rain.fill")
         let rain = try decoder.decode(WidgetWeather.self, from: Data(#"{"ok":true,"label":"Test","current":{"weather_code":500},"days":[]}"#.utf8))
