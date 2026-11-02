@@ -103,3 +103,17 @@ before this corrected build can install. Keep the original Family Weather app.
 Removing only the test app clears its local login/location/widget placement;
 server-side events, announcements and replies remain in the account. Subsequent
 widget-test builds must retain the fixed certificate to update in place.
+
+## Build 13 — delete saved events in the app
+
+My Events now has a Delete event action on every card and inside the event
+workspace. The inline confirmation names the event and warns that invitations
+and RSVP answers are removed. Cancel sends no request. The action refreshes the
+signed-in session, uses the existing authenticated DELETE /api/events/:id route,
+blocks duplicate taps, retains the event after a failed request, and removes only
+the confirmed event after a successful response. Account changes prevent the
+request. Response widgets are asked to refresh after deletion.
+
+Verified with rendered React interaction checks: cancel, correct event/fresh
+bearer token, duplicate submission, failed-request retry, account switch, and
+workspace-to-list success. No real user event was deleted during testing.

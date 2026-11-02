@@ -21,7 +21,9 @@ export function startResponseWidgetSync(session: AuthSession|null) {
     finally{busy=false;}
   }
   void refresh();
+  const changed=()=>void refresh();
+  window.addEventListener('family-weather:responses-changed',changed);
   const timer=setInterval(()=>void refresh(),300000);
   const listener=App.addListener('appStateChange',({isActive})=>{if(isActive)void refresh();});
-  return()=>{disposed=true;clearInterval(timer);void listener.then(h=>h.remove());};
+  return()=>{disposed=true;window.removeEventListener('family-weather:responses-changed',changed);clearInterval(timer);void listener.then(h=>h.remove());};
 }
