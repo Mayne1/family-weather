@@ -51,14 +51,14 @@ jobs:
           mkdir -p build/device-package/Payload
           ditto build/ios-device/Build/Products/Debug-iphoneos/App.app build/device-package/Payload/App.app
           cd build/device-package
-          zip -qr ../Family-Weather-iOS-v13-unsigned.ipa Payload
+          zip -qr ../Family-Weather-iOS-v14-unsigned.ipa Payload
       - name: Save iPhone device test package
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: family-weather-ios-device-debug
           path: |
-            build/Family-Weather-iOS-v13-unsigned.ipa
+            build/Family-Weather-iOS-v14-unsigned.ipa
             build/ios-device-debug.log
           if-no-files-found: warn
           retention-days: 30

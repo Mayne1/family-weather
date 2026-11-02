@@ -117,3 +117,13 @@ request. Response widgets are asked to refresh after deletion.
 Verified with rendered React interaction checks: cancel, correct event/fresh
 bearer token, duplicate submission, failed-request retry, account switch, and
 workspace-to-list success. No real user event was deleted during testing.
+
+## Build 14 — compact event delete control
+
+The new event wrapper inherited the broad `.nativeList article` two-column grid,
+which squeezed the event card and stretched its delete sibling to full height.
+Event wrappers now explicitly use block layout. A 44 × 44 px trash icon sits in
+the card’s top-right corner, with a named accessible label and the same existing
+confirmation. The title reserves space for the icon. A browser check verifies
+card/control bounds, page overflow, cancel and confirmed deletion at phone sizes
+and captures synthetic-data screenshots for inspection. No real records are used.
