@@ -1,9 +1,10 @@
 "use client";
 
+import { fetchHomeWeather } from "../lib/homeWeatherClient";
 import { localWeatherDate } from "../lib/forecastDates";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import SiteTour from "../components/SiteTour";
 import RightNowStrip from "../components/RightNowStrip";
@@ -53,6 +54,7 @@ function forecastIcon(code:number){
 
 export default function HomePreview(){
  const router=useRouter();
+ const requestVersion=useRef(0);
  const[activity,setActivity]=useState("");
  const[location,setLocation]=useState("");
  const[date,setDate]=useState("");
@@ -62,9 +64,11 @@ export default function HomePreview(){
  const[status,setStatus]=useState("Checking the latest observation…");
 
  async function loadWeather(query=""){
-  const response=await fetch(`/api/weather/home${query}`,{cache:"no-store"});
-  const data=await response.json();
-  if(!response.ok||!data.ok)throw new Error("Weather is temporarily unavailable.");
+  const version=++requestVersion.current;
+  let data:Snapshot;
+  try{data=await fetchHomeWeather<Snapshot>(query)}
+  catch(error){if(version!==requestVersion.current)return;throw error}
+  if(version!==requestVersion.current)return;
   setWeather(data);
   setStatus("Latest available observation");
  }
@@ -75,12 +79,8 @@ export default function HomePreview(){
    const saved=JSON.parse(localStorage.getItem(HOME_LOCATION_STORAGE_KEY)||"null") as {lat?:number;lon?:number}|null;
    if(Number.isFinite(saved?.lat)&&Number.isFinite(saved?.lon))query=`?lat=${saved?.lat}&lon=${saved?.lon}`;
   }catch{/* A malformed saved preference should never block the homepage. */}
-  fetch(`/api/weather/home${query}`,{cache:"no-store"}).then(async response=>{
-   const data=await response.json();
-   if(!response.ok||!data.ok)throw new Error();
-   setWeather(data);
-   setStatus("Latest available observation");
-  }).catch(()=>setStatus("Live reading is temporarily unavailable. Planning tools are still open."));
+  void loadWeather(query).catch(()=>setStatus("Live reading is temporarily unavailable. Planning tools are still open."));
+  return ()=>{requestVersion.current++};
   // The default is deliberate; location access remains an explicit visitor action.
  },[]);
 

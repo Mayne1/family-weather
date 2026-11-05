@@ -1,3 +1,4 @@
+import { createAsyncTtlCache } from "../../../lib/asyncTtlCache";
 import { dailyPeriods } from "../../../lib/forecastDates";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeAirQuality } from "../../../lib/airQuality";
@@ -261,7 +262,10 @@ async function airQuality(lat: number, lon: number) {
   } catch { return null; }
 }
 
+const cachedWeather = createAsyncTtlCache<Awaited<ReturnType<typeof loadHomeWeather>>>({ ttlMs: 120_000, maxEntries: 128 });
+
 export async function GET(request: NextRequest) {
+  const started = performance.now();
   const rawLat = request.nextUrl.searchParams.get("lat");
   const rawLon = request.nextUrl.searchParams.get("lon");
   const requestedLat = finiteNumberOrNull(rawLat);
@@ -275,6 +279,17 @@ export async function GET(request: NextRequest) {
   const lat = hasCoordinates ? requestedLat : 37.9177;
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
+  const payload = await cachedWeather(`${lat}:${lon}:${hasCoordinates}`, () => loadHomeWeather(lat, lon, hasCoordinates), value => value.ok);
+  return NextResponse.json(payload, {
+    status: payload.ok ? 200 : 502,
+    headers: {
+      "Cache-Control": payload.ok ? "public, max-age=0, must-revalidate" : "no-store",
+      "Server-Timing": `weather;dur=${(performance.now() - started).toFixed(1)}`,
+    },
+  });
+}
+
+async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean) {
   // Start fallbacks now, but do not hold successful NWS results behind them.
   const airQualityPromise = airQuality(lat, lon);
   const currentPromise = jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`));
@@ -338,10 +353,7 @@ export async function GET(request: NextRequest) {
   const validHumidity = observedHumidity !== null && observedHumidity >= 0 && observedHumidity <= 100;
   const current = rawCurrent ? { ...rawCurrent, humidity_pct: validHumidity ? Math.round(observedHumidity) : calendar.humidity, humidity_estimated: !validHumidity && calendar.humidity !== null } : null;
   if (!current && !days.length) {
-    return NextResponse.json(
-      { ok: false, error: "Weather service unavailable" },
-      { status: 502 },
-    );
+    return { ok: false as const, error: "Weather service unavailable" };
   }
 
   const place = point?.properties?.relativeLocation?.properties;
@@ -351,9 +363,10 @@ export async function GET(request: NextRequest) {
       ? "Your location"
       : "Stockton, California";
 
-  return NextResponse.json({
-    ok: true,
+  return {
+    ok: true as const,
     label,
+    fetched_at: new Date().toISOString(),
     lat,
     lon,
     current,
@@ -363,5 +376,5 @@ export async function GET(request: NextRequest) {
     timezone: timeZone,
     current_source: officialCurrent ? "nws-observation" : current ? "family-weather" : "unavailable",
     partial: !current || !days.length,
-  });
+  };
 }
