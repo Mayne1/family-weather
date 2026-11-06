@@ -13,7 +13,7 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
   const [message, setMessage] = useState("");
 
   if (entitlement.status === "legacy") return null;
-  const upgrades = COMMERCE_PLANS.filter((plan) => plan.priceCents > 0 && plan.rank > entitlement.plan_rank);
+  const upgrades = COMMERCE_PLANS.filter((plan) => plan.code === "clean_event_199" && plan.rank > entitlement.plan_rank);
 
   async function checkout(productCode: string) {
     setLoadingCode(productCode); setError(""); setMessage("");
@@ -67,11 +67,11 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
     }
   }
 
-  if (entitlement.product_code === "family_access") return <section className="launchOffer"><h3>Family Access</h3><p>Your invitations, RSVP tools, full template collection, and ad-free guest presentation are included.</p><p>Share your link through your own messaging app first. Direct email is available when you need it: {entitlement.email_remaining} of {entitlement.email_limit} remaining for this event.</p><a href={continueHref || "/events"}>Open your event →</a><p><a href="/family">Family guides and tools →</a></p></section>;
+  if (entitlement.product_code === "family_access") return <section className="launchOffer"><h3>Family Access</h3><p>Your invitations, RSVP tools, full template collection, and ad-free guest presentation are included.</p><p>Share your invitation link and keep track of replies in your event dashboard.</p><a href={continueHref || "/events"}>Open your event →</a><p><a href="/family">Family guides and tools →</a></p></section>;
 
   return <section className="launchOffer" aria-labelledby={`launch-offer-${eventId}`}>
     <div className="launchOfferHeading"><div><p className="launchEyebrow">Your event access</p><h3 id={`launch-offer-${eventId}`}>{entitlement.plan_name}</h3></div><span>{entitlement.status === "free" ? "No card required" : "One event · one payment"}</span></div>
-    <p className="launchOfferIntro">Planning, invitation design, your shareable link, and RSVP management are included. Upgrade only for a cleaner guest presentation or more Family Weather email delivery.</p>
+    <p className="launchOfferIntro">Planning, invitation design, your shareable link, and RSVP management are free. Pay $1.99 only to remove ads and affiliate promotions from this event.</p>
     {continueHref ? <a className="continueFreeEvent" href={continueHref}>Continue to invitations and RSVP management <span>→</span></a> : null}
 
     {entitlement.pending_product_code && entitlement.checkout_url ? <div className="pendingUpgrade" aria-live="polite"><div><strong>Checkout waiting</strong><span>Your event is still safe at its current level until payment is confirmed.</span></div><div><button type="button" onClick={() => window.location.assign(entitlement.checkout_url!)}>Continue secure checkout</button><button className="cancelPending" type="button" onClick={cancelCheckout} disabled={loadingCode === "cancel"}>{loadingCode === "cancel" ? "Cancelling…" : "Cancel"}</button></div></div> : null}
@@ -80,14 +80,14 @@ export default function EventPurchasePanel({ eventId, authorization, entitlement
       {upgrades.map((plan) => {
         const amountDue = plan.priceCents - entitlement.amount_cents;
         return <article className={plan.code === "event_plus_599" ? "featured" : ""} key={plan.code}>
-          <small>{plan.emailLimit >= 100 ? "MORE DELIVERY" : plan.code === "clean_event_199" ? "CLEAN PRESENTATION" : "POPULAR UPGRADE"}</small>
-          <h4>{plan.name}</h4>
+          <small>ONE EVENT · ONE PAYMENT</small>
+          <h4>Remove promotions</h4>
           <strong>{formatPlanPrice(plan.priceCents)}</strong><span>total event value</span>
-          <ul><li>{plan.emailLimit} direct email invitations</li><li>Share your link anywhere</li><li>No advertised RSVP limit</li><li>{plan.presentation === "clean" ? "No ads · small Family Weather signature" : "No ads or promotional branding"}</li></ul>
+          <ul><li>Keep every free event feature</li><li>Remove ads from this event</li><li>Remove affiliate promotions from this event</li></ul>
           <button type="button" onClick={() => checkout(plan.code)} disabled={Boolean(loadingCode)}>{loadingCode === plan.code ? "Opening checkout…" : `${entitlement.amount_cents ? "Upgrade" : "Choose"} · ${formatPlanPrice(amountDue)} due`}<span>→</span></button>
         </article>;
       })}
-    </div> : <p className="maxPlanNotice">This event already has Family Weather’s largest direct-email allowance.</p>}
+    </div> : <p className="maxPlanNotice">Ads and affiliate promotions are removed from this event.</p>}
 
     <form className="promoCodeForm" onSubmit={redeemPromo}><label><span>Have a Family Weather promotion code?</span><input name="promo" autoComplete="off" maxLength={34} placeholder="FW-XXXXXXXXXXXX" /></label><button type="submit" disabled={promoLoading}>{promoLoading ? "Applying…" : "Apply code"}</button></form>
     {message ? <p className="inviteSuccess" role="status">{message}</p> : null}
