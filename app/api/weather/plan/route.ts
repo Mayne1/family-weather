@@ -11,6 +11,7 @@ import type { LocationCandidate } from "../../../lib/location";
 import { enforceRateLimit } from "../../../lib/requestSecurity";
 import { buildDecision, historicalActivityFit } from "../../../lib/decisionSpine";
 import type { DecisionResult, HourlyCondition, Space } from "../../../lib/decisionSpine";
+import { createAsyncTtlCache } from "../../../lib/asyncTtlCache";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
 
@@ -121,15 +122,15 @@ function nwsHourly(periods: NwsPeriod[], date: string): HourlyCondition[] {
 }
 
 async function nwsForecast(geo: LocationCandidate, date: string) {
-  const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, cache: "no-store" });
+  const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) });
   if (!pointResponse.ok) return null;
   const point = await pointResponse.json();
   const forecastUrl = point?.properties?.forecast;
   const hourlyUrl = point?.properties?.forecastHourly;
   if (!forecastUrl || !hourlyUrl) return null;
   const [forecastResponse, hourlyResponse] = await Promise.all([
-    fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store" }),
-    fetch(hourlyUrl, { headers: NWS_HEADERS, cache: "no-store" }),
+    fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) }),
+    fetch(hourlyUrl, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) }),
   ]);
   if (!forecastResponse.ok || !hourlyResponse.ok) return null;
   const [forecast, hourlyForecast] = await Promise.all([forecastResponse.json(), hourlyResponse.json()]);
@@ -210,6 +211,42 @@ function providerLocalKey(isoTime: string, timezone: string | null) {
     return isoTime.slice(0, 13);
   }
 }
+
+async function loadPlannerForecast(geo: LocationCandidate, date: string) {
+  const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
+  let forecast = geo.countryCode === "US"
+    ? await nwsForecast(geo, date) || await globalForecast(geo, date)
+    : await metForecast(geo, date, precipitation?.timezone || null);
+  if (forecast?.source === "met-norway" && precipitation) {
+    const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
+    forecast = {
+      ...forecast,
+      day: {
+        ...forecast.day,
+        precip_prob_pct: precipitation.dayProbabilityPct ?? forecast.day.precip_prob_pct,
+      },
+      hourly: forecast.hourly.map((hour) => {
+        const overlay = byTime.get(providerLocalKey(hour.time, precipitation.timezone));
+        return overlay ? {
+          ...hour,
+          precipitationProbabilityPct: overlay.probabilityPct ?? hour.precipitationProbabilityPct,
+          precipitationAmountMm: overlay.amountMm ?? hour.precipitationAmountMm,
+          precipitationWindowHours: 1,
+          precipitationSource: overlay.source,
+          condition: [hour.condition, overlay.condition].filter(Boolean).join("; ") || undefined,
+          thunderRisk: hour.thunderRisk || /thunder|lightning/i.test(overlay.condition || ""),
+        } : hour;
+      }),
+    };
+  }
+  return { forecast, precipitation };
+}
+
+const cachedPlannerForecast = createAsyncTtlCache<Awaited<ReturnType<typeof loadPlannerForecast>>>({
+  ttlMs: 180_000,
+  maxEntries: 128,
+});
+
 function globalCondition(code: number) {
   if ([95, 96, 99].includes(code)) return "Thunderstorms";
   if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
@@ -222,6 +259,7 @@ function globalCondition(code: number) {
 export async function POST(request: NextRequest) {
   const limited = enforceRateLimit(request, "weather-plan", 30, 60_000);
   if (limited) return limited;
+  const started = performance.now();
   try {
     const body = await request.json();
     const location = String(body.location || "95206").trim();
@@ -230,35 +268,11 @@ export async function POST(request: NextRequest) {
     const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
     const geo = await resolveLocation(location, body.resolvedLocation);
-    const forecastResult = await forecastForDate(date, async () => {
-      const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
-      let forecast = geo.countryCode === "US" ? await nwsForecast(geo, date) || await globalForecast(geo, date) : await metForecast(geo, date, precipitation?.timezone || null);
-      if (forecast?.source === "met-norway") {
-        if (precipitation) {
-          const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
-          forecast = {
-            ...forecast,
-            day: {
-              ...forecast.day,
-              precip_prob_pct: precipitation.dayProbabilityPct ?? forecast.day.precip_prob_pct,
-            },
-            hourly: forecast.hourly.map((hour) => {
-              const overlay = byTime.get(providerLocalKey(hour.time, precipitation.timezone));
-              return overlay ? {
-                ...hour,
-                precipitationProbabilityPct: overlay.probabilityPct ?? hour.precipitationProbabilityPct,
-                precipitationAmountMm: overlay.amountMm ?? hour.precipitationAmountMm,
-                precipitationWindowHours: 1,
-                precipitationSource: overlay.source,
-                condition: [hour.condition, overlay.condition].filter(Boolean).join("; ") || undefined,
-                thunderRisk: hour.thunderRisk || /thunder|lightning/i.test(overlay.condition || ""),
-              } : hour;
-            }),
-          };
-        }
-      }
-      return { forecast, precipitation };
-    });
+    const forecastResult = await forecastForDate(date, () => cachedPlannerForecast(
+      `${geo.countryCode}:${geo.lat.toFixed(4)}:${geo.lon.toFixed(4)}:${date}`,
+      () => loadPlannerForecast(geo, date),
+      (value) => Boolean(value.forecast),
+    ));
     const forecast = forecastResult?.forecast || null;
     const precipitation = forecastResult?.precipitation || null;
     const almanac = forecast ? null : await lookupAlmanac(geo, date);
@@ -273,7 +287,7 @@ export async function POST(request: NextRequest) {
     };
     const decision = buildDecision({ activity, space, hourly: forecast?.hourly || [], historical: Boolean(almanac), dayRainProbabilityPct: day.precip_prob_pct });
     const recommendation = recommendationFromDecision(decision, almanac, space);
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       source: forecast?.source || "almanac",
       location: forecast?.label || geo.label,
@@ -287,10 +301,16 @@ export async function POST(request: NextRequest) {
       decision,
       ...recommendation,
     });
+    response.headers.set("Server-Timing", `planner;dur=${(performance.now() - started).toFixed(1)}`);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   } catch (error) {
     if (error instanceof AmbiguousLocationError) {
       return NextResponse.json({ ok: false, error: error.message, suggestions: error.suggestions }, { status: 409 });
     }
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Weather service unavailable" }, { status: 502 });
+    const response = NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Weather service unavailable" }, { status: 502 });
+    response.headers.set("Server-Timing", `planner;dur=${(performance.now() - started).toFixed(1)}`);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
   }
 }
