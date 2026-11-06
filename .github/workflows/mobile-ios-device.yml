@@ -3,7 +3,7 @@ name: Family Weather iOS device test build
 on:
   workflow_dispatch:
   push:
-    branches: [codex/ios-android-parity, codex/reply-notifications]
+    branches: [codex/ios-android-parity, codex/reply-notifications, codex/lock-screen-widgets]
     paths:
       - "mobile/**"
       - "ios/**"
@@ -39,22 +39,26 @@ jobs:
           test -n "$xcode_app"
           export DEVELOPER_DIR="$xcode_app/Contents/Developer"
           xcodebuild -version
+          swiftc ios/App/FamilyWeatherWidgets/WeatherModel.swift ios/Tests/WeatherModelChecks.swift -o /tmp/widget-model-checks
+          /tmp/widget-model-checks
           mkdir -p build
           xcodebuild -project ios/App/App.xcodeproj -scheme App \
             -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build/ios-device CODE_SIGNING_ALLOWED=NO \
             build | tee build/ios-device-debug.log
+          test -d build/ios-device/Build/Products/Debug-iphoneos/App.app/PlugIns/FamilyWeatherWidgets.appex
+          /usr/libexec/PlistBuddy -c "Print :NSExtension:NSExtensionPointIdentifier" build/ios-device/Build/Products/Debug-iphoneos/App.app/PlugIns/FamilyWeatherWidgets.appex/Info.plist | grep -qx com.apple.widgetkit-extension
           mkdir -p build/device-package/Payload
           ditto build/ios-device/Build/Products/Debug-iphoneos/App.app build/device-package/Payload/App.app
           cd build/device-package
-          zip -qr ../Family-Weather-iOS-v10-unsigned.ipa Payload
+          zip -qr ../Family-Weather-iOS-v14-unsigned.ipa Payload
       - name: Save iPhone device test package
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: family-weather-ios-device-debug
           path: |
-            build/Family-Weather-iOS-v10-unsigned.ipa
+            build/Family-Weather-iOS-v14-unsigned.ipa
             build/ios-device-debug.log
           if-no-files-found: warn
           retention-days: 30

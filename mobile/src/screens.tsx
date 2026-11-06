@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Browser } from "@capacitor/browser";
-import { apiRequest, authenticate, authHeaders, signOut, SITE_URL, type AuthSession } from "./api";
+import { apiRequest, authenticate, authHeaders, getValidSession, signOut, SITE_URL, type AuthSession } from "./api";
 import { getInvitationDesign, invitationCategoryForActivity, invitationDesigns } from "../../app/invitations/catalog";
 
 type SwitchTab = (tab: "home" | "plan" | "history" | "events" | "announcements" | "account" | "more") => void;
@@ -160,6 +160,12 @@ export function EventsScreen({ session, switchTab, draft, clearDraft }: { sessio
   const [busy, setBusy] = useState(false), [workspaceBusy, setWorkspaceBusy] = useState(false);
   const [error, setError] = useState(""), [notice, setNotice] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<FamilyEvent | null>(null), [responses, setResponses] = useState<ResponseRow[]>([]), [shareUrl, setShareUrl] = useState("");
+  const [deleteCandidate, setDeleteCandidate] = useState<FamilyEvent | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const deleteInFlight = useRef(false);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (deleteCandidate) cancelDeleteRef.current?.focus(); }, [deleteCandidate]);
+
   const [title, setTitle] = useState(draft ? capitalize(draft.activity) : ""), [eventDate, setEventDate] = useState(draft?.date || new Date().toISOString().slice(0, 10)), [eventTime, setEventTime] = useState(timeFromWindow(draft?.bestWindow || ""));
   const [designId, setDesignId] = useState("general-sunlit"), [headline, setHeadline] = useState(draft ? capitalize(draft.activity) : ""), [inviteMessage, setInviteMessage] = useState("");
 
@@ -196,6 +202,31 @@ export function EventsScreen({ session, switchTab, draft, clearDraft }: { sessio
     } catch (e) { setError(e instanceof Error ? e.message : "The event could not be opened."); }
     finally { setWorkspaceBusy(false); }
   }
+
+  async function deleteEvent() {
+    if (!session || !deleteCandidate || deleteInFlight.current) return;
+    const item = deleteCandidate;
+    deleteInFlight.current = true;
+    setDeletingId(String(item.id)); setError(""); setNotice("");
+    try {
+      const current = await getValidSession();
+      if (!current || current.localId !== session.localId) throw new Error("Sign in again before deleting an event.");
+      const result = await apiRequest<{ ok: boolean }>(`/api/events/${encodeURIComponent(String(item.id))}`, { method: "DELETE", headers: authHeaders(current) });
+      if (!result.ok) throw new Error("The event could not be deleted. Please try again.");
+      setEvents(items => items.filter(event => String(event.id) !== String(item.id)));
+      setSelectedEvent(null); setResponses([]); setShareUrl(""); setDeleteCandidate(null);
+      setNotice(`“${item.title}” was deleted.`);
+      window.dispatchEvent(new Event("family-weather:responses-changed"));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "The event could not be deleted. Please try again."); }
+    finally { deleteInFlight.current = false; setDeletingId(null); }
+  }
+
+  const deleteConfirmation = deleteCandidate ? <section className="nativeDeleteConfirmation" role="alertdialog" aria-labelledby="delete-event-title" aria-describedby="delete-event-description" onKeyDown={event => { if (event.key === "Escape" && !deletingId) setDeleteCandidate(null); }}>
+    <h3 id="delete-event-title">Delete “{deleteCandidate.title}”?</h3>
+    <p id="delete-event-description">This permanently removes the event, its invitations, and RSVP answers.</p>
+    {error ? <p className="nativeError" role="alert">{error}</p> : null}
+    <div><button ref={cancelDeleteRef} className="secondaryButton" type="button" disabled={Boolean(deletingId)} onClick={() => setDeleteCandidate(null)}>Keep event</button><button className="deleteEventButton" type="button" disabled={Boolean(deletingId)} onClick={() => void deleteEvent()}>{deletingId ? "Deleting…" : "Yes, delete event"}</button></div>
+  </section> : null;
 
   async function saveInvitation(eventId: string) {
     if (!session) throw new Error("Sign in to save this invitation.");
@@ -254,15 +285,16 @@ export function EventsScreen({ session, switchTab, draft, clearDraft }: { sessio
       <section className="nativeForm"><label>Invitation headline<input value={headline} onChange={e => setHeadline(e.target.value)} maxLength={120} /></label><label>Message<textarea value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} maxLength={500} placeholder="Add a personal note" /></label><InvitationPicker activity={selectedEvent.description || selectedEvent.title} selected={designId} onSelect={setDesignId} /><button className="primaryButton" type="button" disabled={workspaceBusy} onClick={() => void updateInvitation()}>{workspaceBusy ? "Saving…" : "Save invitation design"}<span>→</span></button></section>
       {error ? <p className="nativeError">{error}</p> : null}{notice ? <p className="nativeNotice">{notice}</p> : null}
       <section className="workspaceActions"><button className="primaryButton" type="button" disabled={workspaceBusy} onClick={() => void shareInvitation()}>Share invitation<span>↗</span></button>{shareUrl ? <button className="secondaryAction" type="button" onClick={() => void Browser.open({ url: shareUrl })}>Open guest view<span>→</span></button> : null}<button className="secondaryAction" type="button" disabled={workspaceBusy} onClick={() => void openEvent(selectedEvent.id)}>Refresh RSVPs<span>↻</span></button></section>
+      <section className="nativePanel eventDeleteSection"><h3>Delete this event</h3><p>Remove this event and its invitation responses.</p><button className="deleteEventButton" type="button" disabled={workspaceBusy || Boolean(deletingId)} onClick={() => { setError(""); setDeleteCandidate(selectedEvent); }}>Delete event</button>{deleteConfirmation}</section>
       <section className="nativePanel"><div className="screenTitleRow"><h2>Guest responses</h2><b>{responses.length}</b></div>{responses.length ? <div className="rsvpList">{responses.map(row => <article key={row.token}><div><strong>{row.responder_name || row.invited_email || "Shared-link guest"}</strong><small>{row.message || (row.opened_at ? "Opened—waiting for an answer" : "Invitation sent")}</small></div><span className={row.response || "waiting"}>{row.response === "yes" ? "Going" : row.response === "maybe" ? "Maybe" : row.response === "no" ? "Can’t go" : "Waiting"}</span></article>)}</div> : <p>No one has replied yet.</p>}</section>
     </div>;
   }
 
   return <div className="nativeScreen">
-    <section className="screenMast eventsMast"><span className="mastMark">◇</span><div><p className="eyebrow">YOUR FAMILY PLANS</p><h1>My events.</h1><p>Open any event to manage its invitation, share link, and RSVPs.</p></div><button className="mastAction" onClick={() => void refresh()} disabled={busy}>↻</button></section>
+    <section className="screenMast eventsMast"><span className="mastMark">◇</span><div><p className="eyebrow">YOUR FAMILY PLANS</p><h1>My events.</h1><p>Open any event to manage its invitation, share link, and RSVPs.</p></div><button className="mastAction" onClick={() => void refresh()} disabled={busy || workspaceBusy || Boolean(deleteCandidate)}>↻</button></section>
     {draft ? <form className="nativeForm handoffForm" onSubmit={createInvitation}><p className="eyebrow dark">FROM YOUR WEATHER PLAN</p><h2>Design the invitation.</h2><p>{draft.location} · {draft.bestWindow}</p><label>Event name<input value={title} onChange={e => { setTitle(e.target.value); setHeadline(e.target.value); }} required /></label><div className="formPair"><label>Date<input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} required /></label><label>Start time<input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} required /></label></div><label>Invitation message<textarea value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} maxLength={500} placeholder="Add a personal note" /></label><InvitationPicker activity={draft.activity} selected={designId} onSelect={setDesignId} /><button className="primaryButton" disabled={workspaceBusy}>{workspaceBusy ? "Building your invitation…" : "Save invitation and continue"}<span>→</span></button></form> : null}
     {error ? <p className="nativeError">{error}</p> : null}{notice ? <p className="nativeNotice">{notice}</p> : null}
-    {busy && !events.length ? <p>Loading your events…</p> : events.length ? <div className="nativeList eventList">{events.map(item => { const starts = item.starts_at ? new Date(item.starts_at) : null; return <button type="button" className="eventCardButton" key={item.id} onClick={() => void openEvent(item.id)} disabled={workspaceBusy}><div className="dateTile"><strong>{starts ? starts.toLocaleDateString("en-US", { month: "short" }) : "PLAN"}</strong><span>{starts?.getDate() || "—"}</span></div><div><small>EVENT</small><h2>{item.title}</h2><p>{starts?.toLocaleString() || "Date not set"}</p><p>{item.location || "Location not set"}</p><strong className="openEventLabel">Open invitation & RSVPs →</strong></div></button>; })}</div> : <Empty title="No events yet." copy="Check a weather plan and turn it into an invitation." />}
+    {busy && !events.length ? <p>Loading your events…</p> : events.length ? <div className="nativeList eventList">{events.map(item => { const starts = item.starts_at ? new Date(item.starts_at) : null; return <article className="eventListItem" key={item.id}><button type="button" className="eventCardButton" onClick={() => void openEvent(item.id)} disabled={workspaceBusy || Boolean(deleteCandidate)}><div className="dateTile"><strong>{starts ? starts.toLocaleDateString("en-US", { month: "short" }) : "PLAN"}</strong><span>{starts?.getDate() || "—"}</span></div><div><small>EVENT</small><h2>{item.title}</h2><p>{starts?.toLocaleString() || "Date not set"}</p><p>{item.location || "Location not set"}</p><strong className="openEventLabel">Open invitation & RSVPs →</strong></div></button><button className="deleteEventButton eventListDelete" type="button" aria-label={`Delete ${item.title}`} disabled={busy || workspaceBusy || Boolean(deletingId)} onClick={() => { setError(""); setNotice(""); setDeleteCandidate(item); }} title="Delete event"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" /></svg></button>{String(deleteCandidate?.id) === String(item.id) ? deleteConfirmation : null}</article>; })}</div> : <Empty title="No events yet." copy="Check a weather plan and turn it into an invitation." />}
   </div>;
 }
 

@@ -4,4 +4,6 @@
     <string name="title_activity_main">Family Weather</string>
     <string name="package_name">com.thefamilyweather.app</string>
     <string name="custom_url_scheme">com.thefamilyweather.app</string>
+    <string name="weather_widget_description">Local temperature, today’s high and low, and rain chance. Tap the city to change location.</string>
+<string name="response_widget_description">Your announcement reply and invitation response counts. Open the app to update the saved summary.</string>
 </resources>
