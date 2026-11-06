@@ -122,23 +122,27 @@ function nwsHourly(periods: NwsPeriod[], date: string): HourlyCondition[] {
 }
 
 async function nwsForecast(geo: LocationCandidate, date: string) {
-  const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) });
-  if (!pointResponse.ok) return null;
-  const point = await pointResponse.json();
-  const forecastUrl = point?.properties?.forecast;
-  const hourlyUrl = point?.properties?.forecastHourly;
-  if (!forecastUrl || !hourlyUrl) return null;
-  const [forecastResponse, hourlyResponse] = await Promise.all([
-    fetch(forecastUrl, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) }),
-    fetch(hourlyUrl, { headers: NWS_HEADERS, cache: "no-store", signal: AbortSignal.timeout(6000) }),
-  ]);
-  if (!forecastResponse.ok || !hourlyResponse.ok) return null;
-  const [forecast, hourlyForecast] = await Promise.all([forecastResponse.json(), hourlyResponse.json()]);
-  const day = buildDays(forecast?.properties?.periods || []).find((item) => item.date === date);
-  if (!day) return null;
-  const place = point?.properties?.relativeLocation?.properties;
-  const label = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
-  return { source: "nws", label, day, hourly: nwsHourly(hourlyForecast?.properties?.periods || [], date) };
+  try {
+    const pointResponse = await fetch(`https://api.weather.gov/points/${geo.lat.toFixed(4)},${geo.lon.toFixed(4)}`, { headers: NWS_HEADERS, next: { revalidate: 86_400 }, signal: AbortSignal.timeout(6000) });
+    if (!pointResponse.ok) return null;
+    const point = await pointResponse.json();
+    const forecastUrl = point?.properties?.forecast;
+    const hourlyUrl = point?.properties?.forecastHourly;
+    if (!forecastUrl || !hourlyUrl) return null;
+    const [forecastResponse, hourlyResponse] = await Promise.all([
+      fetch(forecastUrl, { headers: NWS_HEADERS, next: { revalidate: 600 }, signal: AbortSignal.timeout(6000) }),
+      fetch(hourlyUrl, { headers: NWS_HEADERS, next: { revalidate: 600 }, signal: AbortSignal.timeout(6000) }),
+    ]);
+    if (!forecastResponse.ok || !hourlyResponse.ok) return null;
+    const [forecast, hourlyForecast] = await Promise.all([forecastResponse.json(), hourlyResponse.json()]);
+    const day = buildDays(forecast?.properties?.periods || []).find((item) => item.date === date);
+    if (!day) return null;
+    const place = point?.properties?.relativeLocation?.properties;
+    const label = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
+    return { source: "nws", label, day, hourly: nwsHourly(hourlyForecast?.properties?.periods || [], date) };
+  } catch {
+    return null;
+  }
 }
 
 async function globalForecast(geo: LocationCandidate, date: string) {
@@ -150,8 +154,9 @@ async function globalForecast(geo: LocationCandidate, date: string) {
   url.searchParams.set("temperature_unit", "fahrenheit");
   url.searchParams.set("wind_speed_unit", "mph");
   url.searchParams.set("timezone", "auto");
-  url.searchParams.set("forecast_days", "16");
-  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
+  url.searchParams.set("start_date", date);
+  url.searchParams.set("end_date", date);
+  const response = await fetch(url, { next: { revalidate: 600 }, signal: AbortSignal.timeout(6000) });
   if (!response.ok) throw new Error("Worldwide forecast lookup failed");
   const data = await response.json();
   const index = Array.isArray(data?.daily?.time) ? data.daily.time.indexOf(date) : -1;
@@ -215,7 +220,7 @@ function providerLocalKey(isoTime: string, timezone: string | null) {
 async function loadPlannerForecast(geo: LocationCandidate, date: string) {
   const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
   let forecast = geo.countryCode === "US"
-    ? await nwsForecast(geo, date) || await globalForecast(geo, date)
+    ? await fastestUsForecast(geo, date)
     : await metForecast(geo, date, precipitation?.timezone || null);
   if (forecast?.source === "met-norway" && precipitation) {
     const byTime = new Map(precipitation.hourly.map((item) => [item.time.slice(0, 13), item]));
@@ -242,8 +247,54 @@ async function loadPlannerForecast(geo: LocationCandidate, date: string) {
   return { forecast, precipitation };
 }
 
+function fastestUsForecast(geo: LocationCandidate, date: string) {
+  return new Promise<Awaited<ReturnType<typeof nwsForecast>> | Awaited<ReturnType<typeof globalForecast>>>((resolve) => {
+    let settled = false;
+    let nwsDone = false;
+    let globalDone = false;
+    let globalStarted = false;
+
+    const finish = (forecast: Awaited<ReturnType<typeof nwsForecast>> | Awaited<ReturnType<typeof globalForecast>>) => {
+      if (settled) return;
+      if (forecast) {
+        settled = true;
+        clearTimeout(fallbackTimer);
+        resolve(forecast);
+      } else if (nwsDone && globalDone) {
+        settled = true;
+        resolve(null);
+      }
+    };
+
+    const startGlobal = () => {
+      if (globalStarted || settled) return;
+      globalStarted = true;
+      globalForecast(geo, date)
+        .then((forecast) => { globalDone = true; finish(forecast); })
+        .catch(() => { globalDone = true; finish(null); });
+    };
+
+    const fallbackTimer = setTimeout(startGlobal, 250);
+    nwsForecast(geo, date)
+      .then((forecast) => {
+        nwsDone = true;
+        if (!forecast && !globalStarted) {
+          clearTimeout(fallbackTimer);
+          startGlobal();
+        }
+        finish(forecast);
+      })
+      .catch(() => {
+        nwsDone = true;
+        clearTimeout(fallbackTimer);
+        startGlobal();
+        finish(null);
+      });
+  });
+}
+
 const cachedPlannerForecast = createAsyncTtlCache<Awaited<ReturnType<typeof loadPlannerForecast>>>({
-  ttlMs: 180_000,
+  ttlMs: 900_000,
   maxEntries: 128,
 });
 

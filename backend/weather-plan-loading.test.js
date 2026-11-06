@@ -110,6 +110,53 @@ test('simultaneous planner requests share one provider lookup', async () => {
   }
 });
 
+test('a slow official lookup does not hold the planner behind it', async () => {
+  const originalFetch = global.fetch;
+  const selectedDate = date();
+  const times = Array.from({ length: 24 }, (_, hour) => `${selectedDate}T${String(hour).padStart(2, '0')}:00`);
+  global.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('api.weather.gov/points/')) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return reply({}, 503);
+    }
+    if (value.includes('api.open-meteo.com/v1/forecast')) return reply({
+      daily: {
+        time: [selectedDate],
+        weather_code: [1],
+        temperature_2m_max: [68],
+        temperature_2m_min: [49],
+        precipitation_probability_max: [10],
+        wind_speed_10m_max: [6],
+        sunrise: [`${selectedDate}T07:00`],
+        sunset: [`${selectedDate}T17:00`],
+      },
+      hourly: {
+        time: times,
+        temperature_2m: times.map(() => 63),
+        apparent_temperature: times.map(() => 62),
+        precipitation_probability: times.map(() => 10),
+        weather_code: times.map(() => 1),
+        wind_speed_10m: times.map(() => 5),
+        wind_gusts_10m: times.map(() => 8),
+        relative_humidity_2m: times.map(() => 55),
+      },
+    });
+    return reply({}, 503);
+  };
+  try {
+    const started = performance.now();
+    const response = await POST(request(37.954, 'cookout', '198.51.100.23'));
+    const elapsed = performance.now() - started;
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).source, 'open-meteo');
+    assert.ok(elapsed < 375, `fallback should answer before the slow official request; took ${elapsed}ms`);
+    await new Promise((resolve) => setTimeout(resolve, 175));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('failed planner lookups remain retryable', async () => {
   const originalFetch = global.fetch;
   let working = false;
