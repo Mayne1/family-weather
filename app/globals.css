@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 32038)
-Total output lines: 693
-
 @import "tailwindcss";
 
 :root{--ink:#071b25;--blue:#0b4054;--sky:#65c8d7;--sun:#f5c451;--paper:#fffdf7;--muted:#62737a;--line:rgba(7,27,37,.14);--shadow:0 30px 90px rgba(2,24,33,.18);--gold-ring:rgba(245,196,81,.42);--card-glow:0 24px 70px rgba(7,27,37,.12)}
@@ -495,7 +492,65 @@ to{opacity:1;transform:none}
 .invitationKicker{margin:0 0 1rem;color:var(--invitation-accent);font-size:.72rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase}
 .invitationCover h1{max-width:600px;margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2.8rem,8vw,5.5rem);font-weight:500;line-height:.93;letter-spacing:-.055em;text-wrap:balance}
 .invitationNote{max-width:440px;margin:1.25rem auto 1.7rem;font-family:Georgia,"Times New Roman",serif;font-size:1.05rem;font-style:italic;line-height:1.5;opacity:.76}
-.invitationSummary{width:min(100%,560px);display:grid;grid-template-columns:1fr 1fr;border-top…2038 tokens truncated…s:repeat(2,1fr);gap:1rem}
+.invitationSummary{width:min(100%,560px);display:grid;grid-template-columns:1fr 1fr;border-top:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent);border-bottom:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
+.invitationSummary p{margin:0;padding:1rem}.invitationSummary p+ p{border-left:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
+.invitationSummary span,.invitationSummary strong{display:block}.invitationSummary span{margin-bottom:.35rem;color:var(--invitation-accent);font-size:.62rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.invitationSummary strong{font-size:.9rem;line-height:1.45}
+.invitationAction{width:min(100%,560px);margin-top:1.3rem;padding:1rem 1.15rem;border:0;border-radius:999px;display:flex;justify-content:space-between;background:var(--invitation-accent);color:#071b25;font-weight:900;cursor:pointer}
+.invitation-night .invitationAction{color:#171329}.invitation-basic .invitationFrame{min-height:480px}.invitation-basic:before,.invitation-basic:after{display:none}
+.invitation-baby,.invitation-birthday,.invitation-graduation,.invitation-reunion,.invitation-cookout{background-position:center;background-size:cover;background-repeat:no-repeat;box-shadow:0 26px 70px rgba(7,27,37,.2)}
+.invitation-baby{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(255,250,239,.94) 36% 75%,transparent 90%),url('/invitations/baby-shower.webp')}
+.invitation-birthday{background-image:linear-gradient(to bottom,transparent 0 25%,rgba(255,247,230,.94) 37% 76%,transparent 91%),url('/invitations/birthday.webp')}
+.invitation-graduation{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(250,248,239,.94) 36% 75%,transparent 90%),url('/invitations/graduation.webp')}
+.invitation-reunion{background-image:linear-gradient(to bottom,transparent 0 24%,rgba(255,246,226,.94) 37% 76%,transparent 91%),url('/invitations/family-reunion.webp')}
+.invitation-cookout{background-image:linear-gradient(to bottom,transparent 0 23%,rgba(255,249,228,.95) 36% 76%,transparent 91%),url('/invitations/cookout.webp')}
+.invitation-baby:before,.invitation-baby:after,.invitation-birthday:before,.invitation-birthday:after,.invitation-graduation:before,.invitation-graduation:after,.invitation-reunion:before,.invitation-reunion:after,.invitation-cookout:before,.invitation-cookout:after{display:none}
+.invitation-baby .invitationFrame,.invitation-birthday .invitationFrame,.invitation-graduation .invitationFrame,.invitation-reunion .invitationFrame,.invitation-cookout .invitationFrame{min-height:720px;border:0;padding-top:12rem;padding-bottom:7.5rem;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.invitation-baby .invitationMark,.invitation-birthday .invitationMark,.invitation-graduation .invitationMark,.invitation-reunion .invitationMark,.invitation-cookout .invitationMark{width:54px;height:54px;margin-bottom:.65rem;background:rgba(255,255,255,.7);backdrop-filter:blur(5px)}
+.rsvpDetails{margin-top:1rem;padding:clamp(1.2rem,4vw,2.3rem);border-radius:22px;background:var(--paper);animation:rsvpReveal .35s ease both}
+.rsvpDetails h2{margin:.3rem 0 1.2rem;font-size:clamp(2rem,6vw,3.3rem);letter-spacing:-.045em}
+@keyframes rsvpReveal{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.eventFacts{display:grid;gap:.6rem;margin:0 0 1.5rem}
+.eventFacts div{padding:1rem;border-radius:14px;background:#eaf3f1}
+.eventFacts dt{font-size:.62rem;font-weight:800;letter-spacing:.12em;color:#557179}
+.eventFacts dd{margin:.3rem 0 0;line-height:1.45}
+.rsvpForm{display:grid;gap:1rem}
+.rsvpForm fieldset{padding:0;border:0}
+.rsvpForm legend{margin-bottom:.6rem;font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#52656c}
+.rsvpForm fieldset>div{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.rsvpForm fieldset label{padding:.75rem;border:1px solid var(--line);border-radius:12px;background:white}
+.rsvpState{text-align:center;padding:3rem 0}
+.rsvpState>span{display:grid;place-items:center;width:64px;height:64px;margin:auto;border-radius:50%;background:#fff0ce;color:#a66319;font-size:2rem}
+.rsvpState.success>span{background:#dff3e7;color:#237b63}
+.rsvpState p{color:var(--muted)}
+
+@media(max-width:600px){.inviteResults article{grid-template-columns:1fr auto}
+.inviteResults a{display:none}
+.invitationSourceChooser{grid-template-columns:1fr}.customArtworkPicker{grid-template-columns:1fr}.uploadArtworkButton{justify-self:start}
+.designChooser>div{grid-template-columns:1fr 1fr}
+.designChooser button{min-height:68px}.designChooser button>b{flex-basis:38px;width:38px;height:44px}
+.invitationWorkArea{grid-template-columns:1fr}.digitalInvitation.compact{width:min(340px,100%);margin:auto}
+.savedInvitationHeading{flex-direction:column}.savedInvitationHeading>span{align-self:flex-start}
+.guestInvitationActions{align-items:stretch;flex-direction:column}.guestInvitationActions>a{text-align:center}
+.invitation-baby .invitationFrame,.invitation-birthday .invitationFrame,.invitation-graduation .invitationFrame,.invitation-reunion .invitationFrame,.invitation-cookout .invitationFrame{min-height:620px;padding:9rem .8rem 5.5rem}
+.invitation-baby .invitationFrame h1,.invitation-birthday .invitationFrame h1,.invitation-graduation .invitationFrame h1,.invitation-reunion .invitationFrame h1,.invitation-cookout .invitationFrame h1{font-size:clamp(2.25rem,13vw,4.2rem)}
+.shareLinkOption{align-items:flex-start;flex-direction:column}.shareLinkOption button{width:100%}
+.invitationFrame{min-height:500px;padding:2.5rem 1rem}
+.invitationSummary{grid-template-columns:1fr}.invitationSummary p+ p{border-left:0;border-top:1px solid color-mix(in srgb,var(--invitation-accent) 42%,transparent)}
+.rsvpForm fieldset>div{grid-template-columns:1fr}
+}
+
+.eventsPage{position:relative;isolation:isolate;min-height:100vh;padding:0 max(4vw,calc((100vw - 1160px)/2)) 6rem;background:linear-gradient(180deg,transparent 0 290px,var(--paper) 290px)}
+.eventsPage:before{content:"";position:absolute;z-index:-1;inset:0 0 auto;height:310px;background:radial-gradient(circle at 78% 18%,rgba(245,196,81,.2),transparent 22%),radial-gradient(circle at 18% 115%,rgba(101,200,215,.26),transparent 34%),linear-gradient(118deg,#071b25 0%,#0b4054 58%,#276f7d 100%)}
+.eventsPage:after{content:"";position:absolute;z-index:-1;left:0;right:0;top:274px;height:36px;background:linear-gradient(176deg,transparent 0 48%,var(--paper) 50%)}
+.eventsHeader{height:100px;display:flex;align-items:center;justify-content:space-between}
+.eventsHeaderActions{display:flex;align-items:center;gap:.65rem}.homeButton{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1rem;border:1px solid rgba(255,255,255,.38);border-radius:14px;background:rgba(255,255,255,.1);color:white;font-weight:900;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.16);backdrop-filter:blur(10px)}
+.eventsBrand{display:flex;align-items:center;gap:.7rem;color:white;font-weight:900;text-decoration:none}.eventsBrand .brandMark{width:40px;height:40px}.eventsBrand>span:last-child{display:grid}.eventsBrand small{margin-top:.2rem;color:rgba(255,255,255,.58);font-size:.58rem;font-weight:600}.eventsBrand svg,.homeButton svg,.newEventButton svg,.backToEvents svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.newEventButton{display:inline-flex;align-items:center;gap:.5rem;padding:.78rem 1.05rem;border:1px solid rgba(130,86,8,.2);border-radius:14px;background:linear-gradient(135deg,#ffe088,var(--sun) 52%,#e9b13d);color:var(--ink);font-weight:900;text-decoration:none;box-shadow:0 10px 28px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.65)}
+.homeButton:hover,.newEventButton:hover{transform:translateY(-2px)}.homeButton:hover{border-color:var(--sun);background:rgba(255,255,255,.18)}.newEventButton:hover{box-shadow:0 15px 34px rgba(0,0,0,.23),inset 0 1px 0 rgba(255,255,255,.7)}
+.eventsIntro{padding:3.5rem 0 4.5rem;color:white}
+.eventsIntro h1{margin:0;font-size:clamp(3.5rem,7vw,6.5rem);line-height:.9;letter-spacing:-.06em}
+.eventsIntro>p:last-child{max-width:580px;color:rgba(255,255,255,.72);line-height:1.6}
+.eventsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
 .eventCard{display:grid;grid-template-columns:auto 1fr;gap:1.2rem;padding:1.4rem;border:1px solid var(--line);border-radius:20px;background:white;box-shadow:0 16px 50px rgba(7,27,37,.06)}
 .eventCard{position:relative;overflow:hidden;display:block;padding:0}.eventCard:before{content:"";position:absolute;z-index:1;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--sun),var(--sky) 65%,transparent)}.eventCardLink{display:grid;grid-template-columns:auto 1fr;gap:1.2rem;padding:1.55rem 1.4rem 1.4rem;color:inherit;text-decoration:none}.eventTrash{position:absolute;right:.8rem;top:.8rem;width:36px;height:36px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:white;color:#9b3c28;font-size:1rem;cursor:pointer;z-index:2}.eventTrash:hover{border-color:#c85d42;background:#ffe7df}.eventTrash:disabled{opacity:.55;cursor:wait}.eventsPageError{margin:-2.8rem 0 1rem;padding:.8rem 1rem;border-radius:12px;background:#ffe7df;color:#8f3e2b;font-weight:700}
 .eventDate{width:72px;height:82px;display:grid;place-content:center;text-align:center;border-radius:15px;background:#eaf3f1}
