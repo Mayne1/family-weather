@@ -27,7 +27,7 @@ test('every added announcement design survives saving and public retrieval',asyn
  const db=newDb();db.public.none(fs.readFileSync(__dirname+'/announcements.sql','utf8'));const {Pool}=db.adapters.createPg();const pool=new Pool();
  const app=express();app.use(express.json());app.use(router(pool,(req,res,next)=>{req.uid='owner';next()}));
  try{
-  for(const theme of ['blush','rainbow','autumn','golden','coastal','meadow']){
+  for(const theme of ['blush','rainbow','autumn','golden','coastal','meadow','memorial','family','graduation','newbaby','important','holiday']){
    const saved=await request(app).post('/announcements').send({title:'A little love',message:'Thinking of you 💛',theme});
    assert.equal(saved.status,200,theme);
    const publicPage=await request(app).get('/announcements/'+saved.body.id);

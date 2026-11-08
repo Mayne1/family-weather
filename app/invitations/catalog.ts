@@ -22,6 +22,9 @@ export const invitationDesigns = [
   { id: "birthday-essential-balloon-sky", category: "Birthday", name: "Balloon Sky", note: "Essential · bright full-bleed celebration", artwork: "/invitations/curated/birthday-essential-balloon-sky.webp", mark: "E", curated: true, tier: "Essential" },
   { id: "birthday-signature-storybook-safari", category: "Birthday", name: "Storybook Safari", note: "Signature · hand-painted animal celebration", artwork: "/invitations/curated/birthday-signature-storybook-safari.webp", mark: "S", curated: true, tier: "Signature" },
   { id: "birthday-showpiece-midnight-gold", category: "Birthday", name: "Midnight Gold", note: "Showpiece · cinematic evening glamour", artwork: "/invitations/curated/birthday-showpiece-midnight-gold.webp", mark: "★", curated: true, tier: "Showpiece" },
+  { id: "memorial-white-garden", category: "Memorial", name: "In Loving Memory", note: "Quiet white florals for a memorial service", artwork: "/invitations/designs/wedding-white-garden.webp", mark: "M1", featured: true },
+  { id: "memorial-quiet-garden", category: "Memorial", name: "A Life Remembered", note: "A calm garden setting for remembrance", artwork: "/invitations/designs/outdoor-garden.webp", mark: "M2", featured: true },
+  { id: "memorial-ink-gold", category: "Memorial", name: "Celebration of Life", note: "Simple ink and gold for a dignified gathering", artwork: "/invitations/designs/wedding-ink-marble.webp", mark: "M3", featured: true },
   {
     id: "wedding-editorial",
     category: "Wedding",
@@ -221,6 +224,7 @@ export function getInvitationDesign(value?: string | null) {
 export type InvitationCategory = (typeof invitationDesigns)[number]["category"];
 
 const activityCategories: Array<{ category: InvitationCategory; terms: string[] }> = [
+  { category: "Memorial", terms: ["funeral", "memorial", "celebration of life", "homegoing", "home going", "remembrance", "wake", "repast", "visitation", "burial", "in loving memory"] },
   { category: "Family reunion", terms: ["family reunion", "class reunion", "reunion", "family gathering"] },
   { category: "Baby shower", terms: ["baby shower", "baby sprinkle", "gender reveal", "new baby", "little one", "expecting"] },
   { category: "Graduation", terms: ["graduation", "graduate", "commencement", "class of", "diploma"] },

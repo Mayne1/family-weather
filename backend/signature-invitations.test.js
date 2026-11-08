@@ -10,15 +10,16 @@ for (const ext of [".ts", ".tsx"]) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
   }).outputText, filename);
 }
-const { invitationDesigns, featuredInvitationDesigns, archivedInvitationDesigns, getInvitationDesign } = require("../app/invitations/catalog.ts");
+const { invitationDesigns, featuredInvitationDesigns, archivedInvitationDesigns, getInvitationDesign, invitationCategoryForActivity } = require("../app/invitations/catalog.ts");
 const Card = require("../app/invitations/SignatureInvitation.tsx").default;
-test("20 new designs lead the chooser; every older design remains available", () => {
-  for (const activity of ["birthday", "wedding", "movie night", "other"]) {
+test("featured designs lead the chooser; every older design remains available", () => {
+  for (const activity of ["birthday", "wedding", "movie night", "memorial service", "other"]) {
     const featured = featuredInvitationDesigns(activity);
-    assert.equal(featured.length, 20);
-    assert.ok(featured.every(d => d.id.startsWith("signature-")));
+    assert.equal(featured.length, 23);
     assert.equal(new Set([...featured, ...archivedInvitationDesigns(activity)].map(d => d.id)).size, invitationDesigns.length);
   }
+  assert.equal(invitationCategoryForActivity("celebration of life"), "Memorial");
+  assert.ok(featuredInvitationDesigns("funeral")[0].id.startsWith("memorial-"));
   assert.equal(getInvitationDesign("outdoor-movie").id, "outdoor-movie");
   for (const design of featuredInvitationDesigns()) assert.ok(fs.existsSync(path.join(__dirname, "../public", design.artwork)));
 });
