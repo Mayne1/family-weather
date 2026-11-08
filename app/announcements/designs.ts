@@ -9,4 +9,10 @@ export const announcementDesigns = [
  { id: 'golden', label: 'Celebration · Golden celebration', seal: '✦' },
  { id: 'coastal', label: 'Everyday · Coastal calm', seal: '≈' },
  { id: 'meadow', label: 'Everyday · Meadow hello', seal: '❀' },
+ { id: 'memorial', label: 'Memorial · In loving memory', seal: '❦' },
+ { id: 'family', label: 'Family · Family update', seal: '♡' },
+ { id: 'graduation', label: 'Milestone · Graduation news', seal: '★' },
+ { id: 'newbaby', label: 'New arrival · Welcome, little one', seal: '☾' },
+ { id: 'important', label: 'Important · Please read', seal: '!' },
+ { id: 'holiday', label: 'Holiday · Seasonal gathering', seal: '✦' },
 ] as const;
