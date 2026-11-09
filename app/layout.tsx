@@ -4,9 +4,9 @@ import AdvertisingBoundary from "./components/AdvertisingBoundary";
 import AdSenseLoader from "./components/AdSenseLoader";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://thefamilyweather.com").replace(/\/+$/, "");
-const title = "Activity Weather Planner, History & Invitations | Family Weather";
+const title = "Free Invitations, RSVPs & Weather Event Planning | Family Weather";
 const description =
-  "Apply live forecasts or five-year same-date weather history to yard work, dining, travel, family plans and events—then create invitations when people need to join.";
+  "Plan events with free digital invitations, shareable links, announcements and RSVP tracking. Check live forecasts, useful weather windows and five-year weather history.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -17,6 +17,11 @@ const structuredData = {
       name: "Family Weather",
       url: siteUrl,
       email: "contact@thefamilyweather.com",
+      slogan: "Plan more. Worry less.",
+      sameAs: [
+        "https://www.instagram.com/thefamilyweather/",
+        "https://www.youtube.com/@TheFamilyWeather",
+      ],
     },
     {
       "@type": "WebSite",
@@ -35,11 +40,12 @@ const structuredData = {
       operatingSystem: "Any",
       description,
       featureList: [
-        "Weather-aware event planning",
-        "Live forecasts and current conditions",
-        "Five-year historical weather patterns",
-        "Digital invitations",
-        "RSVP management",
+        "Free weather checks for outdoor activities and events",
+        "Live forecasts and useful weather time windows",
+        "Five-year same-date historical weather comparisons",
+        "Free digital invitations and shareable invitation links",
+        "Event announcements and RSVP tracking",
+        "Optional event presentation upgrades",
       ],
       provider: { "@id": `${siteUrl}/#organization` },
     },
@@ -49,6 +55,15 @@ const structuredData = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "Family Weather",
+  keywords: [
+    "weather-aware event planning",
+    "free event invitations",
+    "digital invitation links",
+    "RSVP tracking",
+    "weather planning",
+    "outdoor activity planner",
+    "five-year weather history",
+  ],
   title,
   description,
   alternates: { canonical: "/" },
