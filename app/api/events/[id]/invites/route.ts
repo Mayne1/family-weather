@@ -39,7 +39,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ ok: false, error: "Your sign-in expired. Please sign in again." }, { status: 401 });
     }
 
-    const eventResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}`), { cache: "no-store" });
+    const eventResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/zoned`), { headers: { Authorization: authorization }, cache: "no-store" });
     const eventData = await eventResponse.json();
     if (!eventResponse.ok || !eventData.ok) {
       return NextResponse.json(eventData, { status: eventResponse.status });
@@ -125,6 +125,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
             recipientEmail,
             eventTitle: String(eventData.event?.title || "Family event"),
             startsAt: eventData.event?.starts_at,
+            timeZone: eventData.event?.time_zone,
             location: eventData.event?.location,
             headline: savedInvitation?.headline,
             message: savedInvitation?.message,

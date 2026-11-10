@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - codex/reply-notifications
+      - codex/complete-brand-timezones-20261110
     paths:
       - "mobile/**"
       - "mobile-shell/**"

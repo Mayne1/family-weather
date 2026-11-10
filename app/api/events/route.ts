@@ -1,24 +1,12 @@
+import { zonedLocalToISO } from "../../../backend/event-time";
 import { NextRequest, NextResponse } from "next/server";
-import { backendUrl, firebaseApiKey } from "../../lib/serverConfig";
-
-async function signedInEmail(request: NextRequest) {
-  const authorization = request.headers.get("authorization") || "";
-  if (!authorization.startsWith("Bearer ")) return "";
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey()}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken: authorization.slice(7) }),
-    cache: "no-store",
-  });
-  const data = await response.json();
-  return response.ok ? String(data?.users?.[0]?.email || "") : "";
-}
+import { backendUrl } from "../../lib/serverConfig";
 
 export async function GET(request: NextRequest) {
   try {
-    const email = await signedInEmail(request);
-    if (!email) return NextResponse.json({ ok: false, error: "Sign in to see your events." }, { status: 401 });
-    const response = await fetch(backendUrl(`/events?owner_email=${encodeURIComponent(email)}&limit=100`), { cache: "no-store" });
+    const authorization = request.headers.get("authorization") || "";
+    if (!authorization.startsWith("Bearer ")) return NextResponse.json({ ok: false, error: "Sign in to see your events." }, { status: 401 });
+    const response = await fetch(backendUrl("/events/zoned"), { headers: { Authorization: authorization }, cache: "no-store" });
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
@@ -35,7 +23,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const response = await fetch(backendUrl("/events"), {
+    const zoned = body.starts_local !== undefined || body.time_zone !== undefined;
+    if (zoned) {
+      try {
+        zonedLocalToISO(body.starts_local, body.time_zone);
+        if (!Number.isInteger(body.duration_minutes) || body.duration_minutes < 1 || body.duration_minutes > 10080) throw new Error("Choose a duration between one minute and seven days.");
+      } catch (error) {
+        return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Invalid destination date and time." }, { status: 400 });
+      }
+    }
+    // Zoned creation is atomic in the backend; never fall back to legacy creation.
+    const response = await fetch(backendUrl(zoned ? "/events/zoned" : "/events"), {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authorization },
       body: JSON.stringify(body),

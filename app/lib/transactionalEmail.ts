@@ -1,4 +1,5 @@
 import "server-only";
+import { eventTimeOptions } from "./eventTime";
 
 const BREVO_TRANSACTIONAL_EMAIL_URL = "https://api.brevo.com/v3/smtp/email";
 const SENDER = {
@@ -10,6 +11,7 @@ type TransactionalInvitation = {
   recipientEmail: string;
   eventTitle: string;
   startsAt?: string | null;
+  timeZone?: string | null;
   location?: string | null;
   headline?: string | null;
   message?: string | null;
@@ -30,11 +32,11 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-function formatEventDate(startsAt?: string | null) {
+function formatEventDate(startsAt?: string | null, timeZone?: string | null) {
   if (!startsAt) return "Date and time to be announced";
   const value = new Date(startsAt);
   if (Number.isNaN(value.getTime())) return "Date and time to be announced";
-  return value.toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
+  return value.toLocaleString("en-US", { ...eventTimeOptions(timeZone), dateStyle: "full", timeStyle: "long" });
 }
 
 export async function sendTransactionalInvitationEmail(
@@ -47,7 +49,7 @@ export async function sendTransactionalInvitationEmail(
 
   const eventTitle = invitation.eventTitle.trim() || "Family event";
   const headline = invitation.headline?.trim() || "You’re invited";
-  const when = formatEventDate(invitation.startsAt);
+  const when = formatEventDate(invitation.startsAt, invitation.timeZone);
   const location = invitation.location?.trim() || "Location to be announced";
   const message = invitation.message?.trim() || "";
   const invitationUrl = invitation.invitationUrl;

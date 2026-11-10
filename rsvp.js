@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const info = await loadInvite(token);
       const title = info?.event?.title || "Event";
       const loc = info?.event?.location ? ` • ${info.event.location}` : "";
-      const when = info?.event?.starts_at ? ` • ${new Date(info.event.starts_at).toLocaleString()}` : "";
+      const when = info?.event?.starts_at ? ` • ${new Date(info.event.starts_at).toLocaleString("en-US", info.event.time_zone ? { timeZone: info.event.time_zone, timeZoneName: "short" } : undefined)}` : "";
       $("eventLine").textContent = `${title}${when}${loc}`;
     } catch {
       $("eventLine").textContent = "You’re invited. Fill this out to RSVP.";

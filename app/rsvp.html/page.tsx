@@ -1,5 +1,7 @@
 "use client";
 
+import { formatEventDateTime } from "../lib/eventTime";
+
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
@@ -8,7 +10,7 @@ type InviteData = {
   valid: boolean;
   accepted: boolean;
   invite: { status: string };
-  event: { title: string; description: string; location: string; starts_at: string; ends_at: string };
+  event: { title: string; description: string; location: string; starts_at: string; time_zone?: string | null; ends_at: string };
   invitation?: { design_id?: string } | null;
   presentation?: "promoted" | "clean" | "unbranded" | "legacy";
 };
@@ -92,9 +94,7 @@ export default function RsvpPage() {
   };
 
   const theme = invitationThemes[design];
-  const when = data?.event?.starts_at
-    ? new Date(data.event.starts_at).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" })
-    : "Date and time to be announced";
+  const when = formatEventDateTime(data?.event?.starts_at, data?.event?.time_zone);
 
   return (
     <main className={`rsvpPage rsvpTheme-${design}`}>
