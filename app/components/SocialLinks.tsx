@@ -1,6 +1,7 @@
 const socialProfiles = [
   {
     name: "Instagram",
+    network: "instagram",
     href: "https://www.instagram.com/thefamilyweather/",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -12,6 +13,7 @@ const socialProfiles = [
   },
   {
     name: "Facebook",
+    network: "facebook",
     href: "https://www.facebook.com/profile.php?id=1396088403592189",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -21,6 +23,7 @@ const socialProfiles = [
   },
   {
     name: "YouTube",
+    network: "youtube",
     href: "https://www.youtube.com/channel/UC8krcGNf0KCpuscJVghtVBQ",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -34,8 +37,8 @@ const socialProfiles = [
 export default function SocialLinks() {
   return (
     <nav className="footerSocialLinks" aria-label="Family Weather on social media">
-      {socialProfiles.map(({ name, href, icon }) => (
-        <a key={name} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Family Weather on ${name}`}>
+      {socialProfiles.map(({ name, network, href, icon }) => (
+        <a className={`socialLink socialLink-${network}`} key={name} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Family Weather on ${name}`}>
           {icon}
           <span>{name}</span>
         </a>
