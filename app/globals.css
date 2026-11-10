@@ -676,6 +676,10 @@ to{opacity:1;transform:none}
 @media(max-width:700px){.publicHero:before{opacity:.55}.publicHeaderHome{margin-left:auto}.tourLauncher{right:.75rem;bottom:.75rem}.tourLauncher strong{display:none}.tourLauncher{padding:.48rem}.weatherUseGuide,.historyMethod,.answerAnatomy{padding:3.5rem 1rem}.weatherUseGuide>div:first-child,.historyMethod>div:first-child,.answerAnatomy>div:first-child{grid-template-columns:1fr;gap:.6rem}.weatherUseGrid,.historyMethodGrid,.answerAnatomyGrid{grid-template-columns:1fr}.todayDayFacts,.historyQuestionGrid{grid-template-columns:1fr}.todayDayHeading>.weatherGlyph{width:64px;height:64px}.todayForecast a{padding:.85rem}.homeHow{padding-left:1rem;padding-right:1rem}}
 @media(prefers-reduced-motion:reduce){.weatherGlyphRain,.weatherGlyphSun,.publicHero:before,.tourLauncher{animation:none!important}}
 
+/* Keep the compact navigation out of the desktop header even if a browser's
+   native details styling is more specific than expected. */
+@media(min-width:1101px){.publicHeaderMobile{display:none!important}}
+
 /* Invitation type scales with its card, not the browser window. */
 .digitalInvitation:not(.customInvitationArtwork){container-type:inline-size;display:flex;align-items:center;min-height:0;height:auto}
 .digitalInvitation .digitalInvitationContent{width:70%;min-height:0;margin:10% auto;padding:5%;box-sizing:border-box;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
