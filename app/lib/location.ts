@@ -1,5 +1,5 @@
 import { backendUrl } from "./serverConfig";
-import { dedupeLocationCandidates } from "./locationDedupe";
+import { dedupeLocationCandidates, nominatimFeatureType, openMeteoLocationContext } from "./locationDedupe";
 export { dedupeLocationCandidates } from "./locationDedupe";
 
 export type LocationCandidate = {
@@ -26,6 +26,7 @@ type NominatimResult = {
   name?: string;
   display_name?: string;
   type?: string;
+  addresstype?: string;
   importance?: number;
   address?: Record<string, string | undefined>;
   namedetails?: Record<string, string | undefined>;
@@ -114,7 +115,10 @@ function fromNominatim(input: string, result: NominatimResult): LocationCandidat
     admin1,
     locality,
     postalCode: clean(address.postcode),
-    type: clean(result.type || "place"),
+    // Nominatim's broad `type` can be "administrative" even when the
+    // result's actual address feature is a city. Preserve the more specific
+    // feature category so the UI and deduper do not guess from the provider.
+    type: nominatimFeatureType(result),
     provider: "openstreetmap",
     score: Number(result.importance) || 0,
   };
@@ -126,20 +130,23 @@ function fromOpenMeteo(input: string, result: OpenMeteoResult): LocationCandidat
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   const name = clean(result.name);
   const admin1 = clean(result.admin1 || result.admin2);
+  const admin2 = clean(result.admin2);
   const country = clean(result.country);
+  const featureCode = clean(result.feature_code || "place");
+  const context = openMeteoLocationContext({ name, admin2, admin1, country, featureCode });
   return {
     id: `geonames-${result.id || `${lat}-${lon}`}`,
     input,
     name,
-    label: [name, admin1, country].filter(Boolean).join(", ") || input,
+    label: context.label || input,
     lat,
     lon,
     countryCode: clean(result.country_code).toUpperCase(),
     country,
     admin1,
-    locality: name,
+    locality: context.locality,
     postalCode: clean(result.postcodes?.[0]),
-    type: clean(result.feature_code || "place"),
+    type: featureCode,
     provider: "open-meteo",
     score: Math.min(0.8, 0.15 + Math.log10(Math.max(1, Number(result.population) || 1)) / 10),
   };
