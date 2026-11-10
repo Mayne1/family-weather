@@ -1,5 +1,12 @@
 # Family Weather backend additions
 
+> **Brand/timezone release deployment warning:** Follow the narrow, backend-first
+> [brand/timezone rollout runbook](../DEPLOY-BRAND-TIMEZONES.md). Do not run the
+> broad `install-on-vps.sh` installer for this release: it also replaces unrelated
+> invitation routes and can overwrite existing notification integrations. The
+> older installation instructions below are background, not this release's
+> production procedure.
+
 This folder contains deliberately small backend additions for durable digital invitations and normalized event coordinates.
 
 - `event-invitations.sql` adds one invitation record per event. Existing events, invite tokens, and RSVP responses remain unchanged.

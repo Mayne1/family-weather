@@ -198,7 +198,7 @@ From the verified staged release (not the live build directory):
 npm ci
 npm test
 npx tsc --noEmit
-npx next build --webpack
+npm run build
 npm run mobile:build
 ```
 
