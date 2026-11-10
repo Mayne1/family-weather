@@ -12,12 +12,14 @@ module.exports = function makeEventTimezonesRouter(pool, requireFirebaseUser) {
   const router = express.Router();
   router.post('/events/zoned', requireFirebaseUser, async (req,res) => {
     const body = req.body || {};
+    const ownerEmail = typeof req.firebaseUser?.email === 'string' ? req.firebaseUser.email.trim() : '';
+    if (!ownerEmail) return res.status(400).json({ok:false,error:'account_email_required',message:'Sign in with an account that has an email address before creating an event.'});
     if (!String(body.title || '').trim()) return res.status(400).json({ ok:false,error:'missing_fields',need:['title'] });
     let time;
     try { time = times(body); } catch (error) { return res.status(400).json({ok:false,error:error.message}); }
     try {
       const result = await pool.query(`INSERT INTO events (owner_uid, owner_email, title, description, location, starts_at, ends_at, time_zone) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${fields}`,
-        [req.uid, req.firebaseUser?.email ? String(req.firebaseUser.email) : null, body.title, body.description ?? null, body.location ?? null, time.starts_at, time.ends_at, body.time_zone]);
+        [req.uid, ownerEmail, body.title, body.description ?? null, body.location ?? null, time.starts_at, time.ends_at, body.time_zone]);
       return res.json({ok:true,event:result.rows[0]});
     } catch (error) { console.error('zoned_event_create_failed',error); return res.status(500).json({ok:false,error:'event_create_failed'}); }
   });
