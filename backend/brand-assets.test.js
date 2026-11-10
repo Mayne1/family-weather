@@ -33,6 +33,7 @@ test('ICO contains four valid PNG image entries', () => {
   for (let i=0;i<4;i++) {
     const offset=ico.readUInt32LE(6+i*16+12), length=ico.readUInt32LE(6+i*16+8);
     assert.ok(offset+length<=ico.length); assert.equal(ico.subarray(offset+1,offset+4).toString(),'PNG');
+    assert.equal(ico[offset+25],6,'ICO PNG color type must be RGBA for Turbopack');
   }
 });
 test('all native launch screens preserve dimensions and contain the canonical center artwork', async () => {

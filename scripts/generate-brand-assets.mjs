@@ -11,7 +11,8 @@ await writeFile('ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.p
 await writeFile('app/icon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><title>Family Weather</title><image width="1024" height="1024" href="data:image/jpeg;base64,${input.toString('base64')}"/></svg>\n`);
 // ICO supports embedded PNG images, including a 256px image for high-density displays.
 const sizes = [16, 32, 48, 256];
-const images = await Promise.all(sizes.map(png));
+// Turbopack's ICO decoder requires embedded PNG entries to use RGBA.
+const images = await Promise.all(sizes.map(size => sharp(input).resize(size, size).ensureAlpha().png().toBuffer()));
 const header = Buffer.alloc(6 + sizes.length * 16);
 header.writeUInt16LE(1, 2); header.writeUInt16LE(sizes.length, 4);
 let offset = header.length;
