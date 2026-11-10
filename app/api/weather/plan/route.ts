@@ -76,7 +76,7 @@ type ForecastDay = {
   shortForecast?: string;
 };
 
-function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null, space: Space = "outdoor") {
+export function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null, space: Space = "outdoor") {
   if (historical) {
     const fit = historicalActivityFit(decision.activity.requested, space, historical.years);
     return {
@@ -88,6 +88,19 @@ function recommendationFromDecision(decision: DecisionResult, historical?: Alman
         { tone: historical.averageHighF >= 90 ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
         { tone: historical.averageWindMph > 12 ? "warn" : "good", title: "Typical peak wind", copy: `Matching dates averaged about ${historical.averageWindMph} mph for peak wind.` },
         { tone: "warn", title: "No hourly promise", copy: "Use a live forecast closer to the date before choosing a time." },
+      ],
+    };
+  }
+
+  if (decision.status === "insufficient-data" || decision.safety?.kind === "insufficient") {
+    const detail = decision.safety?.detail || decision.summary || "There is not enough hourly forecast data to make a responsible weather recommendation.";
+    return {
+      score: null,
+      bestWindow: "Weather data incomplete",
+      summary: detail,
+      advice: [
+        { tone: "warn", title: "Weather data incomplete", copy: detail },
+        { tone: "good", title: "What to do next", copy: "Try again later, choose another date, or create the event without treating this as a bad-weather verdict." },
       ],
     };
   }

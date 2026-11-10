@@ -32,7 +32,7 @@ export function PublicHeader() {
       <details className="publicHeaderMobile">
         <summary>Menu</summary>
         <div>
-          <Link href="/today">Today</Link><Link href="/plan">Plan an activity</Link><a href="/events">My events</a><a href="/announcements">Announcements</a><Link href="/weather-history">Weather history</Link><Link href="/live">Live desk</Link><Link href="/how-it-works">How it works</Link><Link href="/weather-stories">Stories</Link>
+          <a className="publicHeaderMobileCta" href="/create-event">Create event</a><Link href="/today">Today</Link><Link href="/plan">Plan an activity</Link><a href="/events">My events</a><a href="/announcements">Announcements</a><Link href="/weather-history">Weather history</Link><Link href="/live">Live desk</Link><Link href="/how-it-works">How it works</Link><Link href="/weather-stories">Stories</Link>
         </div>
       </details>
       <HomeAccount />

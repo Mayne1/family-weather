@@ -15,7 +15,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } },
 ).outputText, file);
 const { NextRequest } = require('next/server');
-const { POST } = require('../app/api/weather/plan/route.ts');
+const { POST, recommendationFromDecision } = require('../app/api/weather/plan/route.ts');
 Module._load = originalLoad;
 
 const date = () => new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -172,4 +172,20 @@ test('failed planner lookups remain retryable', async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('missing hourly data is reported as incomplete instead of bad weather', () => {
+  const detail = 'Hourly forecast detail is unavailable for the selected date.';
+  const recommendation = recommendationFromDecision({
+    status: 'insufficient-data',
+    activity: { requested: 'family cookout' },
+    summary: detail,
+    safety: { kind: 'insufficient', title: 'Weather data incomplete', detail },
+  });
+
+  assert.equal(recommendation.score, null);
+  assert.equal(recommendation.bestWindow, 'Weather data incomplete');
+  assert.match(recommendation.summary, /unavailable/i);
+  assert.doesNotMatch(recommendation.bestWindow, /another day|cancel|avoid/i);
+  assert.match(recommendation.advice[1].copy, /without treating this as a bad-weather verdict/i);
 });
