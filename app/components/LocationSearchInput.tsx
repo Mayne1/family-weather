@@ -15,6 +15,19 @@ type Props = {
   onSelect: (candidate: LocationCandidate) => void;
 };
 
+function choiceContext(candidate: LocationCandidate) {
+  const parts = [candidate.locality, candidate.admin1, candidate.postalCode, candidate.country]
+    .filter(Boolean)
+    .filter((part, index, values) => values.findIndex((value) => value.toLowerCase() === part.toLowerCase()) === index)
+    .filter((part) => part.toLowerCase() !== candidate.name.toLowerCase());
+  return parts.join(" · ") || candidate.label;
+}
+
+function choiceKind(candidate: LocationCandidate) {
+  if (candidate.provider === "open-meteo" || /^(city|town|village|municipality|administrative|ppl)/i.test(candidate.type)) return "City or town";
+  return candidate.type.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function LocationSearchInput({ id, name, value, required, placeholder, className = "", forcedSuggestions = [], onChange, onSelect }: Props) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<LocationCandidate[]>([]);
@@ -78,7 +91,8 @@ export default function LocationSearchInput({ id, name, value, required, placeho
           {choices.map((candidate) => (
             <button type="button" role="option" aria-selected="false" key={candidate.id} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(candidate)}>
               <strong>{candidate.name}</strong>
-              <span>{candidate.label}</span>
+              <span>{choiceContext(candidate)}</span>
+              <small className="locationChoiceKind">{choiceKind(candidate)}</small>
             </button>
           ))}
           <small>Location search data © OpenStreetMap contributors</small>

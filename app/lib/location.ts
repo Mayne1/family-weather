@@ -1,4 +1,6 @@
 import { backendUrl } from "./serverConfig";
+import { dedupeLocationCandidates } from "./locationDedupe";
+export { dedupeLocationCandidates } from "./locationDedupe";
 
 export type LocationCandidate = {
   id: string;
@@ -225,19 +227,6 @@ async function openMeteoCandidates(input: string, limit: number) {
   }
 }
 
-function dedupe(candidates: LocationCandidate[], limit: number) {
-  const seen = new Set<string>();
-  return candidates
-    .sort((a, b) => b.score - a.score)
-    .filter((candidate) => {
-      const key = `${normalized(candidate.name)}:${candidate.lat.toFixed(3)}:${candidate.lon.toFixed(3)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit);
-}
-
 export async function searchLocations(rawInput: string, limit = 6) {
   const input = clean(rawInput).slice(0, 240);
   if (input.length < 2) return [];
@@ -253,7 +242,7 @@ export async function searchLocations(rawInput: string, limit = 6) {
     nominatimCandidates(input, Math.max(limit, 6)),
     openMeteoCandidates(input, Math.max(limit, 6)),
   ]);
-  return dedupe([...curated, ...osm, ...cities], limit);
+  return dedupeLocationCandidates([...curated, ...osm, ...cities], limit);
 }
 
 export function isValidLocationCandidate(value: unknown): value is LocationCandidate {
