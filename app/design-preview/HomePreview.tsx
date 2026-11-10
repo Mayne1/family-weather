@@ -7,12 +7,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import RightNowStrip from "../components/RightNowStrip";
-import HomeAccount from "../components/HomeAccount";
 import LocationSearchInput from "../components/LocationSearchInput";
 import WeatherWatch from "../components/weather-media/WeatherWatch";
 import type { Landmark } from "../lib/landmark";
 import styles from "./preview.module.css";
-import { PublicFooter } from "../components/PublicChrome";
+import { PublicFooter, PublicHeader } from "../components/PublicChrome";
 
 type WeatherDay = { date:string; weather_code:number; temp_max_f:number|null; temp_min_f:number; precip_prob_pct:number; wind_max_mph:number; shortForecast?:string };
 type Snapshot = { timezone?:string;lat?:number;lon?:number;label?:string; current?:{temp_f:number;feels_like_f?:number;wind_mph:number|null;humidity_pct?:number|null;humidity_estimated?:boolean;weather_code:number}|null; days?:WeatherDay[]; air_quality?:{us_aqi:number;category:string;updated_at:string}|null };
@@ -121,7 +120,7 @@ export default function HomePreview(){
  const today=localWeatherDate(weather?.timezone);
 
  return <div className={styles.page}>
-  <header className={styles.header}><Link className={styles.brand} href="/"><span className={styles.brandOrb}><Icon name="sun"/></span><span><strong>Family</strong> Weather<small>PLAN THE DAY. SHARE THE OUTLOOK.</small></span></Link><nav><Link href="/today">Today</Link><Link href="/plan">Plan an activity</Link><Link href="/events">My events</Link><a href="/announcements">Announcements</a><details className={styles.moreNav}><summary>Explore</summary><div><Link href="/weather-history">Weather history</Link><Link href="/live">Live desk</Link><Link href="/how-it-works">How it works</Link><Link href="/weather-stories">Stories</Link></div></details></nav><HomeAccount/></header>
+  <PublicHeader />
   <RightNowStrip snapshot={weather} onLocate={useCurrentLocation}/>
   <main>
    <section className={styles.frontPage}>
