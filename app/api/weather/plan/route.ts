@@ -331,6 +331,25 @@ export async function POST(request: NextRequest) {
     const activity = String(body.activity || "event");
     const space: Space = ["indoor", "outdoor", "both"].includes(body.space) ? body.space : "outdoor";
 
+    // Rendered QA fixture only. This branch is never merged or deployed to production.
+    if (activity === "__QA_INSUFFICIENT__") return NextResponse.json({
+      ok: true,
+      source: "nws",
+      location,
+      resolvedLocation: body.resolvedLocation || { id: "qa", input: location, name: location, label: location, lat: 37.95, lon: -121.29, countryCode: "US", country: "United States", admin1: "California", locality: "Stockton", postalCode: "", type: "city", provider: "family-weather", score: 1 },
+      day: { date, weather_code: 802, temp_max_f: 72, temp_min_f: 51, precip_prob_pct: null, wind_max_mph: 0 },
+      almanac: null,
+      rainTiming: null,
+      rainSummary: null,
+      space,
+      activity: "Family cookout",
+      decision: { status: "insufficient-data", bestWindow: null, safety: { kind: "insufficient", title: "Weather data incomplete", detail: "Hourly forecast detail is unavailable for the selected date." } },
+      score: null,
+      bestWindow: "Weather data incomplete",
+      summary: "Hourly forecast detail is unavailable for the selected date.",
+      advice: [{ tone: "warn", title: "Weather data incomplete", copy: "Hourly forecast detail is unavailable for the selected date." }, { tone: "good", title: "What to do next", copy: "Try again later, choose another date, or create the event without treating this as a bad-weather verdict." }],
+    });
+
     const geo = await resolveLocation(location, body.resolvedLocation);
     const forecastResult = await forecastForDate(date, () => cachedPlannerForecast(
       `${geo.countryCode}:${geo.lat.toFixed(4)}:${geo.lon.toFixed(4)}:${date}`,
