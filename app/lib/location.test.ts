@@ -44,10 +44,26 @@ test("location choices keep nearby same-named places when their types are unrela
   assert.deepEqual(choices.map((choice) => choice.id), ["town", "park"]);
 });
 
-test("location choices still collapse nearby duplicate places when geographic and type identity agree", () => {
+test("location choices still collapse nearby cross-provider duplicate cities", () => {
   const choices = dedupeLocationCandidates([
     candidate({ id: "primary", name: "Fairview", locality: "Fairview", label: "Fairview, California, United States", lat: 37.95, lon: -121.29, type: "city", score: 0.8 }),
     candidate({ id: "duplicate", name: "Fairview", locality: "Fairview", label: "Fairview, California, United States", lat: 37.951, lon: -121.291, provider: "open-meteo", type: "PPL", score: 0.6 }),
   ], 6);
   assert.deepEqual(choices.map((choice) => choice.id), ["primary"]);
+});
+
+test("location choices preserve nearby same-name same-type venues with distinct provider identities", () => {
+  const choices = dedupeLocationCandidates([
+    candidate({ id: "osm-cafe-one", name: "Starbucks", label: "Starbucks, Pacific Avenue, Stockton, California, United States", locality: "Stockton", lat: 37.982, lon: -121.315, type: "cafe", score: 0.8 }),
+    candidate({ id: "osm-cafe-two", name: "Starbucks", label: "Starbucks, March Lane, Stockton, California, United States", locality: "Stockton", lat: 37.991, lon: -121.312, type: "cafe", score: 0.7 }),
+  ], 6);
+  assert.deepEqual(choices.map((choice) => choice.id), ["osm-cafe-one", "osm-cafe-two"]);
+});
+
+test("location choices collapse an exact same-provider identity", () => {
+  const choices = dedupeLocationCandidates([
+    candidate({ id: "osm-42", name: "Victory Park", type: "park", score: 0.8 }),
+    candidate({ id: "osm-42", name: "Victory Park", type: "park", score: 0.7 }),
+  ], 6);
+  assert.deepEqual(choices.map((choice) => choice.id), ["osm-42"]);
 });
