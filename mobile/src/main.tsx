@@ -179,7 +179,7 @@ function App() {
   const mood = weatherMood(currentCode, weather?.timezone);
   const selectedForecastDay = weather?.days?.find((day) => day.date === selectedForecastDate) || null;
 
-  async function useLocation() {
+  async function requestLocation() {
     setBusy(true);
     setStatus("Finding your location…");
     try {
@@ -204,7 +204,7 @@ function App() {
   return <div className={`appShell ${activeTab === "home" ? `homeActive mood-${mood}` : ""}`}>
     <header className={`topBar ${activeTab === "home" ? "homeTopBar" : ""}`}>
       <div className="brand"><BrandMark/><span><strong>Family Weather</strong><small>Plan the day.</small></span></div>
-      <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
+      <button className="roundButton" type="button" onClick={() => void requestLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
     </header>
 
     <main className={activeTab === "home" ? "homeMain" : ""}>
@@ -212,15 +212,15 @@ function App() {
       <section className="weatherStage" aria-busy={busy}>
         <div className="weatherScene" aria-hidden="true"><b className="sceneRain rainOne"/><b className="sceneRain rainTwo"/><b className="sceneRain rainThree"/></div>
         <div className="weatherFocus">
-          <div className="locationLine"><Icon name="location"/><span>HOME</span></div>
+          <div className="locationLine"><Icon name="location"/><span>YOUR LOCAL WEATHER</span></div>
           <h1>{weather?.label || "Family Weather"}</h1>
           <strong className="stageTemperature">{round(weather?.current?.temp_f)}°</strong>
           <p className="stageCondition">{currentCondition.label}</p>
-          <p className="stageRange">H:{round(today?.temp_max_f)}° <span>L:{round(today?.temp_min_f)}°</span></p>
-          <p className="stageStatus">{status}</p>
+          <p className="stageRange">High {round(today?.temp_max_f)}° <span>Low {round(today?.temp_min_f)}°</span></p>
+          <p className="stageStatus" role="status">{status}</p>
         </div>
 
-        <section className="glassPanel todayBrief">
+        <section className="glassPanel todayBrief" aria-label="Today’s weather summary">
           <div className="briefHeading"><span>{currentCondition.icon}</span><p>{weatherBrief(currentCondition.label, today?.precip_prob_pct, weather?.current?.wind_mph ?? today?.wind_max_mph)}</p></div>
           <div className="metricStrip">
             <span><small>FEELS</small><b>{round(weather?.current?.feels_like_f)}°</b></span>
@@ -228,6 +228,11 @@ function App() {
             <span><small>WIND</small><b>{round(weather?.current?.wind_mph ?? today?.wind_max_mph)} mph</b></span>
             <span><small>AIR</small><b>{weather?.air_quality?.us_aqi != null ? round(weather.air_quality.us_aqi) : "—"}</b></span>
           </div>
+        </section>
+
+        <section className="plannerSpotlight">
+          <div><p className="eyebrow">MAKE TIME FOR A GOOD DAY</p><h2>Your plans.<br/>A better window.</h2><p>Find the right time to get outside, gather your people, or make something happen.</p></div>
+          <button type="button" onClick={() => { setPlanDate(null); setPlanLocation(weather?.label || null); setActiveTab("plan"); }}><span>Check a plan</span><b>→</b></button>
         </section>
 
         <section className="glassPanel forecastList">
@@ -254,10 +259,7 @@ function App() {
           </div> : null}
         </section>
 
-        <section className="plannerSpotlight">
-          <div><p className="eyebrow">ONLY FAMILY WEATHER</p><h2>Don’t just check it.<br/>Plan around it.</h2><p>Choose what you’re doing. We’ll find the best weather window and explain why it works.</p></div>
-          <button type="button" onClick={() => { setPlanDate(null); setPlanLocation(weather?.label || null); setActiveTab("plan"); }}><span>Check a plan</span><b>→</b></button>
-        </section>
+
       </section>
 
       <section className="responsesCard">
@@ -281,7 +283,7 @@ function App() {
         ["history", "History"],
         ["events", "Events"],
         ["more", "More"],
-      ] as [Tab, string][]).map(([tab, label]) => { const active = activeTab === tab || (tab === "more" && (activeTab === "announcements" || activeTab === "account")); return <button type="button" className={active ? "active" : ""} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>; })}
+      ] as [Tab, string][]).map(([tab, label]) => { const active = activeTab === tab || (tab === "more" && (activeTab === "announcements" || activeTab === "account")); return <button type="button" className={active ? "active" : ""} aria-current={active ? "page" : undefined} onClick={() => void selectTab(tab)} key={tab}><span aria-hidden="true"><Icon name={tab} /></span><small>{label}</small></button>; })}
     </nav>
   </div>;
 }
