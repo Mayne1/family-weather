@@ -10,9 +10,7 @@ const steps = [
   { target: "planner", title: "Tell us what you’re planning", text: "Enter an activity, a place, and a date here. The planner explains the weather fit, useful hours, and cautions. No account needed.", href: "/plan", link: "Try the planner" },
   { target: "decision", title: "Read the answer—not just the score", text: "Family Weather explains the useful time window and the practical details: bring a layer, watch the rain, or know when to wrap up. The compass spark marks guidance, not anything mystical.", href: "/how-it-works", link: "See how the answer works" },
   { target: "history", title: "Planning weeks or months ahead?", text: "Start here to compare your date across five previous years. That shows historical patterns—not a promise of future weather.", href: "/weather-history", link: "Explore weather history" },
-  { target: "announcements", title: "Share a quick update", text: "Create a free announcement and share its link. People can read it and leave a named reply without signing in.", href: "/announcements", link: "Create an announcement" },
-  { target: "invitations", title: "Invite people when you’re ready", text: "Choose a design, share one link anywhere, and collect RSVPs for free. The optional $1.99 purchase only removes ads and affiliate promotions from that event.", href: "/create-event", link: "Explore invitations" },
-  { target: "help", title: "Come back whenever you need", text: "Show me around is here in the footer. Replay this tour anytime, or open FAQ for more answers.", href: "/faq", link: "Read the FAQ" },
+  { target: "invitations", title: "Share one link and keep track", text: "Create an invitation or announcement, share its link anywhere, and collect RSVPs or replies for free. The optional $1.99 event purchase only removes promotions.", href: "/create-event", link: "Explore invitations" },
 ];
 type Position = { left: number; top: number; width: number; height: number; cardLeft: number; cardTop: number; below: boolean };
 
