@@ -4,6 +4,7 @@
 @media(max-width:520px){.frontPage{padding-inline:0}.leadCopy{left:6%;right:6%}.leadCopy h1{font-size:39px}.liveBadge{width:103px;right:14px;top:14px}.frontRail{padding:0 5%}.planningDesk{padding-inline:5%}.deskHeading h2,.intelTitle h2,.invitationFeature h2{font-size:39px}.planner{padding:25px 19px}.formHead{grid-template-columns:44px 1fr}.formHead small{display:none}.fiveDay{overflow:auto}.fiveDay article{min-width:88px}.sectionBar{align-items:start;flex-direction:column}.invitationImage{margin:18px;min-height:370px}.invitationImage strong{font-size:43px}.footer{grid-template-columns:1fr 1fr;padding:45px 7%}}
 @media(prefers-reduced-motion:reduce){.page *{animation:none!important}}
 .jamaica{background-position:22% center;filter:saturate(1.15)}
+.footer :global(.footerSocialLinks){grid-column:1/-1}
 .moodRain .leadPhoto{filter:saturate(.7) brightness(.7) hue-rotate(8deg)}
 .moodCloud .leadPhoto{filter:saturate(.55) brightness(.78)}
 .moodSnow .leadPhoto{filter:saturate(.35) brightness(1.08)}
