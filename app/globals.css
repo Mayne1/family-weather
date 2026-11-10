@@ -680,6 +680,12 @@ to{opacity:1;transform:none}
    native details styling is more specific than expected. */
 @media(min-width:1101px){.publicHeaderMobile{display:none!important}}
 
+/* One bold navigation system across the homepage and every public tool. */
+.publicHeader nav>a,.publicHeaderMore>summary{min-height:40px;padding:.65rem .85rem;border:1px solid rgba(255,255,255,.16);border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.075);color:#fff!important;font-size:.84rem!important;font-weight:900!important;letter-spacing:.01em;line-height:1;white-space:nowrap;transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease}.publicHeader nav>a:hover,.publicHeader nav>a:focus-visible,.publicHeaderMore>summary:hover,.publicHeaderMore>summary:focus-visible,.publicHeaderMore[open]>summary{border-color:rgba(245,196,81,.72);background:rgba(245,196,81,.17);box-shadow:0 7px 20px rgba(0,0,0,.16);transform:translateY(-1px)}
+
+/* Platform colors stay recognizable without overpowering the Family Weather footer. */
+.footerSocialLinks,.publicFooter>.footerSocialLinks{width:100%;display:flex;grid-column:1/-1;align-items:center;justify-content:center;flex-wrap:wrap;gap:.7rem;padding:0 0 1.2rem;margin:0 0 .35rem;border-bottom:1px solid rgba(255,255,255,.16)}.footerSocialLinks a{flex:0 0 auto;min-height:42px;padding:.65rem 1rem;border-radius:999px;font-size:.76rem;box-shadow:0 7px 18px rgba(0,0,0,.2)}.footerSocialLinks svg{width:1.15rem;height:1.15rem}.footerSocialLinks .socialLink-instagram{background:linear-gradient(115deg,#833ab4 0%,#c13584 38%,#e1306c 62%,#f77737 100%)}.footerSocialLinks .socialLink-facebook{background:#1877f2}.footerSocialLinks .socialLink-youtube{background:#ff0033}
+
 /* Invitation type scales with its card, not the browser window. */
 .digitalInvitation:not(.customInvitationArtwork){container-type:inline-size;display:flex;align-items:center;min-height:0;height:auto}
 .digitalInvitation .digitalInvitationContent{width:70%;min-height:0;margin:10% auto;padding:5%;box-sizing:border-box;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
