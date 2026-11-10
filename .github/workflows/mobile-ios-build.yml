@@ -3,7 +3,7 @@ name: Family Weather iOS simulator preview
 on:
   workflow_dispatch:
   push:
-    branches: [codex/reply-notifications, codex/ios-android-parity]
+    branches: [codex/reply-notifications, codex/ios-android-parity, codex/lock-screen-widgets]
     paths:
       - "mobile/**"
       - "ios/**"
@@ -77,6 +77,7 @@ jobs:
       - name: Launch app and capture real iPhone preview
         timeout-minutes: 5
         run: |
+          test -d build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app/PlugIns/FamilyWeatherWidgets.appex
           xcrun simctl install "$SIMULATOR_UDID" build/ios-simulator/Build/Products/Debug-iphonesimulator/App.app
           xcrun simctl status_bar "$SIMULATOR_UDID" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
           xcrun simctl launch "$SIMULATOR_UDID" com.thefamilyweather.app
