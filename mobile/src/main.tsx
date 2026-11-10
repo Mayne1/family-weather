@@ -114,7 +114,7 @@ async function weatherRequest(query = "") {
 }
 
 function BrandMark() {
-  return <span className="brandMark" aria-hidden="true"><Icon name="sun" /></span>;
+  return <span className="brandMark" aria-hidden="true"><img src="/brand/family-weather-logo.jpg" alt="" width="42" height="42" /></span>;
 }
 
 function Icon({ name }: { name: Tab | "sun" | "location" | "refresh" }) {
@@ -179,7 +179,7 @@ function App() {
   const mood = weatherMood(currentCode, weather?.timezone);
   const selectedForecastDay = weather?.days?.find((day) => day.date === selectedForecastDate) || null;
 
-  async function useLocation() {
+  async function handleUseLocation() {
     setBusy(true);
     setStatus("Finding your location…");
     try {
@@ -204,7 +204,7 @@ function App() {
   return <div className={`appShell ${activeTab === "home" ? `homeActive mood-${mood}` : ""}`}>
     <header className={`topBar ${activeTab === "home" ? "homeTopBar" : ""}`}>
       <div className="brand"><BrandMark/><span><strong>Family Weather</strong><small>Plan the day.</small></span></div>
-      <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
+      <button className="roundButton" type="button" onClick={() => void handleUseLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
     </header>
 
     <main className={activeTab === "home" ? "homeMain" : ""}>

@@ -1,5 +1,12 @@
 # Family Weather production cutover
 
+> **Brand/timezone release: use the new runbook instead.** Follow
+> [DEPLOY-BRAND-TIMEZONES.md](DEPLOY-BRAND-TIMEZONES.md), including backend-first
+> schema/router checks and preservation of notification integrations. Do not
+> execute the broad installer or historical cutover commands below for this
+> release. They can replace unrelated backend routes and assume service/release
+> details that must be verified on the current server.
+
 The Next.js frontend listens on `127.0.0.1:3001`. The existing Express weather/event API remains on `127.0.0.1:3000`.
 
 ## Required production configuration

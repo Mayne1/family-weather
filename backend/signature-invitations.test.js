@@ -44,3 +44,18 @@ test("download renderer produces a full-height signature keepsake", async () => 
   assert.equal(png.readUInt32BE(16), 600);
   assert.ok(png.readUInt32BE(20) > 900, "full artwork and personal details must not be cropped: " + png.readUInt32BE(20));
 });
+test('invitation rendering uses destination date/time in every viewer zone', () => {
+  const previous = process.env.TZ;
+  try {
+    for (const host of ['UTC', 'Pacific/Honolulu', 'Asia/Tokyo']) {
+      process.env.TZ = host;
+      const html = renderToStaticMarkup(React.createElement(Card, {
+        invitation: { design_id: 'signature-birthday' },
+        event: { title: 'Destination', starts_at: '2027-07-05T01:00:00Z', time_zone: 'America/New_York' },
+        artwork: '/test.webp', title: 'Birthday', luxe: false, showBranding: false,
+      }));
+      assert.match(html, /July 4, 2027/);
+      assert.match(html, /9:00 PM EDT/);
+    }
+  } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
+});

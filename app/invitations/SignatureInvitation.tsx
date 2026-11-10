@@ -1,3 +1,5 @@
+
+import { eventTimeOptions, eventClockOptions } from "../lib/eventTime";
 import type { CSSProperties } from "react";
 import type { InvitationRecord } from "./catalog";
 import type { InvitationEvent } from "./InvitationCard";
@@ -11,8 +13,8 @@ export default function SignatureInvitation({ invitation, event, artwork, title,
 }) {
   const start = event.starts_at ? new Date(event.starts_at) : null;
   const valid = start && Number.isFinite(start.getTime());
-  const date = valid ? start.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Date to be announced";
-  const time = valid ? start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "Time to be announced";
+  const date = valid ? start.toLocaleDateString("en-US", { ...eventTimeOptions(event.time_zone), month: "long", day: "numeric", year: "numeric" }) : "Date to be announced";
+  const time = valid ? start.toLocaleTimeString("en-US", { ...eventClockOptions(event.time_zone), hour: "numeric", minute: "2-digit" }) : "Time to be announced";
   const size = (value: number) => exporting ? value * 6 : `${value}cqw`;
   const [artWidth, artHeight] = (aspectRatio || (luxe ? "2 / 3" : "228 / 263")).split("/").map(Number);
   const exportHeight = Math.round(600 * artHeight / artWidth);

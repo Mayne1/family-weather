@@ -20,6 +20,9 @@ test -f "$FRONTEND_DIR/backend/event-entitlements-router.js"
 test -f "$FRONTEND_DIR/backend/commerce-plans.js"
 test -f "$FRONTEND_DIR/backend/canva-jobs.sql"
 test -f "$FRONTEND_DIR/backend/canva-jobs-router.js"
+test -f "$FRONTEND_DIR/backend/event-timezones.sql"
+test -f "$FRONTEND_DIR/backend/event-timezones-router.js"
+test -f "$FRONTEND_DIR/backend/event-time.js"
 test -f "$SERVER_FILE"
 
 cp "$SERVER_FILE" "$SERVER_FILE.before-invitation-designs.$STAMP"
@@ -39,6 +42,9 @@ install -m 0644 "$FRONTEND_DIR/backend/event-entitlements-router.js" "$ROUTES_DI
 install -m 0644 "$FRONTEND_DIR/backend/family-access.js" "$ROUTES_DIR/family-access.js"
 install -m 0644 "$FRONTEND_DIR/backend/commerce-plans.js" "$ROUTES_DIR/commerce-plans.js"
 install -m 0644 "$FRONTEND_DIR/backend/canva-jobs-router.js" "$ROUTES_DIR/canva-jobs-router.js"
+
+install -m 0644 "$FRONTEND_DIR/backend/event-timezones-router.js" "$ROUTES_DIR/event-timezones-router.js"
+install -m 0644 "$FRONTEND_DIR/backend/event-time.js" "$ROUTES_DIR/event-time.js"
 
 SERVER_FILE="$SERVER_FILE" python3 - <<'PY'
 import os
@@ -149,6 +155,22 @@ if "Short-lived server-side Canva design jobs" not in text:
         raise SystemExit("Could not find the Canva allowlist insertion point.")
     text = text.replace(marker, marker + "\n\n" + canva_allow_block, 1)
 
+timezone_require_line = 'const makeEventTimezonesRouter = require("./routes/event-timezones-router");'
+if timezone_require_line not in text:
+    text = text.replace(require_line, require_line + "\n" + timezone_require_line, 1)
+timezone_allow_block = r'''// Destination time-zone endpoints enforce owner or live invitation-token access.
+if (
+  ((req.method === "GET" || req.method === "POST") && /^\/events\/zoned(?:\?|$)/.test(url)) ||
+  ((req.method === "GET" || req.method === "PUT") && /^\/events\/[^/]+\/zoned(?:\?|$)/.test(url))
+) return next();'''
+if "Destination time-zone endpoints" not in text:
+    marker = 'if (req.method === "OPTIONS") return next();'
+    if marker not in text:
+        raise SystemExit("Could not find the timezone allowlist insertion point.")
+    text = text.replace(marker, marker + "\n\n" + timezone_allow_block, 1)
+timezone_mount_line = 'app.use(makeEventTimezonesRouter(pool, requireFirebaseUser));'
+text = text.replace(timezone_mount_line + "\n", "")
+
 mount_line = 'app.use(makeEventInvitationsRouter(pool, requireFirebaseUser));'
 location_mount_line = 'app.use(makeEventLocationsRouter(pool, requireFirebaseUser));'
 rsvp_mount_line = 'app.use(makeRsvpDetailsRouter(pool, requireFirebaseUser));'
@@ -165,14 +187,14 @@ text = text.replace(canva_mount_line + "\n", "")
 marker = '// 1) Create an event'
 if marker not in text:
     raise SystemExit("Could not find the event-route insertion point.")
-text = text.replace(marker, mount_line + "\n" + location_mount_line + "\n" + rsvp_mount_line + "\n" + entitlement_mount_line + "\n" + canva_mount_line + "\n\n" + marker, 1)
+text = text.replace(marker, timezone_mount_line + "\n" + mount_line + "\n" + location_mount_line + "\n" + rsvp_mount_line + "\n" + entitlement_mount_line + "\n" + canva_mount_line + "\n\n" + marker, 1)
 
 path.write_text(text)
 print(f"Patched {path}")
 PY
 
 cd "$API_DIR"
-SQL_FILES="$FRONTEND_DIR/backend/event-invitations.sql:$FRONTEND_DIR/backend/event-locations.sql:$FRONTEND_DIR/backend/invites-rsvp.sql:$FRONTEND_DIR/backend/event-entitlements.sql:$FRONTEND_DIR/backend/canva-jobs.sql" node <<'NODE'
+SQL_FILES="$FRONTEND_DIR/backend/event-timezones.sql:$FRONTEND_DIR/backend/event-invitations.sql:$FRONTEND_DIR/backend/event-locations.sql:$FRONTEND_DIR/backend/invites-rsvp.sql:$FRONTEND_DIR/backend/event-entitlements.sql:$FRONTEND_DIR/backend/canva-jobs.sql" node <<'NODE'
 "use strict";
 
 const fs = require("fs");

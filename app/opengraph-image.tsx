@@ -1,10 +1,14 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export const alt = "Family Weather — event weather planning, digital invitations and RSVPs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logo = await readFile(join(process.cwd(), "public/brand/family-weather-logo.jpg"));
+  const logoSource = `data:image/jpeg;base64,${logo.toString("base64")}`;
   return new ImageResponse(
     <div
       style={{
@@ -21,11 +25,7 @@ export default function OpenGraphImage() {
     >
       <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
         <div style={{ alignItems: "center", display: "flex", fontSize: 30, fontWeight: 700, gap: 18 }}>
-          <div style={{ alignItems: "flex-end", background: "#f3b634", borderRadius: 18, display: "flex", gap: 5, height: 58, justifyContent: "center", padding: "12px", width: 58 }}>
-            <span style={{ background: "#06283a", borderRadius: 4, height: 18, width: 7 }} />
-            <span style={{ background: "#06283a", borderRadius: 4, height: 28, width: 7 }} />
-            <span style={{ background: "#06283a", borderRadius: 4, height: 38, width: 7 }} />
-          </div>
+          <img src={logoSource} alt="" width={82} height={82} style={{ borderRadius: 18 }} />
           Family Weather
         </div>
         <div style={{ display: "flex", flexDirection: "column", fontSize: 74, fontWeight: 800, letterSpacing: -3, lineHeight: 1.03, marginTop: 68, maxWidth: 960 }}>

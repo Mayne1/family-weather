@@ -8,7 +8,7 @@ import type { InvitationRecord } from "../../invitations/catalog";
 
 type GuestData = {
   valid: boolean;
-  event: { title: string; description?: string; location?: string; starts_at?: string };
+  event: { title: string; description?: string; location?: string; time_zone?: string | null; starts_at?: string };
   invitation?: InvitationRecord | null;
   presentation?: "promoted" | "clean" | "unbranded" | "legacy";
 };

@@ -11,7 +11,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
     if (response.status === 410) return NextResponse.json({ ok: true, valid: false, expired: true });
     if (!response.ok || !data.ok) return NextResponse.json(data, { status: response.status });
     const eventId = data.invite?.eventId;
-    const eventResponse = await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}`), { cache: "no-store" });
+    const eventResponse = await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}/zoned?token=${encodeURIComponent(token)}`), { cache: "no-store" });
     const eventData = await eventResponse.json();
     if (!eventResponse.ok || !eventData.ok) return NextResponse.json(eventData, { status: eventResponse.status });
     const invitationResponse = await fetch(backendUrl(`/events/${encodeURIComponent(eventId)}/invitation`), { cache: "no-store" });
@@ -33,6 +33,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
         description: publicEventDescription(eventData.event?.description),
         location: eventData.event?.location,
         starts_at: eventData.event?.starts_at,
+        time_zone: eventData.event?.time_zone,
         ends_at: eventData.event?.ends_at,
       },
       invitation,

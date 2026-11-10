@@ -3,7 +3,7 @@ name: Family Weather iOS simulator preview
 on:
   workflow_dispatch:
   push:
-    branches: [codex/reply-notifications, codex/ios-android-parity]
+    branches: [codex/reply-notifications, codex/ios-android-parity, codex/complete-brand-timezones-20261110]
     paths:
       - "mobile/**"
       - "ios/**"
