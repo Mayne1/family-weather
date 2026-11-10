@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { weatherStories, weatherStory } from "../stories";
 import StoryVisual from "../../components/weather-media/StoryVisual";
 import { storyMedia } from "../media";
+import SocialLinks from "../../components/SocialLinks";
 
 export const dynamicParams = false;
 
@@ -74,7 +75,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
           <section className="eventGuideIntro"><p className="destinationKicker">About these stories</p><h2>Weather is part of the event, not the sales pitch.</h2><p>Family Weather compares an activity, location and date using a live forecast when available or five years of same-date history when the event is farther away.</p></section>
         )}
       </main>
-      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/weather-stories">Weather stories</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link></footer>
+      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/weather-stories">Weather stories</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><SocialLinks /></footer>
     </div>
   );
 }

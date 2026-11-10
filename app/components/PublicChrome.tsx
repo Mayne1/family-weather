@@ -3,6 +3,7 @@
 import Link from "next/link";
 import RightNowStrip from "./RightNowStrip";
 import SiteTour from "./SiteTour";
+import SocialLinks from "./SocialLinks";
 import type { ReactNode } from "react";
 
 export function PublicHeader() {
@@ -44,6 +45,7 @@ export function PublicFooter() {
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
       </nav>
+      <SocialLinks />
       <a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a>
     </footer>
   );

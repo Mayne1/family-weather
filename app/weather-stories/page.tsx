@@ -4,6 +4,7 @@ import { weatherStories } from "./stories";
 import Image from "next/image";
 import { storyMedia } from "./media";
 import mediaStyles from "../components/weather-media/media.module.css";
+import SocialLinks from "../components/SocialLinks";
 
 export const metadata: Metadata = {
   title: "Weather Stories: When Weather Changes the Plan | Family Weather",
@@ -38,7 +39,7 @@ export default function WeatherStoriesIndex() {
           </div>
         </section>
       </main>
-      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><a href="/privacy">Privacy</a></footer>
+      <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><a href="/privacy">Privacy</a><SocialLinks /></footer>
     </div>
   );
 }

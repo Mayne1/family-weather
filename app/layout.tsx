@@ -19,6 +19,8 @@ const structuredData = {
       slogan: "Plan more. Worry less.",
       sameAs: [
         "https://www.instagram.com/thefamilyweather/",
+        "https://www.facebook.com/profile.php?id=1396088403592189",
+        "https://www.youtube.com/channel/UC8krcGNf0KCpuscJVghtVBQ",
       ],
     },
     {
