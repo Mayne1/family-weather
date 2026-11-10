@@ -9,6 +9,11 @@ test("planner handoff keeps the destination-local start of the recommended windo
 
 test("older planner links recover their start time from the visible window label", () => {
   assert.equal(timeInputFromWindowLabel("5 PM–8 PM"), "17:00");
+  assert.equal(timeInputFromWindowLabel("1–4 PM"), "13:00");
+  assert.equal(timeInputFromWindowLabel("11 AM–2 PM"), "11:00");
+  assert.equal(timeInputFromWindowLabel("12–2 AM"), "00:00");
+  assert.equal(timeInputFromWindowLabel("11 PM–1 AM"), "23:00");
+  assert.equal(timeInputFromWindowLabel("11–1 AM"), "23:00");
   assert.equal(timeInputFromWindowLabel("12:30 AM - 3 AM"), "00:30");
   assert.equal(timeInputFromWindowLabel("Historical pattern only"), "");
 });
