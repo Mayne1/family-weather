@@ -3,6 +3,7 @@
 import Link from "next/link";
 import RightNowStrip from "./RightNowStrip";
 import SiteTour from "./SiteTour";
+import PublicAffiliatePromotion from "./PublicAffiliatePromotion";
 import SocialLinks from "./SocialLinks";
 import HomeAccount from "./HomeAccount";
 import type { ReactNode } from "react";
@@ -43,6 +44,8 @@ export function PublicHeader() {
 
 export function PublicFooter({ firstVisitTour = false }: { firstVisitTour?: boolean }) {
   return (
+    <>
+    <PublicAffiliatePromotion />
     <footer className="publicFooter">
       <SocialLinks />
       <div className="publicFooterBrand">
@@ -55,6 +58,7 @@ export function PublicFooter({ firstVisitTour = false }: { firstVisitTour?: bool
       <div className="publicFooterColumn"><strong>USE</strong><Link href="/live">Live weather desk</Link><a href="/create-event">Invitations</a><a data-tour="announcements" href="/announcements">Free announcements</a><Link href="/events">My events</Link><Link href="/pricing">Pricing</Link></div>
       <div className="publicFooterColumn" data-tour="help"><strong>COMPANY</strong><Link href="/about">About</Link><Link href="/faq">FAQ</Link><SiteTour firstVisit={firstVisitTour}/><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
     </footer>
+    </>
   );
 }
 

@@ -1,10 +1,14 @@
 "use client";
 
+import GuestAffiliatePromotion from "../components/GuestAffiliatePromotion";
+import { supportsEventAffiliate } from "../lib/affiliatePromotions";
+
 import { formatEventDateTime } from "../lib/eventTime";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 type InviteData = {
   valid: boolean;
@@ -42,7 +46,19 @@ function validDesign(value: string | null): InvitationDesign {
 }
 
 export default function RsvpPage() {
-  const [token, setToken] = useState("");
+  return <Suspense fallback={<main className="rsvpPage"><p>Opening your invitation…</p></main>}><RsvpRouter /></Suspense>;
+}
+
+function RsvpRouter() {
+  const queryString = useSearchParams().toString();
+  return <RsvpContent key={queryString} queryString={queryString} />;
+}
+
+function RsvpContent({ queryString }: { queryString: string }) {
+  const token = new URLSearchParams(queryString).get("token") || "";
+  const submission = useRef<AbortController | null>(null);
+  useEffect(() => () => { submission.current?.abort(); }, []);
+  const [resolvedQuery, setResolvedQuery] = useState<string | null>(null);
   const [design, setDesign] = useState<InvitationDesign>("basic");
   const [data, setData] = useState<InviteData | null>(null);
   const [error, setError] = useState("");
@@ -51,47 +67,60 @@ export default function RsvpPage() {
   const [showRsvp, setShowRsvp] = useState(false);
 
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
+    let active = true;
+    const controller = new AbortController();
+    const query = new URLSearchParams(queryString);
     const nextToken = query.get("token") || "";
-    setToken(nextToken);
     setDesign(validDesign(query.get("design")));
     if (!nextToken) {
       setError("This invitation link is missing its token.");
+      setResolvedQuery(queryString);
       return;
     }
-    fetch(`/api/invites/${encodeURIComponent(nextToken)}`, { cache: "no-store" })
+    fetch(`/api/invites/${encodeURIComponent(nextToken)}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const reply = await response.json();
         if (!response.ok || !reply.ok) throw new Error(reply.error || "Invitation not found");
+        if (!active) return;
         setData(reply);
+        setResolvedQuery(queryString);
         if (!query.get("design")) setDesign(validDesign(reply.invitation?.design_id || null));
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : "Invitation unavailable"));
-  }, []);
+      .catch((reason) => { if (active) { setError(reason instanceof Error ? reason.message : "Invitation unavailable"); setResolvedQuery(queryString); } });
+    return () => { active = false; controller.abort(); };
+  }, [queryString]);
 
   const respond = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
     const responseStorageKey = `family-weather-rsvp-${token}`;
     const savedResponseKey = localStorage.getItem(responseStorageKey) || "";
+    if (submission.current && !submission.current.signal.aborted) return;
+    const controller = new AbortController();
+    submission.current = controller;
     setSending(true);
     setError("");
     try {
       const response = await fetch(`/api/invites/${encodeURIComponent(token)}/rsvp`, {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, response_key: savedResponseKey }),
       });
       const reply = await response.json();
+      if (controller.signal.aborted) return;
       if (!response.ok || !reply.ok) throw new Error(reply.error || "RSVP could not be saved");
       if (reply.responseKey) localStorage.setItem(responseStorageKey, String(reply.responseKey));
       setAnswer(String(values.response || "yes"));
     } catch (reason) {
+      if (controller.signal.aborted) return;
       setError(reason instanceof Error ? reason.message : "RSVP could not be saved");
     } finally {
-      setSending(false);
+      if (!controller.signal.aborted) { submission.current = null; setSending(false); }
     }
   };
+
+  if (resolvedQuery !== queryString) return <main className="rsvpPage"><p>Opening your invitation…</p></main>;
 
   const theme = invitationThemes[design];
   const when = formatEventDateTime(data?.event?.starts_at, data?.event?.time_zone);
@@ -145,6 +174,7 @@ export default function RsvpPage() {
           </>
         )}
       </section>
+      {supportsEventAffiliate(data?.presentation, data?.valid === true, Boolean(error)) ? <GuestAffiliatePromotion key={token} token={token} /> : null}
     </main>
   );
 }
