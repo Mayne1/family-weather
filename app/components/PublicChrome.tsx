@@ -49,11 +49,11 @@ export function PublicFooter({ firstVisitTour = false }: { firstVisitTour?: bool
         <strong>Family Weather</strong>
         <span>Weather for what you’re actually doing.</span>
         <span>Plans change. Families stay connected.</span>
+        <a className="publicFooterEmail" href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a>
       </div>
       <div className="publicFooterColumn"><strong>PLAN</strong><Link href="/today">Today</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link></div>
       <div className="publicFooterColumn"><strong>USE</strong><Link href="/live">Live weather desk</Link><a href="/create-event">Invitations</a><a data-tour="announcements" href="/announcements">Free announcements</a><Link href="/events">My events</Link><Link href="/pricing">Pricing</Link></div>
       <div className="publicFooterColumn" data-tour="help"><strong>COMPANY</strong><Link href="/about">About</Link><Link href="/faq">FAQ</Link><SiteTour firstVisit={firstVisitTour}/><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
-      <a className="publicFooterEmail" href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a>
     </footer>
   );
 }
