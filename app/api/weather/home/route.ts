@@ -1,4 +1,5 @@
 import { metarCurrent, newerObservation, needsFresherObservation, type StationCurrent, type StationIdentity } from "../../../lib/stationObservation";
+import { openMeteoCurrent } from "../../../lib/locationCurrent";
 import { createAsyncTtlCache } from "../../../lib/asyncTtlCache";
 import { dailyPeriods } from "../../../lib/forecastDates";
 import { NextRequest, NextResponse } from "next/server";
@@ -188,7 +189,7 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
     wind_speed_unit: "mph",
     timezone: requestedTimeZone || "auto",
     forecast_days: "8",
-    current: "relative_humidity_2m",
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m",
     timeformat: "iso8601",
   });
   const payload = await jsonOrNull(`https://api.open-meteo.com/v1/forecast?${params}`);
@@ -206,8 +207,9 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
       shortForecast: openMeteoDescription(rawCode),
     };
   });
-  const humidity = finiteNumberOrNull(payload?.current?.relative_humidity_2m);
-  return { days, humidity: humidity !== null && humidity >= 0 && humidity <= 100 ? Math.round(humidity) : null, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
+  const current = openMeteoCurrent(payload);
+  const humidity = finiteNumberOrNull(current?.humidity_pct ?? payload?.current?.relative_humidity_2m);
+  return { days, current, humidity: humidity !== null && humidity >= 0 && humidity <= 100 ? Math.round(humidity) : null, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
 }
 
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
@@ -324,15 +326,9 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
   const officialCurrent = stationWeather?.current || null;
   const officialDays = officialForecast ? buildDays(officialForecast?.properties?.periods || []) : [];
   const nwsTimeZone = point?.properties?.timeZone;
-  const nwsDate = nwsTimeZone ? dateInTimezone(nwsTimeZone) : null;
-  const completeOfficialDays = nwsDate && officialDays.some(day => day.date === nwsDate)
-    && officialDays.filter(day => day.date >= nwsDate).length >= 5;
-  const officialHumidity = finiteNumberOrNull(officialCurrent?.humidity_pct);
-  const completeOfficialHumidity = officialHumidity !== null && officialHumidity >= 0 && officialHumidity <= 100;
-  // Calendar data fills gaps; it should not delay a complete official reading.
-  const calendar = completeOfficialDays && completeOfficialHumidity
-    ? { days: [] as WeatherDay[], humidity: null, timeZone: nwsTimeZone }
-    : await calendarPromise;
+  // The station remains the official fallback, while the location grid represents
+  // conditions at the requested coordinates instead of several miles away.
+  const calendar = await calendarPromise;
   const timeZone = nwsTimeZone || calendar.timeZone || "UTC";
   const localDate = dateInTimezone(timeZone);
 
@@ -359,8 +355,8 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
       .slice(0, 5);
   }
 
-  const currentPayload = officialCurrent ? null : await currentPromise;
-  const rawCurrent = officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
+  const currentPayload = (calendar.current || officialCurrent) ? null : await currentPromise;
+  const rawCurrent = calendar.current || officialCurrent || currentPayload?.current || currentPayload?.rightNow || null;
   const airQualityReading = await airQualityPromise;
   const observedHumidity = finiteNumberOrNull(rawCurrent?.humidity_pct);
   const validHumidity = observedHumidity !== null && observedHumidity >= 0 && observedHumidity <= 100;
