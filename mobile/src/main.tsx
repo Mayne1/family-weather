@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App as NativeApp } from "@capacitor/app";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
@@ -27,6 +27,8 @@ type Snapshot = {
   lon: number;
   timezone: string;
   source: string;
+  current_source?: string;
+  refining_current?: boolean;
   current?: {
     temp_f: number;
     feels_like_f?: number;
@@ -144,6 +146,8 @@ function App() {
   const [selectedForecastDate, setSelectedForecastDate] = useState<string | null>(null);
   const [planDate, setPlanDate] = useState<string | null>(null);
   const [planLocation, setPlanLocation] = useState<string | null>(null);
+  const refinementTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadRef = useRef<(query?: string) => Promise<void>>(async () => undefined);
 
   const load = useCallback(async (query = "") => {
     setBusy(true);
@@ -151,13 +155,18 @@ function App() {
     try {
       const result = await weatherRequest(query);
       setWeather(result);
-      setStatus("Latest available observation");
+      if (refinementTimer.current) clearTimeout(refinementTimer.current);
+      if (result.refining_current) {
+        setStatus("Checking conditions closer to this location…");
+        refinementTimer.current = setTimeout(() => { void loadRef.current(query); }, 6000);
+      } else setStatus("Latest available observation");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Weather is temporarily unavailable.");
     } finally {
       setBusy(false);
     }
   }, []);
+  loadRef.current = load;
 
   useEffect(() => {
     void getValidSession().then(setSession);
@@ -170,7 +179,7 @@ function App() {
     const listener = NativeApp.addListener("appStateChange", ({ isActive }) => {
       if (isActive) void load(query);
     });
-    return () => { void listener.then((handle) => handle.remove()); };
+    return () => { if (refinementTimer.current) clearTimeout(refinementTimer.current); void listener.then((handle) => handle.remove()); };
   }, [load]);
 
   const today = useMemo(() => weather?.days?.find((day) => day.date === localDate(weather?.timezone)) || weather?.days?.[0], [weather]);

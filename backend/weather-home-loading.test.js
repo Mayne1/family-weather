@@ -21,6 +21,7 @@ test('complete NWS data returns without waiting for unused slow backup services'
   if(u.endsWith('/test/stations'))return reply({features:[{id:'https://api.weather.gov/stations/TEST'}]});
   if(u.endsWith('/observations/latest'))return reply(observation);
   if(u.includes('/observations?'))return reply({features:[observation]});
+  if(u.includes('api.open-meteo.com/v1/forecast')&&!u.includes('daily='))return {ok:false};
   await held;return {ok:false};
  };
  let timer;
@@ -34,6 +35,32 @@ test('complete NWS data returns without waiting for unused slow backup services'
   assert.equal(calls.length,count,'repeat route request must avoid provider work');
   assert.match(response.headers.get('server-timing'),/weather;dur=/);
  }finally{clearTimeout(timer);release();global.fetch=original;}
+});
+test('a slow coordinate reading refines the next request without delaying the first response',async()=>{
+ const original=global.fetch;let releaseCurrent,releaseFallback;
+ const currentHeld=new Promise(resolve=>{releaseCurrent=()=>resolve(reply({utc_offset_seconds:0,current:{time:new Date().toISOString(),temperature_2m:53.4,apparent_temperature:52.7,relative_humidity_2m:91,weather_code:0,wind_speed_10m:2.6}}));});
+ const fallbackHeld=new Promise(resolve=>{releaseFallback=resolve;});
+ global.fetch=async(url)=>{const u=String(url);
+  if(u.includes('air-quality'))return reply({});
+  if(u.includes('/points/'))return reply(point);
+  if(u.endsWith('/test/forecast'))return reply(forecast);
+  if(u.endsWith('/test/stations'))return reply({features:[{id:'https://api.weather.gov/stations/TEST'}]});
+  if(u.endsWith('/observations/latest'))return reply(observation);
+  if(u.includes('/observations?'))return reply({features:[observation]});
+  if(u.includes('api.open-meteo.com/v1/forecast')&&!u.includes('daily='))return currentHeld;
+  await fallbackHeld;return {ok:false};
+ };
+ try{
+  const first=await(await GET(req(37.95))).json();
+  assert.equal(first.current_source,'nws-observation');
+  assert.equal(first.refining_current,true);
+  releaseCurrent();
+  await new Promise(resolve=>setImmediate(resolve));
+  const refined=await(await GET(req(37.95))).json();
+  assert.equal(refined.current_source,'open-meteo-current');
+  assert.equal(refined.current.temp_f,53.4);
+  assert.equal(refined.refining_current,false);
+ }finally{releaseCurrent();releaseFallback();global.fetch=original;}
 });
 test('complete NWS forecast uses a ready coordinate-matched current reading without waiting for calendar fallback',async()=>{
  const original=global.fetch;let release;const held=new Promise(resolve=>{release=resolve;});
