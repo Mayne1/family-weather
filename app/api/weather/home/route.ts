@@ -212,6 +212,20 @@ async function calendarForecast(lat: number, lon: number, requestedTimeZone?: st
   return { days, current, humidity: humidity !== null && humidity >= 0 && humidity <= 100 ? Math.round(humidity) : null, timeZone: String(payload?.timezone || requestedTimeZone || "UTC") };
 }
 
+async function locationCurrentForecast(lat: number, lon: number) {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m",
+    temperature_unit: "fahrenheit",
+    wind_speed_unit: "mph",
+    timezone: "auto",
+    timeformat: "iso8601",
+  });
+  const payload = await jsonOrNull(`https://api.open-meteo.com/v1/forecast?${params}`);
+  return openMeteoCurrent(payload);
+}
+
 function buildDays(periods: NwsPeriod[]): WeatherDay[] {
   const nights = periods.filter((period) => !period.isDaytime);
   return dailyPeriods(periods)
@@ -307,6 +321,9 @@ export async function GET(request: NextRequest) {
 async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean) {
   // Start fallbacks now, but do not hold successful NWS results behind them.
   const airQualityPromise = airQuality(lat, lon);
+  // Start the small, coordinate-matched current-conditions request immediately.
+  // This normally completes while the official point, forecast, and station calls run.
+  const locationCurrentPromise = locationCurrentForecast(lat, lon);
   const currentPromise = jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`));
   const fallbackPromise = jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`));
   const point = await jsonOrNull(
@@ -331,15 +348,28 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
     && officialDays.filter(day => day.date >= nwsDate).length >= 5;
   const officialHumidity = finiteNumberOrNull(officialCurrent?.humidity_pct);
   const completeOfficialHumidity = officialHumidity !== null && officialHumidity >= 0 && officialHumidity <= 100;
-  // Give the coordinate-matched current reading a short opportunity to answer.
-  // Complete official weather must not wait behind a slow fallback provider.
-  const fastCalendar = completeOfficialDays && completeOfficialHumidity
+  // Prefer the exact-coordinate current reading without making complete official
+  // weather wait for the heavier calendar fallback. Because this request starts
+  // before the NWS work, the deadline is usually only a last-resort guard.
+  const locationCurrent = completeOfficialDays && completeOfficialHumidity
     ? await Promise.race([
-        calendarPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 200)),
+        locationCurrentPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 350)),
       ])
+    : await locationCurrentPromise;
+  const calendarResult = completeOfficialDays && completeOfficialHumidity
+    ? null
     : await calendarPromise;
-  const calendar = fastCalendar || { days: [] as WeatherDay[], current: null, humidity: null, timeZone: nwsTimeZone };
+  const calendar = calendarResult || {
+    days: [] as WeatherDay[],
+    current: null,
+    humidity: null,
+    timeZone: nwsTimeZone,
+  };
+  if (locationCurrent) {
+    calendar.current = locationCurrent;
+    calendar.humidity = locationCurrent.humidity_pct;
+  }
   const timeZone = nwsTimeZone || calendar.timeZone || "UTC";
   const localDate = dateInTimezone(timeZone);
 
