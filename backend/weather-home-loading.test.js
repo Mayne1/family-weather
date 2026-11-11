@@ -35,6 +35,29 @@ test('complete NWS data returns without waiting for unused slow backup services'
   assert.match(response.headers.get('server-timing'),/weather;dur=/);
  }finally{clearTimeout(timer);release();global.fetch=original;}
 });
+test('complete NWS forecast uses a ready coordinate-matched current reading without waiting for calendar fallback',async()=>{
+ const original=global.fetch;let release;const held=new Promise(resolve=>{release=resolve;});
+ global.fetch=async(url)=>{const u=String(url);
+  if(u.includes('air-quality'))return reply({});
+  if(u.includes('/points/'))return reply(point);
+  if(u.endsWith('/test/forecast'))return reply(forecast);
+  if(u.endsWith('/test/stations'))return reply({features:[{id:'https://api.weather.gov/stations/TEST'}]});
+  if(u.endsWith('/observations/latest'))return reply(observation);
+  if(u.includes('/observations?'))return reply({features:[observation]});
+  if(u.includes('api.open-meteo.com/v1/forecast')&&!u.includes('daily='))return reply({
+   utc_offset_seconds:0,
+   current:{time:new Date().toISOString(),temperature_2m:53.4,apparent_temperature:52.7,relative_humidity_2m:91,weather_code:0,wind_speed_10m:2.6},
+  });
+  await held;return {ok:false};
+ };
+ try{
+  const response=await GET(req(37.94));
+  const data=await response.json();
+  assert.equal(data.current_source,'open-meteo-current');
+  assert.equal(data.current.temp_f,53.4);
+  assert.equal(data.days.length,5);
+ }finally{release();global.fetch=original;}
+});
 test('unavailable official services still use backend and calendar fallback data',async()=>{
  const original=global.fetch;
  global.fetch=async url=>{const u=String(url);
@@ -62,7 +85,7 @@ test('simultaneous requests for one location share provider work',async()=>{
  };
  try{
   const responses=await Promise.all(Array.from({length:20},()=>GET(req(37.93))));
-  assert.equal(calls,5,'one provider sequence for twenty callers');
+  assert.equal(calls,6,'one provider sequence, including location current, for twenty callers');
   for(const response of responses)assert.equal((await response.json()).current.temp_f,65);
  }finally{global.fetch=original;}
 });
