@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - codex/reply-notifications
+      - codex/weather-station-freshness-20261111
     paths:
       - "mobile/**"
       - "mobile-shell/**"
