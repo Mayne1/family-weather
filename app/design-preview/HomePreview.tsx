@@ -14,7 +14,7 @@ import styles from "./preview.module.css";
 import { PublicFooter, PublicHeader } from "../components/PublicChrome";
 
 type WeatherDay = { date:string; weather_code:number; temp_max_f:number|null; temp_min_f:number; precip_prob_pct:number; wind_max_mph:number; shortForecast?:string };
-type Snapshot = { timezone?:string;lat?:number;lon?:number;label?:string; current?:{temp_f:number;feels_like_f?:number;wind_mph:number|null;humidity_pct?:number|null;humidity_estimated?:boolean;weather_code:number}|null; days?:WeatherDay[]; air_quality?:{us_aqi:number;category:string;updated_at:string}|null };
+type Snapshot = { timezone?:string;lat?:number;lon?:number;label?:string; current_source?:string;refining_current?:boolean;current?:{temp_f:number;feels_like_f?:number;wind_mph:number|null;humidity_pct?:number|null;humidity_estimated?:boolean;weather_code:number}|null; days?:WeatherDay[]; air_quality?:{us_aqi:number;category:string;updated_at:string}|null };
 const HOME_LOCATION_STORAGE_KEY = "family-weather-home-location-v2";
 
 function Icon({name}:{name:"sun"|"wind"|"rain"|"history"|"share"|"arrow"}){return <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -63,6 +63,7 @@ function forecastIcon(code:number){
 export default function HomePreview(){
  const router=useRouter();
  const requestVersion=useRef(0);
+ const refinementTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const[activity,setActivity]=useState("");
  const[location,setLocation]=useState("");
  const[date,setDate]=useState("");
@@ -71,14 +72,18 @@ export default function HomePreview(){
  const[failedImage,setFailedImage]=useState<string|null>(null);
  const[status,setStatus]=useState("Checking the latest observation…");
 
- async function loadWeather(query=""){
+ async function loadWeather(query="",force=false){
   const version=++requestVersion.current;
   let data:Snapshot;
-  try{data=await fetchHomeWeather<Snapshot>(query)}
+  try{data=await fetchHomeWeather<Snapshot>(query,{force})}
   catch(error){if(version!==requestVersion.current)return;throw error}
   if(version!==requestVersion.current)return;
   setWeather(data);
-  setStatus("Latest available observation");
+  if(refinementTimer.current)clearTimeout(refinementTimer.current);
+  if(data.refining_current){
+   setStatus("Checking conditions closer to this location…");
+   refinementTimer.current=setTimeout(()=>{void loadWeather(query,true).catch(()=>setStatus("Latest available observation"))},6000);
+  }else setStatus("Latest available observation");
  }
 
  useEffect(()=>{
@@ -88,7 +93,7 @@ export default function HomePreview(){
    if(Number.isFinite(saved?.lat)&&Number.isFinite(saved?.lon))query=`?lat=${saved?.lat}&lon=${saved?.lon}`;
   }catch{/* A malformed saved preference should never block the homepage. */}
   void loadWeather(query).catch(()=>setStatus("Live reading is temporarily unavailable. Planning tools are still open."));
-  return ()=>{requestVersion.current++};
+  return ()=>{requestVersion.current++;if(refinementTimer.current)clearTimeout(refinementTimer.current)};
   // The default is deliberate; location access remains an explicit visitor action.
  },[]);
 

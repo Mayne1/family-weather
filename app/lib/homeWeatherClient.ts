@@ -30,21 +30,21 @@ function restore(key: string) {
   } catch { /* Storage is optional, including in private browsing. */ }
 }
 
-export async function fetchHomeWeather<T>(query = ""): Promise<T> {
+export async function fetchHomeWeather<T>(query = "", { force = false } = {}): Promise<T> {
   const params = new URLSearchParams(query);
   params.sort();
   const suffix = params.toString();
   const url = `/api/weather/home${suffix ? `?${suffix}` : ""}`;
-  const cached = restore(url);
+  const cached = force ? undefined : restore(url);
   if (cached) return cached as T;
   const active = pending.get(url);
   if (active) return active as Promise<T>;
   const task = (async () => {
-    const response = await fetch(url, { signal: AbortSignal.timeout(25_000) });
+    const response = await fetch(url, { cache: force ? "no-store" : "default", signal: AbortSignal.timeout(25_000) });
     const data = await response.json();
     if (!response.ok || data?.ok !== true) throw new Error("Weather is temporarily unavailable.");
     const fetchedAt = typeof data.fetched_at === "string" ? Date.parse(data.fetched_at) : Date.now();
-    readings.set(url, { data, expiresAt: Math.min(Date.now(), Number.isFinite(fetchedAt) ? fetchedAt : Date.now()) + TTL_MS });
+    if (!data?.refining_current) readings.set(url, { data, expiresAt: Math.min(Date.now(), Number.isFinite(fetchedAt) ? fetchedAt : Date.now()) + TTL_MS });
     for (const [key, value] of readings) if (!isReading(value)) readings.delete(key);
     while (readings.size > MAX_ENTRIES) readings.delete(readings.keys().next().value!);
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...readings])); } catch { /* Optional cache. */ }

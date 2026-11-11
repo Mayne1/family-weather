@@ -292,6 +292,7 @@ async function airQuality(lat: number, lon: number) {
 }
 
 const cachedWeather = createAsyncTtlCache<Awaited<ReturnType<typeof loadHomeWeather>>>({ ttlMs: 120_000, maxEntries: 128 });
+const cachedLocationCurrent = createAsyncTtlCache<Awaited<ReturnType<typeof locationCurrentForecast>>>({ ttlMs: 120_000, maxEntries: 128 });
 
 export async function GET(request: NextRequest) {
   const started = performance.now();
@@ -308,7 +309,11 @@ export async function GET(request: NextRequest) {
   const lat = hasCoordinates ? requestedLat : 37.9177;
   const lon = hasCoordinates ? requestedLon : -121.3123;
 
-  const payload = await cachedWeather(`${lat}:${lon}:${hasCoordinates}`, () => loadHomeWeather(lat, lon, hasCoordinates), value => value.ok);
+  const payload = await cachedWeather(
+    `${lat}:${lon}:${hasCoordinates}`,
+    () => loadHomeWeather(lat, lon, hasCoordinates),
+    value => value.ok && !("refining_current" in value && value.refining_current),
+  );
   return NextResponse.json(payload, {
     status: payload.ok ? 200 : 502,
     headers: {
@@ -323,7 +328,11 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
   const airQualityPromise = airQuality(lat, lon);
   // Start the small, coordinate-matched current-conditions request immediately.
   // This normally completes while the official point, forecast, and station calls run.
-  const locationCurrentPromise = locationCurrentForecast(lat, lon);
+  const locationCurrentPromise = cachedLocationCurrent(
+    `${lat}:${lon}`,
+    () => locationCurrentForecast(lat, lon),
+    Boolean,
+  );
   const currentPromise = jsonOrNull(backendUrl(`/weather/current?lat=${lat}&lon=${lon}`));
   const fallbackPromise = jsonOrNull(backendUrl(`/weather/forecast10?lat=${lat}&lon=${lon}`));
   const point = await jsonOrNull(
@@ -351,12 +360,13 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
   // Prefer the exact-coordinate current reading without making complete official
   // weather wait for the heavier calendar fallback. Because this request starts
   // before the NWS work, the deadline is usually only a last-resort guard.
-  const locationCurrent = completeOfficialDays && completeOfficialHumidity
+  const locationResult = completeOfficialDays && completeOfficialHumidity
     ? await Promise.race([
-        locationCurrentPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 350)),
+        locationCurrentPromise.then((value) => ({ settled: true as const, value })),
+        new Promise<{ settled: false; value: null }>((resolve) => setTimeout(() => resolve({ settled: false, value: null }), 350)),
       ])
-    : await locationCurrentPromise;
+    : { settled: true as const, value: await locationCurrentPromise };
+  const locationCurrent = locationResult.value;
   const calendarResult = completeOfficialDays && completeOfficialHumidity
     ? null
     : await calendarPromise;
@@ -425,6 +435,7 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
     source,
     timezone: timeZone,
     current_source: current?.source || (current ? "family-weather" : "unavailable"),
+    refining_current: !locationResult.settled,
     location_mode: hasCoordinates ? "selected" : "default",
     partial: !current || !days.length,
   };

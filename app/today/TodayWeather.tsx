@@ -6,7 +6,7 @@ import Link from "next/link";
 import WeatherIcon from "../components/WeatherIcon";
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number | null; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { timezone?: string; label?: string; current: { temp_f: number; feels_like_f: number; wind_mph: number | null; humidity_pct?: number | null; humidity_estimated?: boolean } | null; days: WeatherDay[]; air_quality?: { us_aqi: number; category: string } | null };
+type HomeWeather = { timezone?: string; label?: string; refining_current?: boolean; current: { temp_f: number; feels_like_f: number; wind_mph: number | null; humidity_pct?: number | null; humidity_estimated?: boolean } | null; days: WeatherDay[]; air_quality?: { us_aqi: number; category: string } | null };
 
 function condition(code: number) {
   if (code >= 200 && code < 300) return "Thunderstorms possible";
@@ -21,18 +21,24 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let refinementTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
     let query = "";
     try {
       const saved = JSON.parse(localStorage.getItem("family-weather-home-location-v2") || "null");
       if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lon)) query = `?lat=${saved.lat}&lon=${saved.lon}`;
     } catch { /* Use the default location if the saved preference is invalid. */ }
-    fetch(`/api/weather/home${query}`, { cache: "no-store" })
+    const load = () => fetch(`/api/weather/home${query}`, { cache: "no-store" })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error(data.error || "Weather is temporarily unavailable.");
+        if (cancelled) return;
         setWeather(data);
+        if (data.refining_current) refinementTimer = setTimeout(load, 6000);
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "Weather is temporarily unavailable."));
+    void load();
+    return () => { cancelled = true; if (refinementTimer) clearTimeout(refinementTimer); };
   }, []);
 
   const today = weather?.days?.find(day => day.date === localWeatherDate(weather?.timezone));

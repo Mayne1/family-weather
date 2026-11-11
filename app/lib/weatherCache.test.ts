@@ -88,3 +88,25 @@ test('browser restores a recent snapshot after reload without extending its orig
     else Reflect.deleteProperty(globalThis, 'sessionStorage');
   }
 });
+
+test('browser retries a refining current reading and force refresh bypasses its saved snapshot', async () => {
+  const originalFetch = globalThis.fetch;
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  let calls = 0;
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, get() { throw Error('storage blocked'); } });
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ok:true,label:`reading-${calls}`,refining_current:calls===1,fetched_at:new Date().toISOString()});
+  };
+  try {
+    assert.equal((await fetchHomeWeather<{label:string}>('?lat=14&lon=15')).label,'reading-1');
+    assert.equal((await fetchHomeWeather<{label:string}>('?lat=14&lon=15')).label,'reading-2');
+    assert.equal((await fetchHomeWeather<{label:string}>('?lat=14&lon=15')).label,'reading-2');
+    assert.equal((await fetchHomeWeather<{label:string}>('?lat=14&lon=15',{force:true})).label,'reading-3');
+    assert.equal(calls,3);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (descriptor) Object.defineProperty(globalThis, 'sessionStorage', descriptor);
+    else Reflect.deleteProperty(globalThis, 'sessionStorage');
+  }
+});
