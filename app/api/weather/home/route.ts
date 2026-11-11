@@ -13,9 +13,11 @@ const NWS_HEADERS = {
 
 type NwsPeriod = {
   startTime: string;
+  endTime?: string;
   isDaytime: boolean;
   temperature: number;
   probabilityOfPrecipitation?: { value?: number | null };
+  relativeHumidity?: { value?: number | null };
   windSpeed?: string;
   shortForecast?: string;
 };
@@ -36,6 +38,7 @@ type NwsPoint = {
   properties?: {
     observationStations?: string;
     forecast?: string;
+    forecastHourly?: string;
     timeZone?: string;
     relativeLocation?: { properties?: { city?: string; state?: string } };
   };
@@ -102,6 +105,31 @@ function officialCurrentConditions(observation: NwsObservation | null): StationC
     humidity_pct: humidity !== null ? Math.round(humidity) : null,
     observed_at: observedAt,
     source: "nws-observation",
+  };
+}
+
+function officialGridCurrent(periods: NwsPeriod[], now = Date.now()): StationCurrent | null {
+  const period = periods.find((item) => {
+    const start = Date.parse(item?.startTime || "");
+    const end = Date.parse(item?.endTime || "");
+    return Number.isFinite(start) && start <= now && (!Number.isFinite(end) || end > now);
+  }) || periods.find((item) => {
+    const start = Date.parse(item?.startTime || "");
+    return Number.isFinite(start) && start > now && start - now <= 90 * 60_000;
+  });
+  if (!period) return null;
+  const temperature = finiteNumberOrNull(period.temperature);
+  const validAt = Date.parse(period.startTime);
+  if (temperature === null || temperature < -130 || temperature > 140 || !Number.isFinite(validAt)) return null;
+  const humidity = finiteNumberOrNull(period.relativeHumidity?.value);
+  return {
+    temp_f: Math.round(temperature * 10) / 10,
+    feels_like_f: Math.round(temperature * 10) / 10,
+    wind_mph: maxWind(period.windSpeed),
+    weather_code: weatherCode(period.shortForecast || ""),
+    humidity_pct: humidity !== null && humidity >= 0 && humidity <= 100 ? Math.round(humidity) : null,
+    observed_at: new Date(validAt).toISOString(),
+    source: "nws-grid-forecast",
   };
 }
 
@@ -343,13 +371,16 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
   let days: WeatherDay[] = [];
   let source = "family-weather";
   const forecastUrl = point?.properties?.forecast;
+  const hourlyUrl = point?.properties?.forecastHourly;
   // Observations only need the point's timezone, not a completed forecast.
   const calendarPromise = calendarForecast(lat, lon, point?.properties?.timeZone);
-  const [officialForecast, stationWeather] = await Promise.all([
+  const [officialForecast, officialHourly, stationWeather] = await Promise.all([
     forecastUrl ? jsonOrNull(forecastUrl, NWS_HEADERS) : Promise.resolve(null),
+    hourlyUrl ? jsonOrNull(hourlyUrl, NWS_HEADERS) : Promise.resolve(null),
     nwsStationWeather(point, point?.properties?.timeZone || "UTC"),
   ]);
-  const officialCurrent = stationWeather?.current || null;
+  const gridCurrent = officialGridCurrent(officialHourly?.properties?.periods || []);
+  const officialCurrent = gridCurrent || stationWeather?.current || null;
   const officialDays = officialForecast ? buildDays(officialForecast?.properties?.periods || []) : [];
   const nwsTimeZone = point?.properties?.timeZone;
   const nwsDate = nwsTimeZone ? dateInTimezone(nwsTimeZone) : null;
@@ -435,7 +466,7 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
     source,
     timezone: timeZone,
     current_source: current?.source || (current ? "family-weather" : "unavailable"),
-    refining_current: !locationResult.settled,
+    refining_current: !locationResult.settled && !gridCurrent,
     location_mode: hasCoordinates ? "selected" : "default",
     partial: !current || !days.length,
   };
