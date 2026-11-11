@@ -273,7 +273,25 @@ export class AmbiguousLocationError extends Error {
 
 export async function resolveLocation(query: string, supplied?: unknown) {
   if (isValidLocationCandidate(supplied)) {
-    return { ...supplied, lat: Number(supplied.lat), lon: Number(supplied.lon), input: supplied.input || query };
+    const candidate = { ...supplied, lat: Number(supplied.lat), lon: Number(supplied.lon), input: supplied.input || query };
+    if (candidate.type === "coordinates" && !candidate.countryCode) {
+      // Today carries the exact forecast point, but that point has no country
+      // metadata yet. Resolve its country before choosing a weather provider.
+      // A nearby reverse-geocoded feature must never move the forecast point.
+      const url = new URL("https://nominatim.openstreetmap.org/reverse");
+      url.searchParams.set("lat", String(candidate.lat));
+      url.searchParams.set("lon", String(candidate.lon));
+      url.searchParams.set("format", "jsonv2");
+      url.searchParams.set("addressdetails", "1");
+      const response = await fetch(url, { headers: SEARCH_HEADERS, cache: "no-store", signal: AbortSignal.timeout(8000) });
+      const data = response.ok ? await response.json() as NominatimResult : null;
+      const countryCode = clean(data?.address?.country_code).toUpperCase();
+      if (!/^[A-Z]{2}$/.test(countryCode)) {
+        throw new Error("We couldn't verify this location's country. Choose the location again before checking the plan.");
+      }
+      return { ...candidate, countryCode, country: clean(data?.address?.country) };
+    }
+    return candidate;
   }
   const suggestions = await searchLocations(query, 6);
   if (!suggestions.length) {
