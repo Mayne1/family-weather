@@ -1,3 +1,5 @@
+import { recommendationFromDecision } from "../../../lib/plannerRecommendation";
+import { destinationTimeZone } from "../../../lib/destinationTimeZone";
 import { NextRequest, NextResponse } from "next/server";
 import { forecastForDate } from "../../../lib/plannerForecast";
 import { lookupAlmanac } from "../../../lib/almanac";
@@ -5,12 +7,11 @@ import { rainTiming } from "../../../lib/rainTiming";
 import { summarizeRain } from "../../../lib/rainSummary";
 import { metForecast } from "../../../lib/metForecast";
 import { weatherApiPrecipitation } from "../../../lib/precipitationForecast";
-import type { AlmanacResult } from "../../../lib/almanac";
 import { AmbiguousLocationError, resolveLocation } from "../../../lib/location";
 import type { LocationCandidate } from "../../../lib/location";
 import { enforceRateLimit } from "../../../lib/requestSecurity";
-import { buildDecision, historicalActivityFit } from "../../../lib/decisionSpine";
-import type { DecisionResult, HourlyCondition, Space } from "../../../lib/decisionSpine";
+import { buildDecision } from "../../../lib/decisionSpine";
+import type { HourlyCondition, Space } from "../../../lib/decisionSpine";
 import { createAsyncTtlCache } from "../../../lib/asyncTtlCache";
 
 const NWS_HEADERS = { "User-Agent": "FamilyWeather/1.0 (thefamilyweather.com)", Accept: "application/geo+json" };
@@ -76,39 +77,6 @@ type ForecastDay = {
   shortForecast?: string;
 };
 
-function recommendationFromDecision(decision: DecisionResult, historical?: AlmanacResult | null, space: Space = "outdoor") {
-  if (historical) {
-    const fit = historicalActivityFit(decision.activity.requested, space, historical.years);
-    return {
-      score: fit.score,
-      bestWindow: "Historical pattern only",
-      summary: fit.explanation,
-      advice: [
-        { tone: historical.rainFrequencyPct >= 40 ? "warn" : "good", title: "Five-year rain pattern", copy: `${historical.rainYears} of ${historical.years.length} matching dates recorded rain. This is history, not a forecast.` },
-        { tone: historical.averageHighF >= 90 ? "warn" : "good", title: "Typical temperature", copy: `The five-year average was ${historical.averageHighF}° high and ${historical.averageLowF}° low.` },
-        { tone: historical.averageWindMph > 12 ? "warn" : "good", title: "Typical peak wind", copy: `Matching dates averaged about ${historical.averageWindMph} mph for peak wind.` },
-        { tone: "warn", title: "No hourly promise", copy: "Use a live forecast closer to the date before choosing a time." },
-      ],
-    };
-  }
-
-  const advice = decision.safety
-    ? [{ tone: "warn", title: decision.safety.title, copy: decision.safety.detail }]
-    : [
-    ...(decision.guidance ? [{ tone: decision.status === "avoid" ? "warn" : "good", title: decision.guidance.title, copy: decision.guidance.copy }] : []),
-    ...decision.reasons.map((copy, index) => ({ tone: "good", title: index === 0 ? "Why this window works" : "Supporting condition", copy })),
-    ...decision.cautions.map((copy, index) => ({ tone: "warn", title: index === 0 ? "What could interfere" : "Additional caution", copy })),
-  ];
-  if (decision.alternateWindow) advice.push({ tone: "good", title: "Second choice", copy: `${decision.alternateWindow.label} is the next-best non-overlapping window.` });
-  if (decision.confidence.level !== "high") advice.push({ tone: "warn", title: `${decision.confidence.level[0].toUpperCase()}${decision.confidence.level.slice(1)} confidence`, copy: `The hourly data is missing ${decision.confidence.missing.join(", ") || "some forecast detail"}.` });
-  return {
-    score: decision.safety ? null : decision.score,
-    bestWindow: decision.safety ? "Choose another day" : decision.bestWindow?.label || (decision.status === "recommended" ? "Your planned time" : "No responsible window"),
-    summary: decision.summary,
-    advice: advice.slice(0, 5),
-  };
-}
-
 function nwsHourly(periods: NwsPeriod[], date: string): HourlyCondition[] {
   return periods.filter((period) => period.startTime.slice(0, 10) === date).map((period) => ({
     time: period.startTime,
@@ -139,7 +107,7 @@ async function nwsForecast(geo: LocationCandidate, date: string) {
     if (!day) return null;
     const place = point?.properties?.relativeLocation?.properties;
     const label = place?.city ? `${place.city}, ${place.state || ""}`.replace(/, $/, "") : geo.label;
-    return { source: "nws", label, day, hourly: nwsHourly(hourlyForecast?.properties?.periods || [], date) };
+    return { source: "nws", timezone: point?.properties?.timeZone as string | undefined, label, day, hourly: nwsHourly(hourlyForecast?.properties?.periods || [], date) };
   } catch {
     return null;
   }
@@ -187,7 +155,7 @@ async function globalForecast(geo: LocationCandidate, date: string) {
       isDaylight: typeof sunrise === "string" && typeof sunset === "string" ? time >= sunrise && time < sunset : null,
     }];
   }) : [];
-  return { source: "open-meteo", label: geo.label, day, hourly };
+  return { source: "open-meteo", timezone: data.timezone as string | undefined, label: geo.label, day, hourly };
 }
 
 function numericOrNull(value: unknown) {
@@ -219,7 +187,7 @@ function providerLocalKey(isoTime: string, timezone: string | null) {
 
 async function loadPlannerForecast(geo: LocationCandidate, date: string) {
   const precipitation = geo.countryCode === "US" ? null : await weatherApiPrecipitation(geo, date);
-  let forecast = geo.countryCode === "US"
+  let forecast: { source: string; label: string; timezone?: string | null; day: ForecastDay; hourly: HourlyCondition[] } | null = geo.countryCode === "US"
     ? await fastestUsForecast(geo, date)
     : await metForecast(geo, date, precipitation?.timezone || null);
   if (forecast?.source === "met-norway" && precipitation) {
@@ -343,6 +311,7 @@ export async function POST(request: NextRequest) {
       source: forecast?.source || "almanac",
       location: forecast?.label || geo.label,
       resolvedLocation: geo,
+      time_zone: forecast?.timezone || precipitation?.timezone || await destinationTimeZone(geo.lat, geo.lon),
       day,
       almanac,
       rainTiming: forecast ? rainTiming(forecast.hourly, decision.bestWindow) : null,

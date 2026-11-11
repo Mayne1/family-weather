@@ -1,3 +1,5 @@
+
+import { eventTimeOptions, eventClockOptions } from "../lib/eventTime";
 import { getInvitationDesign } from "./catalog";
 import type { InvitationRecord } from "./catalog";
 import type { CSSProperties } from "react";
@@ -10,6 +12,7 @@ export type InvitationEvent = {
   description?: string | null;
   location?: string | null;
   starts_at?: string | null;
+  time_zone?: string | null;
 };
 
 type Props = {
@@ -22,8 +25,8 @@ type Props = {
 export default function InvitationCard({ invitation, event, compact = false, showBranding = true }: Props) {
   const design = getInvitationDesign(invitation.design_id);
   const starts = event.starts_at ? new Date(event.starts_at) : null;
-  const date = starts?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
-  const time = starts?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) || "Time to be announced";
+  const date = starts?.toLocaleDateString("en-US", { ...eventTimeOptions(event.time_zone), weekday: "long", month: "long", day: "numeric", year: "numeric" }) || "Date to be announced";
+  const time = starts?.toLocaleTimeString("en-US", { ...eventClockOptions(event.time_zone), hour: "numeric", minute: "2-digit" }) || "Time to be announced";
   const publicDescription = publicEventDescription(event.description);
   const style = normalizeInvitationStyle(invitation.style_options);
   const headline = (invitation.headline || event.title).trim().replace(/\s+/g, " ");

@@ -1,3 +1,5 @@
+
+import { eventTimeOptions, eventClockOptions } from "../../../../lib/eventTime";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -9,13 +11,13 @@ import SignatureInvitation from "../../../../invitations/SignatureInvitation";
 
 export const dynamic = "force-dynamic";
 
-function formatDate(value?: string | null) {
+function formatDate(value?: string | null, time_zone?: string | null) {
   if (!value) return { date: "Date to be announced", time: "Time to be announced" };
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return { date: "Date to be announced", time: "Time to be announced" };
   return {
-    date: date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
-    time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    date: date.toLocaleDateString("en-US", { ...eventTimeOptions(time_zone), weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+    time: date.toLocaleTimeString("en-US", { ...eventClockOptions(time_zone), hour: "numeric", minute: "2-digit" }),
   };
 }
 
@@ -58,7 +60,7 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   const headlineFont = style.font === "modern" || style.font === "bold" ? "Arial" : "Georgia";
   const frameWidth = style.frame === "none" ? 0 : style.frame === "fine-line" ? 1 : 3;
   const showBranding = data.presentation !== "unbranded";
-  const { date, time } = formatDate(event.starts_at);
+  const { date, time } = formatDate(event.starts_at, event.time_zone);
   const artwork = await readFile(join(process.cwd(), "public", design.artwork.replace(/^\//, "")));
   const artworkData = `data:image/webp;base64,${artwork.toString("base64")}`;
 

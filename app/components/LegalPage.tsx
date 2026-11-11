@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SocialLinks from "./SocialLinks";
 import type { ReactNode } from "react";
 
 type LegalPageProps = {
@@ -32,6 +33,7 @@ export default function LegalPage({ eyebrow, title, summary, children, effective
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
         </nav>
+        <SocialLinks />
         <a href="mailto:contact@thefamilyweather.com">contact@thefamilyweather.com</a>
       </footer>
     </main>

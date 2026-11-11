@@ -60,6 +60,19 @@ export function signUp(email: string, password: string) {
   return authenticate("signUp", email, password);
 }
 
+export async function sendPasswordReset(email: string) {
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
+  });
+  const data = await response.json();
+  if (response.ok || data?.error?.message === "EMAIL_NOT_FOUND") return;
+  const code = String(data?.error?.message || "PASSWORD_RESET_FAILED");
+  if (code === "INVALID_EMAIL") throw new Error("Enter a valid email address.");
+  throw new Error("We could not send the reset email right now. Please try again.");
+}
+
 export function loadSession(): AuthSession | null {
   try {
     const stored = localStorage.getItem(SESSION_KEY);

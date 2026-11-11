@@ -1,5 +1,12 @@
 # Family Weather backend additions
 
+> **Brand/timezone release deployment warning:** Follow the narrow, backend-first
+> [brand/timezone rollout runbook](../DEPLOY-BRAND-TIMEZONES.md). Do not run the
+> broad `install-on-vps.sh` installer for this release: it also replaces unrelated
+> invitation routes and can overwrite existing notification integrations. The
+> older installation instructions below are background, not this release's
+> production procedure.
+
 This folder contains deliberately small backend additions for durable digital invitations and normalized event coordinates.
 
 - `event-invitations.sql` adds one invitation record per event. Existing events, invite tokens, and RSVP responses remain unchanged.
@@ -73,3 +80,23 @@ and restarts only `family-weather-api.service`:
 ```bash
 bash /var/www/family-weather-frontend/backend/install-on-vps.sh
 ```
+
+## Destination event time zones
+
+`event-timezones.sql` adds nullable `events.time_zone`. Old events keep their
+instants and local display; no timezone is guessed for historical records.
+`event-timezones-router.js` adds atomic owner-authenticated creation/update with
+`starts_local`, IANA `time_zone`, and elapsed `duration_minutes` (1–10080).
+The server converts local wall time, rejects DST gaps and repeated hours with
+an actionable message, and stores the UTC instants and zone in one statement.
+Zoned list/detail reads include the zone; guest detail needs an unexpired invite
+token for that exact event and does not return owner email/UID.
+
+Deploy the additive SQL and router **before** deploying this frontend. Mount
+`makeEventTimezonesRouter(pool, requireFirebaseUser)` before the existing generic
+event routes, and permit `/events/zoned` and `/events/:id/zoned` through API-key
+middleware (these routes enforce Firebase/token access themselves). Copy
+`event-time.js` alongside the router. `install-on-vps.sh` includes these steps;
+review the installer against the current server before running it. No migration
+or deployment is performed by tests. Missing backend support fails closed and
+never falls back to a timezone-losing creation request.

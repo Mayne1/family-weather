@@ -24,3 +24,9 @@ test("device location remains available as an explicit visitor action", () => {
   assert.match(strip, /onClick=\{locate\}/);
   assert.match(strip, /if\(onLocate\)\{onLocate\(\);return\}/);
 });
+
+test("homepage hero uses the local landmark and keeps weather art as its fallback", () => {
+  assert.match(page, /className=\{visibleLandmark\?styles\.landmarkPhoto:styles\.conditionPhoto\}/);
+  assert.match(page, /src=\{visibleLandmark\?\.image\|\|weatherScene\(conditionCode\)\}/);
+  assert.match(page, /onError=\{visibleLandmark\?\(\)=>setFailedImage\(visibleLandmark\.image\):undefined\}/);
+});

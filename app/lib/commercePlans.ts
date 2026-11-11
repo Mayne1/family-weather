@@ -20,3 +20,11 @@ export function commercePlan(code?: string | null) {
 export function formatPlanPrice(priceCents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(priceCents / 100);
 }
+
+// Guest advertising must not inherit commercePlan’s free fallback for unknown data.
+export function guestPresentation(code: string | null | undefined, status: string | null | undefined): PresentationLevel {
+  if (!["free", "paid", "pending"].includes(status || "")) return "legacy";
+  if (code === "free_event") return status === "free" || status === "pending" ? "promoted" : "legacy";
+  if (code === "family_access" || code === "family_weather_launch_event_599") return "unbranded";
+  return COMMERCE_PLANS.find((plan) => plan.code === code)?.presentation || "legacy";
+}

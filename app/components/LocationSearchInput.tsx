@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { LocationCandidate } from "../lib/location";
+import { locationKindLabel } from "../lib/locationDedupe";
 
 type Props = {
   id: string;
@@ -14,6 +15,14 @@ type Props = {
   onChange: (value: string) => void;
   onSelect: (candidate: LocationCandidate) => void;
 };
+
+function choiceContext(candidate: LocationCandidate) {
+  const parts = [candidate.locality, candidate.admin1, candidate.postalCode, candidate.country]
+    .filter(Boolean)
+    .filter((part, index, values) => values.findIndex((value) => value.toLowerCase() === part.toLowerCase()) === index)
+    .filter((part) => part.toLowerCase() !== candidate.name.toLowerCase());
+  return parts.join(" · ") || candidate.label;
+}
 
 export default function LocationSearchInput({ id, name, value, required, placeholder, className = "", forcedSuggestions = [], onChange, onSelect }: Props) {
   const listId = useId();
@@ -78,7 +87,8 @@ export default function LocationSearchInput({ id, name, value, required, placeho
           {choices.map((candidate) => (
             <button type="button" role="option" aria-selected="false" key={candidate.id} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(candidate)}>
               <strong>{candidate.name}</strong>
-              <span>{candidate.label}</span>
+              <span>{choiceContext(candidate)}</span>
+              <small className="locationChoiceKind">{locationKindLabel(candidate)}</small>
             </button>
           ))}
           <small>Location search data © OpenStreetMap contributors</small>

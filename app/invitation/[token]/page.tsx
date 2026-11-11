@@ -1,5 +1,8 @@
 "use client";
 
+import GuestAffiliatePromotion from "../../components/GuestAffiliatePromotion";
+import { supportsEventAffiliate } from "../../lib/affiliatePromotions";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import InvitationCard from "../../invitations/InvitationCard";
@@ -8,7 +11,7 @@ import type { InvitationRecord } from "../../invitations/catalog";
 
 type GuestData = {
   valid: boolean;
-  event: { title: string; description?: string; location?: string; starts_at?: string };
+  event: { title: string; description?: string; location?: string; time_zone?: string | null; starts_at?: string };
   invitation?: InvitationRecord | null;
   presentation?: "promoted" | "clean" | "unbranded" | "legacy";
 };
@@ -17,20 +20,27 @@ export default function GuestInvitationPage({ params }: { params: Promise<{ toke
   const [token, setToken] = useState("");
   const [data, setData] = useState<GuestData | null>(null);
   const [error, setError] = useState("");
+  const [resolvedParams, setResolvedParams] = useState<typeof params | null>(null);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
     params.then(({ token: nextToken }) => {
+      if (!active) throw new Error("Cancelled");
       setToken(nextToken);
-      return fetch(`/api/invites/${encodeURIComponent(nextToken)}`, { cache: "no-store" });
+      setError("");
+      return fetch(`/api/invites/${encodeURIComponent(nextToken)}`, { cache: "no-store", signal: controller.signal });
     })
       .then(async (response) => {
         const reply = await response.json();
         if (!response.ok || !reply.ok) throw new Error(reply.error || "Invitation not found");
-        setData(reply);
+        if (active) { setData(reply); setResolvedParams(params); }
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : "Invitation unavailable"));
+      .catch((reason) => { if (active) { setError(reason instanceof Error ? reason.message : "Invitation unavailable"); setResolvedParams(params); } });
+    return () => { active = false; controller.abort(); };
   }, [params]);
 
+  if (resolvedParams !== params) return <main className="guestInvitationPage"><section className="guestInvitationState"><span>◌</span><h1>Opening your invitation…</h1></section></main>;
   if (error) return <main className="guestInvitationPage"><section className="guestInvitationState"><span>!</span><h1>We couldn’t open this invitation.</h1><p>{error}</p></section></main>;
   if (!data) return <main className="guestInvitationPage"><section className="guestInvitationState"><span>◌</span><h1>Opening your invitation…</h1></section></main>;
   if (!data.valid) return <main className="guestInvitationPage"><section className="guestInvitationState"><span>×</span><h1>This invitation is no longer active.</h1><p>Ask the organizer for a fresh link.</p></section></main>;
@@ -50,7 +60,7 @@ export default function GuestInvitationPage({ params }: { params: Promise<{ toke
         <div><small>You’re invited</small><h2>Let the host know if you’ll be there.</h2><p>The RSVP page holds the current event details and records your answer.</p></div>
         <a href={`/rsvp.html?token=${encodeURIComponent(token)}&design=${encodeURIComponent(invitation.design_id)}`}>View details &amp; RSVP <span>→</span></a>
       </section>
-      {data.presentation === "promoted" ? <aside className="freeEventPromotion"><div><small>PLANNED WITH FAMILY WEATHER</small><strong>Choose the date. Know the weather. Invite everybody.</strong><span>Create your own weather-smart event free.</span></div><Link href="/">Plan a free event <span>→</span></Link></aside> : null}
+      {supportsEventAffiliate(data.presentation, data.valid, Boolean(error)) ? <GuestAffiliatePromotion key={token} token={token}><aside className="freeEventPromotion"><div><small>PLANNED WITH FAMILY WEATHER</small><strong>Choose the date. Know the weather. Invite everybody.</strong><span>Create your own weather-smart event free.</span></div><Link href="/">Plan a free event <span>→</span></Link></aside></GuestAffiliatePromotion> : null}
     </main>
   );
 }

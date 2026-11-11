@@ -16,6 +16,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
 ).outputText, file);
 const { NextRequest } = require('next/server');
 const { POST } = require('../app/api/weather/plan/route.ts');
+const { recommendationFromDecision } = require('../app/lib/plannerRecommendation.ts');
 Module._load = originalLoad;
 
 const date = () => new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -68,7 +69,7 @@ function successfulProvider() {
   }));
   return async (url) => {
     const value = String(url);
-    if (value.includes('/points/')) return reply({ properties: { forecast: 'https://api.weather.gov/fixture/forecast', forecastHourly: 'https://api.weather.gov/fixture/hourly', relativeLocation: { properties: { city: 'Test City', state: 'CA' } } } });
+    if (value.includes('/points/')) return reply({ properties: { timeZone: 'America/Los_Angeles', forecast: 'https://api.weather.gov/fixture/forecast', forecastHourly: 'https://api.weather.gov/fixture/hourly', relativeLocation: { properties: { city: 'Test City', state: 'CA' } } } });
     if (value.endsWith('/fixture/forecast')) return reply({ properties: { periods: dailyPeriods } });
     if (value.endsWith('/fixture/hourly')) return reply({ properties: { periods: hourlyPeriods } });
     return reply({}, 503);
@@ -121,6 +122,7 @@ test('a slow official lookup does not hold the planner behind it', async () => {
       return reply({}, 503);
     }
     if (value.includes('api.open-meteo.com/v1/forecast')) return reply({
+      timezone: 'America/Los_Angeles',
       daily: {
         time: [selectedDate],
         weather_code: [1],
@@ -172,4 +174,20 @@ test('failed planner lookups remain retryable', async () => {
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('missing hourly data is reported as incomplete instead of bad weather', () => {
+  const detail = 'Hourly forecast detail is unavailable for the selected date.';
+  const recommendation = recommendationFromDecision({
+    status: 'insufficient-data',
+    activity: { requested: 'family cookout' },
+    summary: detail,
+    safety: { kind: 'insufficient', title: 'Weather data incomplete', detail },
+  });
+
+  assert.equal(recommendation.score, null);
+  assert.equal(recommendation.bestWindow, 'Weather data incomplete');
+  assert.match(recommendation.summary, /unavailable/i);
+  assert.doesNotMatch(recommendation.bestWindow, /another day|cancel|avoid/i);
+  assert.match(recommendation.advice[1].copy, /without treating this as a bad-weather verdict/i);
 });

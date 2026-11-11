@@ -1,11 +1,12 @@
+import { eventTimeOptions, eventClockOptions } from "../../app/lib/eventTime";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Browser } from "@capacitor/browser";
 import { apiRequest, authenticate, authHeaders, signOut, SITE_URL, type AuthSession } from "./api";
 import { getInvitationDesign, invitationCategoryForActivity, invitationDesigns } from "../../app/invitations/catalog";
 
 type SwitchTab = (tab: "home" | "plan" | "history" | "events" | "announcements" | "account" | "more") => void;
-type PlanResult = { source: string; location: string; activity: string; score: number | null; bestWindow: string; summary: string; day: { temp_max_f: number; temp_min_f: number; precip_prob_pct: number | null; wind_max_mph: number }; advice?: Array<{ tone: string; title: string; copy: string }> };
-export type PlanHandoff = { activity: string; location: string; date: string; space: string; bestWindow: string; summary: string };
+type PlanResult = { time_zone?: string | null; source: string; location: string; activity: string; score: number | null; bestWindow: string; summary: string; day: { temp_max_f: number; temp_min_f: number; precip_prob_pct: number | null; wind_max_mph: number }; advice?: Array<{ tone: string; title: string; copy: string }> };
+export type PlanHandoff = { time_zone?: string | null; activity: string; location: string; date: string; space: string; bestWindow: string; summary: string };
 type LocationSuggestion = { label: string; lat: number; lon: number; timezone?: string };
 type AlmanacResult = {
   location: string;
@@ -20,7 +21,7 @@ type AlmanacResult = {
 };
 
 type Design = (typeof invitationDesigns)[number];
-type FamilyEvent = { id: string; title: string; description?: string; location?: string; starts_at?: string; ends_at?: string };
+type FamilyEvent = { time_zone?: string | null; id: string; title: string; description?: string; location?: string; starts_at?: string; ends_at?: string };
 type InvitationRecord = { design_id: string; headline?: string | null; message?: string | null };
 type ResponseRow = { token: string; invited_email?: string; response?: "yes" | "maybe" | "no" | null; responder_name?: string | null; guests_count?: number | null; message?: string | null; responded_at?: string | null; opened_at?: string | null };
 
@@ -112,7 +113,7 @@ export function PlanScreen({ continueWith, initialDate, initialLocation }: { con
     catch (reason) { setError(reason instanceof Error ? reason.message : "The plan could not be checked."); }
     finally { setBusy(false); }
   }
-  const handoff = result ? { activity, location: result.location || location, date, space, bestWindow: result.bestWindow, summary: result.summary } : null;
+  const handoff = result ? { time_zone: result.time_zone, activity, location: result.location || location, date, space, bestWindow: result.bestWindow, summary: result.summary } : null;
   return <div className="nativeScreen">
     <section className="screenMast planMast"><span className="mastMark">✦</span><div><p className="eyebrow">ACTIVITY WEATHER PLANNER</p><h1>Check a plan.</h1><p>Choose the activity, place, date, and setting. We’ll find the useful weather window.</p></div></section>
     <form className="nativeForm" onSubmit={submit}>
@@ -151,7 +152,7 @@ function InvitationPreview({ event, designId, headline, message }: { event: Fami
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   return <section className="invitationPreview">
     <img src={designUrl(design)} alt={design.name} />
-    <div><small>{design.name}</small><h2>{headline || event.title}</h2>{message ? <p>{message}</p> : null}<p>{starts?.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}</p><p>{event.location}</p></div>
+    <div><small>{design.name}</small><h2>{headline || event.title}</h2>{message ? <p>{message}</p> : null}<p>{starts?.toLocaleString("en-US", { ...eventClockOptions(event.time_zone), weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}</p><p>{event.location}</p></div>
   </section>;
 }
 
@@ -215,8 +216,8 @@ export function EventsScreen({ session, switchTab, draft, clearDraft }: { sessio
     if (!session || !draft) return;
     setWorkspaceBusy(true); setError(""); setNotice("");
     try {
-      const starts = new Date(`${eventDate}T${eventTime}:00`); const ends = new Date(starts.getTime() + 3 * 60 * 60 * 1000);
-      const created = await apiRequest<{ event: FamilyEvent }>("/api/events", { method: "POST", headers: authHeaders(session), data: { title, description: `${draft.activity} · ${draft.space} · ${draft.bestWindow}`, location: draft.location, starts_at: starts.toISOString(), ends_at: ends.toISOString() } });
+      if (!draft.time_zone) throw new Error("The destination time zone could not be confirmed. Check the weather plan again before saving.");
+      const created = await apiRequest<{ event: FamilyEvent }>("/api/events", { method: "POST", headers: authHeaders(session), data: { title, description: `${draft.activity} · ${draft.space} · ${draft.bestWindow}`, location: draft.location, starts_local: `${eventDate}T${eventTime}:00`, time_zone: draft.time_zone, duration_minutes: 180 } });
       const item = created.event; const eventId = String(item?.id || "");
       if (!eventId) throw new Error("The event could not be saved.");
       await saveInvitation(eventId);
@@ -260,9 +261,9 @@ export function EventsScreen({ session, switchTab, draft, clearDraft }: { sessio
 
   return <div className="nativeScreen">
     <section className="screenMast eventsMast"><span className="mastMark">◇</span><div><p className="eyebrow">YOUR FAMILY PLANS</p><h1>My events.</h1><p>Open any event to manage its invitation, share link, and RSVPs.</p></div><button className="mastAction" onClick={() => void refresh()} disabled={busy}>↻</button></section>
-    {draft ? <form className="nativeForm handoffForm" onSubmit={createInvitation}><p className="eyebrow dark">FROM YOUR WEATHER PLAN</p><h2>Design the invitation.</h2><p>{draft.location} · {draft.bestWindow}</p><label>Event name<input value={title} onChange={e => { setTitle(e.target.value); setHeadline(e.target.value); }} required /></label><div className="formPair"><label>Date<input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} required /></label><label>Start time<input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} required /></label></div><label>Invitation message<textarea value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} maxLength={500} placeholder="Add a personal note" /></label><InvitationPicker activity={draft.activity} selected={designId} onSelect={setDesignId} /><button className="primaryButton" disabled={workspaceBusy}>{workspaceBusy ? "Building your invitation…" : "Save invitation and continue"}<span>→</span></button></form> : null}
+    {draft ? <form className="nativeForm handoffForm" onSubmit={createInvitation}><p className="eyebrow dark">FROM YOUR WEATHER PLAN</p><h2>Design the invitation.</h2><p>{draft.location} · {draft.bestWindow}</p><label>Event name<input value={title} onChange={e => { setTitle(e.target.value); setHeadline(e.target.value); }} required /></label><div className="formPair"><label>Date<input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} required /></label><label>Start time ({draft?.time_zone || "destination local time"})<input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} required /></label></div><label>Invitation message<textarea value={inviteMessage} onChange={e => setInviteMessage(e.target.value)} maxLength={500} placeholder="Add a personal note" /></label><InvitationPicker activity={draft.activity} selected={designId} onSelect={setDesignId} /><button className="primaryButton" disabled={workspaceBusy}>{workspaceBusy ? "Building your invitation…" : "Save invitation and continue"}<span>→</span></button></form> : null}
     {error ? <p className="nativeError">{error}</p> : null}{notice ? <p className="nativeNotice">{notice}</p> : null}
-    {busy && !events.length ? <p>Loading your events…</p> : events.length ? <div className="nativeList eventList">{events.map(item => { const starts = item.starts_at ? new Date(item.starts_at) : null; return <button type="button" className="eventCardButton" key={item.id} onClick={() => void openEvent(item.id)} disabled={workspaceBusy}><div className="dateTile"><strong>{starts ? starts.toLocaleDateString("en-US", { month: "short" }) : "PLAN"}</strong><span>{starts?.getDate() || "—"}</span></div><div><small>EVENT</small><h2>{item.title}</h2><p>{starts?.toLocaleString() || "Date not set"}</p><p>{item.location || "Location not set"}</p><strong className="openEventLabel">Open invitation & RSVPs →</strong></div></button>; })}</div> : <Empty title="No events yet." copy="Check a weather plan and turn it into an invitation." />}
+    {busy && !events.length ? <p>Loading your events…</p> : events.length ? <div className="nativeList eventList">{events.map(item => { const starts = item.starts_at ? new Date(item.starts_at) : null; return <button type="button" className="eventCardButton" key={item.id} onClick={() => void openEvent(item.id)} disabled={workspaceBusy}><div className="dateTile"><strong>{starts ? starts.toLocaleDateString("en-US", { ...eventTimeOptions(item.time_zone), month: "short" }) : "PLAN"}</strong><span>{starts?.toLocaleDateString("en-US", { ...eventTimeOptions(item.time_zone), day: "numeric" }) || "—"}</span></div><div><small>EVENT</small><h2>{item.title}</h2><p>{starts?.toLocaleString("en-US", eventClockOptions(item.time_zone)) || "Date not set"}</p><p>{item.location || "Location not set"}</p><strong className="openEventLabel">Open invitation & RSVPs →</strong></div></button>; })}</div> : <Empty title="No events yet." copy="Check a weather plan and turn it into an invitation." />}
   </div>;
 }
 

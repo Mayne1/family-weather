@@ -14,7 +14,7 @@ type EventDetail = {
   title: string;
   description?: string;
   location?: string;
-  starts_at?: string;
+  time_zone?: string | null; starts_at?: string;
 };
 
 type Source = "family_weather" | "upload" | "canva";

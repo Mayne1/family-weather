@@ -16,9 +16,12 @@ const structuredData = {
       name: "Family Weather",
       url: siteUrl,
       email: "contact@thefamilyweather.com",
+      logo: `${siteUrl}/brand/family-weather-logo.jpg`,
       slogan: "Plan more. Worry less.",
       sameAs: [
         "https://www.instagram.com/thefamilyweather/",
+        "https://www.facebook.com/profile.php?id=1396088403592189",
+        "https://www.youtube.com/channel/UC8krcGNf0KCpuscJVghtVBQ",
       ],
     },
     {
@@ -53,7 +56,7 @@ const structuredData = {
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Family Weather", statusBarStyle: "default" },
-  icons: { apple: "/notification-icon-192.png" },
+  icons: { apple: "/brand/apple-touch-icon.png", icon: "/icon.svg" },
   metadataBase: new URL(siteUrl),
   applicationName: "Family Weather",
   keywords: [

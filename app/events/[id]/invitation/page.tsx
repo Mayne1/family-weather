@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getValidSession } from "../../../lib/firebaseAuth";
 import SavedInvitationEditor from "../../../components/SavedInvitationEditor";
 
-type EventDetail = { id: string; title: string; description?: string; location?: string; starts_at?: string; ends_at?: string };
+type EventDetail = { id: string; title: string; description?: string; location?: string; time_zone?: string | null; starts_at?: string; ends_at?: string };
 
 export default function InvitationWorkspacePage() {
   const { id } = useParams<{ id: string }>();
