@@ -6,6 +6,7 @@ on:
     branches:
       - codex/reply-notifications
       - codex/weather-station-freshness-20261111
+      - codex/android-canonical-nighttest-20261111
     paths:
       - "mobile/**"
       - "mobile-shell/**"
@@ -53,9 +54,19 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
+      - name: Verify canonical Android package
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
+          BADGING="$("$AAPT" dump badging "$APK" | head -1)"
+          echo "$BADGING"
+          grep -q "name='com.thefamilyweather.app.nighttest'" <<<"$BADGING"
+          grep -q "versionCode='12'" <<<"$BADGING"
+          grep -q "versionName='2.0.2'" <<<"$BADGING"
+
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: family-weather-android-debug
+          name: family-weather-current-android-2.0.2
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
