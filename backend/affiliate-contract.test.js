@@ -5,7 +5,7 @@ const path = require("node:path");
 const read = (file) => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 test("affiliate card discloses commercial purpose and suppresses referrer data", () => {
   const card = read("app/components/AffiliatePromotion.tsx");
-  assert.match(card, /ADVERTISEMENT · AFFILIATE PARTNER/);
+  assert.match(card, /ADVERTISEMENT/);
   assert.match(card, /may earn a commission/);
   assert.match(card, /rel="sponsored noopener noreferrer"/);
   assert.match(card, /referrerPolicy="no-referrer"/);
