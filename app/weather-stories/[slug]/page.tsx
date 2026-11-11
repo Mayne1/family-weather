@@ -1,3 +1,4 @@
+import AffiliatePromotion from "../../components/AffiliatePromotion";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -75,6 +76,7 @@ export default async function WeatherStoryPage({ params }: { params: Promise<{ s
           <section className="eventGuideIntro"><p className="destinationKicker">About these stories</p><h2>Weather is part of the event, not the sales pitch.</h2><p>Family Weather compares an activity, location and date using a live forecast when available or five years of same-date history when the event is farther away.</p></section>
         )}
       </main>
+      <AffiliatePromotion />
       <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/weather-stories">Weather stories</Link><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><SocialLinks /></footer>
     </div>
   );

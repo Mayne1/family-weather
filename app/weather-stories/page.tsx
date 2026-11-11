@@ -1,3 +1,4 @@
+import AffiliatePromotion from "../components/AffiliatePromotion";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { weatherStories } from "./stories";
@@ -39,6 +40,7 @@ export default function WeatherStoriesIndex() {
           </div>
         </section>
       </main>
+      <AffiliatePromotion />
       <footer className="destinationFooter"><strong>Family Weather</strong><span>Weather information for the plans people actually make.</span><Link href="/plan">Activity planner</Link><Link href="/weather-history">Weather history</Link><a href="/privacy">Privacy</a><SocialLinks /></footer>
     </div>
   );
