@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {metarCurrent,newerObservation,needsFresherObservation} from './stationObservation.ts';
+const now=Date.parse('2026-11-11T09:00:00Z'),station={id:'KSCK',name:'Stockton Metropolitan Airport'};
+const row={icaoId:'KSCK',obsTime:now/1000-300,temp:9.4,wspd:4,cover:'CLR'};
+test('actual KSCK METAR converts Celsius/knots and preserves station/time',()=>{const r=metarCurrent([row],station,now)!;assert.equal(r.temp_f,48.9);assert.equal(r.wind_mph,4.6);assert.equal(r.weather_code,800);assert.equal(r.feels_like_f,null);assert.equal(r.station?.id,'KSCK');assert.equal(r.observed_at,'2026-11-11T08:55:00.000Z')});
+test('wrong station,missing/invalid data,stale/future reports rejected',()=>{for(const patch of [{icaoId:'KMOD'},{temp:null},{temp:NaN},{temp:999},{obsTime:now/1000-7200},{obsTime:now/1000+600},{cover:'UNKNOWN'}])assert.equal(metarCurrent([{...row,...patch}],station,now),null)});
+test('zero Celsius is valid, severer weather overrides clear sky cover',()=>{assert.equal(metarCurrent([{...row,temp:0,wxString:'TSRA'}],station,now)?.temp_f,32);assert.equal(metarCurrent([{...row,wxString:'TSRA'}],station,now)?.weather_code,211)});
+test('older candidates never replace valid current; failures preserve original',()=>{const fresh=metarCurrent([row],station,now)!;const old={...fresh,observed_at:'2026-11-11T08:00:00Z'};assert.equal(newerObservation(old,fresh),fresh);assert.equal(newerObservation(fresh,old),fresh);assert.equal(newerObservation(old,null),old);assert.equal(needsFresherObservation(old,now),true);assert.equal(needsFresherObservation(fresh,now),false)});

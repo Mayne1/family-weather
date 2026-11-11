@@ -1,3 +1,4 @@
+import { metarCurrent, newerObservation, needsFresherObservation, type StationCurrent, type StationIdentity } from "../../../lib/stationObservation";
 import { createAsyncTtlCache } from "../../../lib/asyncTtlCache";
 import { dailyPeriods } from "../../../lib/forecastDates";
 import { NextRequest, NextResponse } from "next/server";
@@ -40,7 +41,7 @@ type NwsPoint = {
 };
 
 type NwsStationWeather = {
-  current: ReturnType<typeof officialCurrentConditions>;
+  current: StationCurrent | null;
   high_f: number | null;
   low_f: number | null;
 };
@@ -65,6 +66,7 @@ function weatherCode(summary = "") {
   if (/rain|shower|drizzle/.test(text)) return 500;
   if (/fog|haze|smoke/.test(text)) return 741;
   if (/mostly cloudy/.test(text)) return 803;
+  if (/^cloudy$|overcast/.test(text)) return 804;
   if (/partly cloudy|partly sunny/.test(text)) return 802;
   if (/mostly sunny|few clouds/.test(text)) return 801;
   if (/sunny|clear/.test(text)) return 800;
@@ -77,7 +79,7 @@ function finiteNumberOrNull(value: unknown) {
   return Number.isFinite(number) ? number : null;
 }
 
-function officialCurrentConditions(observation: NwsObservation | null) {
+function officialCurrentConditions(observation: NwsObservation | null): StationCurrent | null {
   const properties = observation?.properties;
   const tempC = finiteNumberOrNull(properties?.temperature?.value);
   if (tempC === null) return null;
@@ -118,9 +120,13 @@ async function nwsStationWeather(point: NwsPoint | null, timeZone: string): Prom
   const stationsUrl = point?.properties?.observationStations;
   if (!stationsUrl) return null;
   const stations = await jsonOrNull(stationsUrl, NWS_HEADERS, 3600);
-  const stationUrl = stations?.features?.[0]?.id;
+  const stationFeature = stations?.features?.[0];
+  const stationUrl = stationFeature?.id;
   if (!stationUrl) return null;
 
+  const stationId = String(stationFeature?.properties?.stationIdentifier || String(stationUrl).split("/").pop() || "");
+  const coords = stationFeature?.geometry?.coordinates;
+  const station: StationIdentity = { id: stationId, name: stationFeature?.properties?.name, ...(Array.isArray(coords) && typeof coords[0] === "number" && typeof coords[1] === "number" ? { longitude: coords[0], latitude: coords[1] } : {}) };
   const localDate = dateInTimezone(timeZone);
   const [latest, observations] = await Promise.all([
     jsonOrNull(`${stationUrl}/observations/latest`, NWS_HEADERS),
@@ -131,12 +137,19 @@ async function nwsStationWeather(point: NwsPoint | null, timeZone: string): Prom
       const timestamp = item?.properties?.timestamp;
       return timestamp && dateInTimezone(timeZone, timestamp) === localDate;
     })
-    .map((item: NwsObservation) => Number(item?.properties?.temperature?.value))
-    .filter((value: number) => Number.isFinite(value))
+    .map((item: NwsObservation) => finiteNumberOrNull(item?.properties?.temperature?.value))
+    .filter((value: number | null): value is number => value !== null)
     .map((value: number) => value * 9 / 5 + 32);
 
+  const original = officialCurrentConditions(latest);
+  const stationCurrent = original ? { ...original, station } : null;
+  let current: StationCurrent | null = stationCurrent;
+  if (/^[A-Z0-9]{3,8}$/.test(stationId) && needsFresherObservation(stationCurrent)) {
+    const metar = await jsonOrNull(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(stationId)}&format=json&hours=2`, undefined, 60, 3000);
+    current = newerObservation(stationCurrent, metarCurrent(metar, station));
+  }
   return {
-    current: officialCurrentConditions(latest),
+    current,
     high_f: temperatures.length ? Math.round(Math.max(...temperatures)) : null,
     low_f: temperatures.length ? Math.round(Math.min(...temperatures)) : null,
   };
@@ -233,12 +246,12 @@ function normalizeFallbackDays(value: unknown): WeatherDay[] {
   }).filter((day) => day.date);
 }
 
-async function jsonOrNull(url: string, headers?: HeadersInit, revalidate = 60) {
+async function jsonOrNull(url: string, headers?: HeadersInit, revalidate = 60, timeoutMs = 8000) {
   try {
     const response = await fetch(url, {
       headers,
       next: { revalidate },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) return null;
     return await response.json();
@@ -374,7 +387,8 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
     days,
     source,
     timezone: timeZone,
-    current_source: officialCurrent ? "nws-observation" : current ? "family-weather" : "unavailable",
+    current_source: current?.source || (current ? "family-weather" : "unavailable"),
+    location_mode: hasCoordinates ? "selected" : "default",
     partial: !current || !days.length,
   };
 }
