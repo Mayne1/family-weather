@@ -1,0 +1,37 @@
+name: Mobile event card layout check
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/android-widget-canonical-v15-20261111, codex/weather-station-freshness-20261111]
+    paths: ["mobile/**", "scripts/check-mobile-event-layout.cjs", ".github/workflows/mobile-event-layout.yml"]
+permissions:
+  contents: read
+jobs:
+  event-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --prefix /tmp/mobile-layout --no-package-lock --ignore-scripts playwright@1.62.1
+      - run: npx vite build --config mobile/vite.config.mts
+      - name: Check event controls in a real browser at phone sizes
+        env:
+          PLAYWRIGHT_MODULE: /tmp/mobile-layout/node_modules/playwright
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory mobile-shell > /tmp/mobile-layout-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node scripts/check-mobile-event-layout.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-event-card-layout
+          path: build/mobile-layout/*.png
+          if-no-files-found: warn
+          retention-days: 7
