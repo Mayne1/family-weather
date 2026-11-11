@@ -10,17 +10,18 @@ import { clockLabel } from "../lib/rainTiming";
 import type { RainTiming } from "../lib/rainTiming";
 import type { RainSummary } from "../lib/rainSummary";
 import DecisionEyeMark from "../components/DecisionEyeMark";
+import { handedOffLocation } from "../lib/todayHandoff";
 import { recommendedStartTime } from "../lib/plannerWindow";
 
 type Advice = { tone: string; title: string; copy: string };
 type Result = { rainTiming?: RainTiming | null; rainSummary?: RainSummary | null; source: string; location: string; resolvedLocation: LocationCandidate; day: { rainPeriodStart?: string; rainPeriodEnd?: string; date: string; temp_max_f: number; temp_min_f: number; precip_prob_pct: number | null; wind_max_mph: number; shortForecast?: string }; almanac?: { summary: string; rainYears: number; years: unknown[] } | null; space: string; activity: string; score: number | null; bestWindow: string; summary: string; advice: Advice[]; decision?: { status?: "recommended" | "caution" | "avoid" | "insufficient-data" | "historical-only"; bestWindow?: { start: string; end: string; label: string } | null; safety?: { kind: "rain-risk" | "thunderstorm" | "insufficient"; title: string; detail: string } } };
 
-export default function PlannerTool({ initialActivity, initialLocation, initialDate }: { initialActivity: string; initialLocation: string; initialDate: string }) {
+export default function PlannerTool({ initialActivity, initialLocation, initialDate, initialLat = "", initialLon = "" }: { initialActivity: string; initialLocation: string; initialDate: string; initialLat?: string; initialLon?: string }) {
   const [activity, setActivity] = useState(initialActivity || "yard work");
   const [location, setLocation] = useState(initialLocation);
   const [date, setDate] = useState(initialDate || new Date().toISOString().slice(0, 10));
   const [space, setSpace] = useState("outdoor");
-  const [resolved, setResolved] = useState<LocationCandidate | null>(null);
+  const [resolved, setResolved] = useState<LocationCandidate | null>(() => handedOffLocation(initialLocation, initialLat, initialLon));
   const [suggestions, setSuggestions] = useState<LocationCandidate[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);

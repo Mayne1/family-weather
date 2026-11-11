@@ -19,7 +19,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
           <h1>What are you doing?<br /><em>When should you do it?</em></h1>
           <p>A forecast reports conditions. Family Weather applies those conditions to the activity, location, setting, and date you choose.</p>
         </section>
-        <PlannerTool initialActivity={initial("activity")} initialLocation={initial("location")} initialDate={initial("date")} />
+        <PlannerTool key={[initial("location"), initial("date"), initial("lat"), initial("lon")].join("|")} initialLat={initial("lat")} initialLon={initial("lon")} initialActivity={initial("activity")} initialLocation={initial("location")} initialDate={initial("date")} />
         <section className="plannerExplanation">
           <div><p className="publicKicker">What the answer means</p><h2>A recommendation, not a guarantee.</h2></div>
           <p>Dates inside the forecast window use available forecast data. Farther-out dates use five years of same-date history as planning context. Conditions can change, so check again as the day approaches.</p>

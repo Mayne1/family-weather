@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { localWeatherDate } from "../lib/forecastDates";
 import Link from "next/link";
+import { currentWindText, todayPlannerHref } from "../lib/todayHandoff";
 import WeatherIcon from "../components/WeatherIcon";
 
 type WeatherDay = { date: string; weather_code: number; temp_max_f: number | null; temp_min_f: number; precip_prob_pct: number; wind_max_mph: number; shortForecast?: string };
-type HomeWeather = { timezone?: string; label?: string; refining_current?: boolean; current: { temp_f: number; feels_like_f: number; wind_mph: number | null; humidity_pct?: number | null; humidity_estimated?: boolean } | null; days: WeatherDay[]; air_quality?: { us_aqi: number; category: string } | null };
+type HomeWeather = { lat?: number; lon?: number; current_source?: string; timezone?: string; label?: string; refining_current?: boolean; current: { temp_f: number; feels_like_f: number; wind_mph: number | null; humidity_pct?: number | null; humidity_estimated?: boolean } | null; days: WeatherDay[]; air_quality?: { us_aqi: number; category: string } | null };
 
 function condition(code: number) {
   if (code >= 200 && code < 300) return "Thunderstorms possible";
@@ -49,7 +50,7 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
         <div className="todayCurrentCopy">
           <p className="publicKicker">{weather?.label || "Your weather dashboard"}</p>
           <h2>{weather?.current ? `${weather.current.temp_f}°F` : "Current conditions are being checked"}</h2>
-          <p>{error || (weather?.current ? `Feels like ${weather.current.feels_like_f}°F. ${typeof weather.current.wind_mph === "number" && Number.isFinite(weather.current.wind_mph) ? `Observed wind ${Math.round(weather.current.wind_mph)} mph.` : "Current wind observation unavailable."}` : "While the live observation arrives, you can still open the activity planner or weather history tool below.")}</p>
+          <p>{error || (weather?.current ? `Feels like ${weather.current.feels_like_f}°F. ${currentWindText(weather.current.wind_mph, weather.current_source)}` : "While the live observation arrives, you can still open the activity planner or weather history tool below.")}</p>
         </div>
         {today ? <WeatherIcon className="todayCurrentIcon" code={today.weather_code} title={today.shortForecast || condition(today.weather_code)} /> : null}
         <div className="todaySnapshot">
@@ -70,7 +71,7 @@ export default function TodayWeather({ initialDate = "" }: { initialDate?: strin
         <div className="todayDayHeading"><div><p className="publicKicker">Selected day</p><h3>{new Date(`${selected.date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h3><p>{selected.shortForecast || condition(selected.weather_code)}</p></div><WeatherIcon code={selected.weather_code} title={selected.shortForecast || condition(selected.weather_code)} /></div>
         <div className="todayDayFacts"><span><small>HIGH / LOW (°F)</small><strong>{selected.temp_max_f ?? "—"}°F / {selected.temp_min_f}°F</strong></span><span><small>RAIN CHANCE</small><strong>{selected.precip_prob_pct}%</strong></span><span><small>PEAK WIND</small><strong>{selected.wind_max_mph} mph</strong></span></div>
         <p className="todayDecisionCopy"><strong>This is the weather view.</strong> To find a useful time window, tell the planner whether this is yard work, travel, a cookout, a wedding, or something else.</p>
-        <div className="publicActionRow"><Link className="publicPrimary" href={`/plan?date=${encodeURIComponent(selected.date)}`}>Apply this day to an activity <span>→</span></Link></div>
+        <div className="publicActionRow"><Link className="publicPrimary" href={todayPlannerHref(selected.date, weather)}>Apply this day to an activity <span>→</span></Link></div>
       </div> : null}
       <div className="publicActionRow"><Link className="publicPrimary" href="/plan">Check an activity <span>→</span></Link><Link className="publicSecondary" href="/weather-history">Look up weather history</Link></div>
     </section>
