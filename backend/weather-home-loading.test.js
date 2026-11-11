@@ -85,6 +85,29 @@ test('complete NWS forecast uses a ready coordinate-matched current reading with
   assert.equal(data.days.length,5);
  }finally{release();global.fetch=original;}
 });
+test('location-matched NWS hourly grid beats the airport station when the live provider is unavailable',async()=>{
+ const original=global.fetch;
+ const gridPoint={properties:{...point.properties,forecastHourly:'https://api.weather.gov/test/hourly'}};
+ const start=new Date(Date.now()-5*60000).toISOString(),end=new Date(Date.now()+55*60000).toISOString();
+ const hourly={properties:{periods:[{startTime:start,endTime:end,isDaytime:false,temperature:53,relativeHumidity:{value:88},windSpeed:'3 mph',shortForecast:'Clear'}]}};
+ global.fetch=async(url)=>{const u=String(url);
+  if(u.includes('air-quality'))return reply({});
+  if(u.includes('/points/'))return reply(gridPoint);
+  if(u.endsWith('/test/forecast'))return reply(forecast);
+  if(u.endsWith('/test/hourly'))return reply(hourly);
+  if(u.endsWith('/test/stations'))return reply({features:[{id:'https://api.weather.gov/stations/TEST'}]});
+  if(u.endsWith('/observations/latest'))return reply(observation);
+  if(u.includes('/observations?'))return reply({features:[observation]});
+  return {ok:false};
+ };
+ try{
+  const data=await(await GET(req(37.96))).json();
+  assert.equal(data.current_source,'nws-grid-forecast');
+  assert.equal(data.current.temp_f,53);
+  assert.equal(data.current.humidity_pct,88);
+  assert.equal(data.refining_current,false);
+ }finally{global.fetch=original;}
+});
 test('unavailable official services still use backend and calendar fallback data',async()=>{
  const original=global.fetch;
  global.fetch=async url=>{const u=String(url);
