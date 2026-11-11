@@ -6,7 +6,7 @@ on:
     branches:
       - codex/reply-notifications
       - codex/weather-station-freshness-20261111
-      - codex/android-canonical-nighttest-20261111
+      - codex/android-widget-canonical-v15-20261111
     paths:
       - "mobile/**"
       - "mobile-shell/**"
@@ -49,24 +49,53 @@ jobs:
           mkdir -p "$HOME/.android"
           base64 --decode .github/debug/family-weather-debug.keystore.b64 > "$HOME/.android/debug.keystore"
           chmod 600 "$HOME/.android/debug.keystore"
+          base64 --decode .github/debug/family-weather-debug.keystore.b64 > android/family-weather-widget-test.keystore
+          chmod 600 android/family-weather-widget-test.keystore
 
       - name: Build Android debug app
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew testWidgetPreviewUnitTest assembleWidgetPreview
+
+      - name: Normalize and verify the fixed widget-test signing identity
+        run: |
+          set -o pipefail
+          signing_tool="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
+          apk=android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk
+          "$signing_tool" sign --ks android/family-weather-widget-test.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --v2-signing-enabled true --out /tmp/widget-signed.apk "$apk"
+          "$signing_tool" verify --print-certs /tmp/widget-signed.apk
+          mv /tmp/widget-signed.apk "$apk"
+          python3 <<'PYCODE'
+          import pathlib, struct, hashlib
+          b=pathlib.Path('android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk').read_bytes()
+          end=b.rfind(b'PK\x05\x06'); cd=struct.unpack_from('<I',b,end+16)[0]
+          pos=cd-struct.unpack_from('<Q',b,cd-24)[0]
+          def take(data,p):
+              n=struct.unpack_from('<I',data,p)[0]; return data[p+4:p+4+n],p+4+n
+          while pos<cd-24:
+              n=struct.unpack_from('<Q',b,pos)[0]
+              if struct.unpack_from('<I',b,pos+8)[0]==0x7109871a:
+                  a,_=take(b[pos+12:pos+8+n],0); a,_=take(a,0); a,_=take(a,0)
+                  _,i=take(a,0); a,_=take(a,i); cert,_=take(a,0)
+                  digest=hashlib.sha256(cert).hexdigest(); print('Packaged certificate:',digest)
+                  assert digest=='52d0acd237d956e1cc3feeaa2b387d75a68e015117fd0bdc51dcb12f0df7d39b'
+                  break
+              pos+=8+n
+          else: raise AssertionError('No APK v2 signature')
+          PYCODE
 
       - name: Verify canonical Android package
         run: |
-          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
           BADGING="$("$AAPT" dump badging "$APK" | head -1)"
           echo "$BADGING"
-          grep -q "name='com.thefamilyweather.app.nighttest'" <<<"$BADGING"
-          grep -q "versionCode='12'" <<<"$BADGING"
-          grep -q "versionName='2.0.2'" <<<"$BADGING"
+          grep -q "name='com.thefamilyweather.app.widgetpreview'" <<<"$BADGING"
+          grep -q "versionCode='15'" <<<"$BADGING"
+          grep -q "versionName='2.1.0'" <<<"$BADGING"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: family-weather-current-android-2.0.2
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: family-weather-current-widget-android-v15
+          path: android/app/build/outputs/apk/widgetPreview/app-widgetPreview.apk
           if-no-files-found: error

@@ -1,0 +1,6 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/response_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical" android:padding="16dp" android:background="@drawable/widget_background">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="FAMILY WEATHER · RESPONSES" android:textColor="#F1BD43" android:textSize="10sp"/>
+<TextView android:id="@+id/response_announcements" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="center_vertical" android:text="Sign in inside the app" android:textColor="#FFFFFF" android:textSize="15sp"/>
+<TextView android:id="@+id/response_invitations" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="center_vertical" android:text="Invitation responses" android:textColor="#FFFFFF" android:textSize="13sp"/>
+<TextView android:id="@+id/response_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Open app to sync" android:textColor="#C5D9D1" android:textSize="10sp"/>
+</LinearLayout>

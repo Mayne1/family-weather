@@ -7,6 +7,8 @@ import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { getValidSession, SITE_URL, type AuthSession } from "./api";
 import { AccountScreen, AnnouncementsScreen, EventsScreen, HistoryScreen, MoreScreen, PlanScreen, type PlanHandoff } from "./screens";
 import "./styles.css";
+import { weatherMood } from "./weatherPresentation";
+import { startResponseWidgetSync } from "./responseWidgets";
 
 const LOCATION_KEY = "family-weather-native-location-v1";
 
@@ -70,22 +72,6 @@ function localDate(timeZone?: string) {
 
 function round(value?: number | null) {
   return typeof value === "number" && Number.isFinite(value) ? Math.round(value) : "—";
-}
-
-function localHour(timeZone?: string) {
-  try { return Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(new Date())); }
-  catch { return new Date().getHours(); }
-}
-
-function weatherMood(code: number | undefined, timeZone?: string) {
-  const hour = localHour(timeZone);
-  if (hour < 6 || hour >= 18) return "night";
-  if (code != null && code >= 200 && code < 300) return "storm";
-  if (code != null && code >= 300 && code < 600) return "rain";
-  if (code != null && code >= 600 && code < 700) return "snow";
-  if (code != null && (code === 801 || code === 802)) return "partly";
-  if (code != null && (code >= 700 || code > 802)) return "cloudy";
-  return "sunny";
 }
 
 function weatherBrief(label: string, rain?: number | null, wind?: number | null) {
@@ -176,11 +162,25 @@ function App() {
       if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lon)) query = `?lat=${saved?.lat}&lon=${saved?.lon}`;
     } catch { /* Ignore malformed local preferences. */ }
     void load(query);
+    void NativeApp.getLaunchUrl().then(result=>{
+      const destination=result?.url.split("://")[1]?.split(/[/?#]/)[0];
+      if(destination==="home"||destination==="announcements"||destination==="events")setActiveTab(destination);
+    });
+    const widgetLink = NativeApp.addListener("appUrlOpen", ({ url }) => {
+      const destination=url.split("://")[1]?.split(/[/?#]/)[0];
+      if(destination==="home"||destination==="announcements"||destination==="events")setActiveTab(destination);
+    });
     const listener = NativeApp.addListener("appStateChange", ({ isActive }) => {
       if (isActive) void load(query);
     });
-    return () => { if (refinementTimer.current) clearTimeout(refinementTimer.current); void listener.then((handle) => handle.remove()); };
+    return () => {
+      if (refinementTimer.current) clearTimeout(refinementTimer.current);
+      void listener.then((handle) => handle.remove());
+      void widgetLink.then((handle) => handle.remove());
+    };
   }, [load]);
+
+  useEffect(() => startResponseWidgetSync(session), [session]);
 
   const today = useMemo(() => weather?.days?.find((day) => day.date === localDate(weather?.timezone)) || weather?.days?.[0], [weather]);
   const currentCode = weather?.current?.weather_code ?? today?.weather_code;
@@ -188,7 +188,7 @@ function App() {
   const mood = weatherMood(currentCode, weather?.timezone);
   const selectedForecastDay = weather?.days?.find((day) => day.date === selectedForecastDate) || null;
 
-  async function useLocation() {
+  async function requestLocation() {
     setBusy(true);
     setStatus("Finding your location…");
     try {
@@ -213,7 +213,7 @@ function App() {
   return <div className={`appShell ${activeTab === "home" ? `homeActive mood-${mood}` : ""}`}>
     <header className={`topBar ${activeTab === "home" ? "homeTopBar" : ""}`}>
       <div className="brand"><BrandMark/><span><strong>Family Weather</strong><small>Plan the day.</small></span></div>
-      <button className="roundButton" type="button" onClick={() => void useLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
+      <button className="roundButton" type="button" onClick={() => void requestLocation()} disabled={busy} aria-label="Use my current location"><Icon name="location" /></button>
     </header>
 
     <main className={activeTab === "home" ? "homeMain" : ""}>
