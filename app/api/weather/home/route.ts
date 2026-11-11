@@ -326,9 +326,20 @@ async function loadHomeWeather(lat: number, lon: number, hasCoordinates: boolean
   const officialCurrent = stationWeather?.current || null;
   const officialDays = officialForecast ? buildDays(officialForecast?.properties?.periods || []) : [];
   const nwsTimeZone = point?.properties?.timeZone;
-  // The station remains the official fallback, while the location grid represents
-  // conditions at the requested coordinates instead of several miles away.
-  const calendar = await calendarPromise;
+  const nwsDate = nwsTimeZone ? dateInTimezone(nwsTimeZone) : null;
+  const completeOfficialDays = nwsDate && officialDays.some(day => day.date === nwsDate)
+    && officialDays.filter(day => day.date >= nwsDate).length >= 5;
+  const officialHumidity = finiteNumberOrNull(officialCurrent?.humidity_pct);
+  const completeOfficialHumidity = officialHumidity !== null && officialHumidity >= 0 && officialHumidity <= 100;
+  // Give the coordinate-matched current reading a short opportunity to answer.
+  // Complete official weather must not wait behind a slow fallback provider.
+  const fastCalendar = completeOfficialDays && completeOfficialHumidity
+    ? await Promise.race([
+        calendarPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 200)),
+      ])
+    : await calendarPromise;
+  const calendar = fastCalendar || { days: [] as WeatherDay[], current: null, humidity: null, timeZone: nwsTimeZone };
   const timeZone = nwsTimeZone || calendar.timeZone || "UTC";
   const localDate = dateInTimezone(timeZone);
 
