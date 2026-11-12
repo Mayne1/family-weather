@@ -7,11 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { getValidSession, sendPasswordReset, signIn, signOut, signUp } from "../lib/firebaseAuth";
 import type { AuthSession } from "../lib/firebaseAuth";
+import { navigateWithoutReferrer } from "../lib/googleAdsConversionBridge";
 import styles from "../design-preview/preview.module.css";
 
 export default function HomeAccount() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [ready, setReady] = useState(false);
+  const [accountPage, setAccountPage] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -23,10 +25,11 @@ export default function HomeAccount() {
     if (requestedMode !== "signin" && requestedMode !== "signup") return;
     setMode(requestedMode);
     setError("");
-    setNotice(""); dialog.current?.showModal();
-    url.searchParams.delete("account");
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    setNotice("");
+    setAccountPage(true);
+    // Keep the marker: this entire document must remain outside measurement.
   }, []);
+  useEffect(() => { if (accountPage) dialog.current?.showModal(); }, [accountPage]);
   useEffect(() => {
     let active = true;
     const sync = () => { void getValidSession().then(value => { if (active) { setSession(value); setReady(true); } }); };
@@ -53,10 +56,15 @@ export default function HomeAccount() {
     finally { setBusy(false); }
   }
   return <>
-    <button type="button" className={styles.accountButton} disabled={!ready} onClick={() => { setMode("signin"); setError(""); setNotice(""); dialog.current?.showModal(); }}>
+    <button type="button" className={styles.accountButton} disabled={!ready} onClick={() => {
+      if (accountPage) { dialog.current?.showModal(); return; }
+      const url = new URL(window.location.href);
+      url.searchParams.set("account", "signin");
+      navigateWithoutReferrer(`${url.pathname}${url.search}${url.hash}`);
+    }}>
       <span className={styles.accountDot} data-signed-in={!!session} />{!ready ? "Checking account…" : session ? "Signed in · Account" : "Sign in"}
     </button>
-    <dialog ref={dialog} className={styles.accountDialog} aria-labelledby="home-account-title">
+    {accountPage ? <dialog ref={dialog} className={styles.accountDialog} aria-labelledby="home-account-title">
       <button type="button" className={styles.dialogClose} aria-label="Close account box" onClick={() => dialog.current?.close()}>×</button>
       <p className={styles.kicker}>FAMILY WEATHER ACCOUNT</p>
       <h2 id="home-account-title">{session ? "You’re signed in." : mode === "signin" ? "Welcome back." : mode === "signup" ? "Make yourself at home." : "Reset your password."}</h2>
@@ -70,6 +78,6 @@ export default function HomeAccount() {
         {mode === "signin" ? <button className={styles.forgotPassword} type="button" disabled={busy} onClick={() => { setMode("reset"); setError(""); setNotice(""); }}>Forgot password?</button> : null}
         <button className={styles.authSwitch} type="button" disabled={busy} onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setNotice(""); }}>{mode === "signin" ? "New here? Sign up" : mode === "signup" ? "Already have an account? Sign in" : "Back to sign in"}</button>
       </form>}
-    </dialog>
+    </dialog> : null}
   </>;
 }

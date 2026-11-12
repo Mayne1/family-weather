@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import LocationSearchInput from "../components/LocationSearchInput";
 import { getValidSession, sendPasswordReset, signIn, signUp } from "../lib/firebaseAuth";
 import type { AuthSession } from "../lib/firebaseAuth";
@@ -10,12 +9,15 @@ import type { LocationCandidate } from "../lib/location";
 import DecisionEyeMark from "../components/DecisionEyeMark";
 import { recommendedStartTime } from "../lib/plannerWindow";
 import { weatherScoreCaption } from "../lib/weatherReview";
+import { continueAfterEventSave } from "../lib/googleAdsEventConversion";
 
 type EventDraft = { name: string; activity: string; guests: string; location: string; date: string; time: string };
 type Plan = { source: string; location: string; resolvedLocation: LocationCandidate; score: number | null; bestWindow: string; space: string; activity: string; advice: Array<{ tone: string; title: string; copy: string }>; decision?: { status?: "recommended" | "caution" | "avoid" | "insufficient-data" | "historical-only" } };
 
 export default function CreateEventFlow({ initialActivity, initialLocation, initialDate, initialWindow, initialTime }: { initialActivity: string; initialLocation: string; initialDate: string; initialWindow: string; initialTime: string }) {
-  const router = useRouter();
+  const saveInFlight = useRef(false);
+  const createdEventId = useRef<string | null>(null);
+  const [eventAlreadyCreated, setEventAlreadyCreated] = useState(false);
   const [step, setStep] = useState<"details" | "review" | "account">("details");
   const [activity, setActivity] = useState(initialActivity || "family gathering");
   const [location, setLocation] = useState(initialLocation);
@@ -65,22 +67,34 @@ export default function CreateEventFlow({ initialActivity, initialLocation, init
   }
 
   async function save() {
-    const active = await getValidSession();
-    if (!active) { setSession(null); setStep("account"); return; }
-    if (!draft || !plan) return;
+    // Disable synchronously: two clicks must not create two events or conversions.
+    if (saveInFlight.current || !draft || !plan) return;
+    saveInFlight.current = true;
     setLoading(true); setError("");
+    let continuing = false;
     try {
-      const starts = new Date(`${draft.date}T${draft.time || "12:00"}:00`); const ends = new Date(starts.getTime() + 3 * 60 * 60 * 1000);
-      const response = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${active.idToken}` }, body: JSON.stringify({ title: draft.name, description: `${draft.activity} · ${space}`, location: draft.location, starts_at: starts.toISOString(), ends_at: ends.toISOString() }) });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "The event could not be saved.");
-      if (resolved) {
-        const locationResponse = await fetch(`/api/events/${encodeURIComponent(data.event.id)}/location`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${active.idToken}` }, body: JSON.stringify(resolved) });
-        const locationData = await locationResponse.json();
-        if (!locationResponse.ok || !locationData.ok) throw new Error(locationData.error || "The event was saved, but its location could not be attached.");
+      const active = await getValidSession();
+      if (!active) { setSession(null); setStep("account"); return; }
+      if (!createdEventId.current) {
+        const starts = new Date(`${draft.date}T${draft.time || "12:00"}:00`); const ends = new Date(starts.getTime() + 3 * 60 * 60 * 1000);
+        const response = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${active.idToken}` }, body: JSON.stringify({ title: draft.name, description: `${draft.activity} · ${space}`, location: draft.location, starts_at: starts.toISOString(), ends_at: ends.toISOString() }) });
+        const data = await response.json();
+        const id = String(data?.event?.id || "");
+        if (!response.ok || !data.ok || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) throw new Error(data.error || "The event could not be saved.");
+        createdEventId.current = id;
+        setEventAlreadyCreated(true);
       }
-      router.push(`/events/${encodeURIComponent(data.event.id)}/invitation`);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "The event could not be saved."); setLoading(false); }
+      // Retain the created ID if this attachment fails. A retry finishes the same
+      // event instead of POSTing another event and counting a second conversion.
+      if (resolved) {
+        const locationResponse = await fetch(`/api/events/${encodeURIComponent(createdEventId.current)}/location`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${active.idToken}` }, body: JSON.stringify(resolved) });
+        const locationData = await locationResponse.json();
+        if (!locationResponse.ok || !locationData.ok) throw new Error("Your event is saved, but its location could not be attached. Retry to finish the same event.");
+      }
+      continueAfterEventSave(createdEventId.current, process.env.NEXT_PUBLIC_GOOGLE_ADS_EVENT_CONVERSION_LABEL);
+      continuing = true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "The event could not be saved."); }
+    finally { if (!continuing) { saveInFlight.current = false; setLoading(false); } }
   }
 
   const planIsHistorical = plan?.source === "almanac";
@@ -88,7 +102,7 @@ export default function CreateEventFlow({ initialActivity, initialLocation, init
 
   return <section className="createEventWorkspace"><ol className="workflowProgress"><li className={step === "details" ? "active" : "done"}><span>1</span>Event details</li><li className={step === "review" ? "active" : step === "account" ? "done" : ""}><span>2</span>Weather review</li><li className={step === "account" ? "active" : ""}><span>3</span>Save event</li><li><span>4</span>Invitation design</li></ol>
     {step === "details" ? <form className="workflowCard" onSubmit={review}><h2>Tell us what you are planning.</h2><p>These details create the event. The invitation design comes next on its own page.</p><div className="formGrid"><label className="formField full"><span>Event name</span><input name="name" required placeholder="Johnson family cookout" /></label><label className="formField"><span>Activity</span><input value={activity} onChange={(event) => setActivity(event.target.value)} required /></label><label className="formField"><span>Expected guests</span><input name="guests" type="number" min="1" defaultValue="12" /></label><label className="formField full"><span>Address, venue, landmark, or city</span><LocationSearchInput id="create-event-location" required value={location} forcedSuggestions={suggestions} onChange={(value) => { setLocation(value); setResolved(null); setSuggestions([]); }} onSelect={(candidate) => { setLocation(candidate.label); setResolved(candidate); setSuggestions([]); }} /></label><label className="formField"><span>Date</span><input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label><label className="formField"><span>Start time</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} required />{initialWindow && recommendedStartTime(`2000-01-01T${initialTime}:00`, initialWindow) ? <small className="fieldHint">Planner window: {initialWindow}. The start time begins inside that window.</small> : null}</label></div><fieldset className="spaceChoice"><legend>Where will people spend their time?</legend><div>{[["indoor", "⌂", "Indoor", "Travel weather matters."], ["outdoor", "☀", "Outdoor", "Exposure matters most."], ["both", "◐", "Both", "Check both settings."]].map(([value, icon, title, copy]) => <button key={value} type="button" className={space === value ? "active" : ""} onClick={() => setSpace(value)}><b>{icon}</b><span><strong>{title}</strong><small>{copy}</small></span></button>)}</div></fieldset><button className="primaryCta" disabled={loading}>{loading ? "Checking real weather…" : "Review the weather fit"}<span>→</span></button>{error ? <p className="formError">{error}</p> : null}</form> : null}
-    {step === "review" && plan && draft ? <section className="workflowCard weatherReviewCard"><button className="backButton" type="button" onClick={() => setStep("details")}>← Edit event details</button><p className="publicKicker">Weather review</p><h2>{planDataIncomplete ? "Weather data is incomplete—not bad." : planIsHistorical ? "Historical pattern for your event date." : plan.score !== null && plan.score >= 80 ? "This plan has a strong weather window." : plan.score !== null && plan.score >= 60 ? "This plan can work with preparation." : "This plan needs a backup."}</h2><p>{draft.name} · {draft.location} · {new Date(`${draft.date}T${draft.time}:00`).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>{planDataIncomplete ? <div className="plannerDataAlert" role="status"><strong>No weather verdict was issued.</strong><p>You can still save the event, but check again before relying on the weather.</p></div> : null}<div className="reviewScore"><div><small>{planDataIncomplete ? "DATA STATUS" : planIsHistorical && plan.score !== null ? "HISTORICAL FIT" : "WEATHER FIT"}</small><strong>{planDataIncomplete ? "?" : plan.score ?? "—"}</strong><span>{weatherScoreCaption(plan.source, plan.score, planDataIncomplete)}</span></div><div><small>BEST WINDOW</small><strong>{plan.bestWindow}</strong><span>{plan.source.toUpperCase()} planning basis</span></div></div><div className="adviceList">{plan.advice?.map((item) => <article key={item.title} className={`${item.tone === "warn" ? "warning" : ""}${item.title === "The Eye says" ? " eyeGuidance" : ""}`}><span>{item.title === "The Eye says" ? <DecisionEyeMark /> : item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div><button className="primaryCta" type="button" onClick={save} disabled={loading}>{loading ? "Saving event…" : session ? "Save event and design invitation" : "Sign in to save and continue"}<span>→</span></button>{error ? <p className="formError">{error}</p> : null}</section> : null}
+    {step === "review" && plan && draft ? <section className="workflowCard weatherReviewCard"><button className="backButton" type="button" disabled={loading || eventAlreadyCreated} onClick={() => setStep("details")}>← Edit event details</button><p className="publicKicker">Weather review</p><h2>{planDataIncomplete ? "Weather data is incomplete—not bad." : planIsHistorical ? "Historical pattern for your event date." : plan.score !== null && plan.score >= 80 ? "This plan has a strong weather window." : plan.score !== null && plan.score >= 60 ? "This plan can work with preparation." : "This plan needs a backup."}</h2><p>{draft.name} · {draft.location} · {new Date(`${draft.date}T${draft.time}:00`).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>{planDataIncomplete ? <div className="plannerDataAlert" role="status"><strong>No weather verdict was issued.</strong><p>You can still save the event, but check again before relying on the weather.</p></div> : null}<div className="reviewScore"><div><small>{planDataIncomplete ? "DATA STATUS" : planIsHistorical && plan.score !== null ? "HISTORICAL FIT" : "WEATHER FIT"}</small><strong>{planDataIncomplete ? "?" : plan.score ?? "—"}</strong><span>{weatherScoreCaption(plan.source, plan.score, planDataIncomplete)}</span></div><div><small>BEST WINDOW</small><strong>{plan.bestWindow}</strong><span>{plan.source.toUpperCase()} planning basis</span></div></div><div className="adviceList">{plan.advice?.map((item) => <article key={item.title} className={`${item.tone === "warn" ? "warning" : ""}${item.title === "The Eye says" ? " eyeGuidance" : ""}`}><span>{item.title === "The Eye says" ? <DecisionEyeMark /> : item.tone === "warn" ? "!" : "✓"}</span><div><strong>{item.title}</strong><p>{item.copy}</p></div></article>)}</div><button className="primaryCta" type="button" onClick={save} disabled={loading}>{loading ? "Saving event…" : session ? "Save event and design invitation" : "Sign in to save and continue"}<span>→</span></button>{error ? <p className="formError">{error}</p> : null}</section> : null}
     {step === "account" ? <form className="workflowCard accountCard" onSubmit={authenticate}><button className="backButton" type="button" onClick={() => setStep("review")}>← Back to weather review</button><p className="publicKicker">Family Weather account</p><h2>{authMode === "signin" ? "Sign in to save the event." : authMode === "signup" ? "Create an account to save the event." : "Reset your password."}</h2><p>{authMode === "reset" ? "Enter your account email. Firebase will send the secure reset link, and your event details will remain in place." : "The event details and weather review remain in place while you sign in."}</p><label className="formField"><span>Email address</span><input name="email" type="email" required autoComplete="email" /></label>{authMode !== "reset" ? <label className="formField"><span>Password</span><input name="password" type="password" required minLength={authMode === "signup" ? 6 : undefined} autoComplete={authMode === "signin" ? "current-password" : "new-password"} /></label> : null}{authNotice ? <p className="authNotice" role="status">{authNotice}</p> : null}<button className="primaryCta" disabled={loading}>{loading ? "One moment…" : authMode === "signin" ? "Sign in and continue" : authMode === "signup" ? "Create account and continue" : "Send reset email"}<span>→</span></button>{authMode === "signin" ? <button className="forgotPassword" type="button" onClick={() => { setAuthMode("reset"); setError(""); setAuthNotice(""); }}>Forgot password?</button> : null}<button className="authSwitch" type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setError(""); setAuthNotice(""); }}>{authMode === "signin" ? "New here? Create an account" : authMode === "signup" ? "Already have an account? Sign in" : "Back to sign in"}</button>{error ? <p className="formError">{error}</p> : null}</form> : null}
   </section>;
 }

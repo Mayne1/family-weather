@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getValidSession } from "../../lib/firebaseAuth";
+import PurchaseConversionReturn from "../../components/PurchaseConversionReturn";
 import ReplyNotifications from "../../components/ReplyNotifications";
 import NativeShare from "../../components/NativeShare";
 import type { EventEntitlement } from "../../lib/entitlementTypes";
@@ -155,6 +156,7 @@ export default function EventDetailPage() {
 
   const starts = event.starts_at ? new Date(event.starts_at) : null;
   return <main className="eventManagePage">
+    <PurchaseConversionReturn eventId={id} />
     <header className="manageHeader"><Link className="eventsBrand" href="/" aria-label="Family Weather home"><span className="brandMark"><i /><i /><i /></span><span><strong>Family Weather</strong><small>Plan together. Weather better.</small></span></Link><Link className="backToEvents" href="/events"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6.5-5 5.5 5 5.5"/></svg><span>My events</span></Link></header>
     <nav className="eventWorkspaceNav" aria-label="Event workspace"><Link className="active" href={`/events/${id}`}>Overview & guests</Link><Link href={`/events/${id}/invitation`}>Invitation design</Link><Link href={`/events/${id}/package`}>Package</Link></nav>
     <section className="eventManageHero"><p className="eyebrow"><span /> Event #{event.id}</p><h1>{event.title}</h1><p>{event.description || "No additional details."}</p><div className="manageFacts"><span>{starts ? starts.toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Date not set"}</span><span>{event.location || "Location not set"}</span></div></section>

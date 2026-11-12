@@ -70,7 +70,7 @@ export default function GoogleAdsMeasurement() {
   return <aside className={styles.root} aria-label="Google Ads measurement choices">
     {open ? <section className={styles.panel} aria-labelledby="google-ads-choice-title">
       <h2 id="google-ads-choice-title">Help us measure our ads?</h2>
-      <p>With your permission, Google Ads can use cookies and receive ad-click and browser information on public pages to measure our advertising. This does not enable personalized ads. You can decline and keep using the site.</p>
+      <p>With your permission, Google Ads can use cookies and receive ad-click and browser information on selected public pages and after a confirmed purchase to measure our advertising. This does not enable personalized ads. You can decline and keep using the site.</p>
       <p>This choice is for Google Ads measurement. <a href="/privacy">Privacy policy</a></p>
       {privacySignal ? <p>Your browser privacy signal keeps Google Ads measurement off.</p> : null}
       {error ? <p role="alert">{error}</p> : null}
