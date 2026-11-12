@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { backendUrl } from "../../../../lib/serverConfig";
 import { enforceRateLimit } from "../../../../lib/requestSecurity";
 import { readPurchaseReceipt } from "../../../../lib/purchaseReceipt";
+import { isLiveStripeSecret, stripeHeaders } from "../../../../lib/stripeConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     },
     async loadStripeSession(sessionId) {
       const secret = process.env.STRIPE_SECRET_KEY?.trim();
-      if (!secret) return { ok: false, status: 503, data: null };
+      if (!isLiveStripeSecret(secret)) return { ok: false, status: 503, data: null };
       const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
-        headers: { Authorization: `Bearer ${secret}` }, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(6_000),
+        headers: stripeHeaders(secret), cache: "no-store", redirect: "error", signal: AbortSignal.timeout(6_000),
       });
       return { ok: response.ok, status: response.status, data: await response.json() };
     },

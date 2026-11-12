@@ -99,7 +99,7 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
       const parsed = new URL(checkoutUrl);
       validUrl = parsed.protocol === "https:" && parsed.hostname === "checkout.stripe.com";
     } catch {}
-    if (!target || !sessionId.startsWith("cs_") || !validUrl) return res.status(400).json({ ok: false, error: "invalid_checkout" });
+    if (!target || !sessionId.startsWith("cs_live_") || !validUrl) return res.status(400).json({ ok: false, error: "invalid_checkout" });
 
     let client;
     try {
@@ -117,7 +117,13 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
         await client.query("ROLLBACK");
         return res.status(409).json({ ok: false, error: "event_already_entitled" });
       }
-      if (current.pending_product_code && current.stripe_checkout_session_id && current.pending_product_code !== target.code) {
+      // Concurrent requests must not replace an already registered session.
+      // Otherwise a customer could pay the first session after it loses its entitlement link.
+      if (current.pending_product_code && current.stripe_checkout_session_id) {
+        if (current.pending_product_code === target.code && current.stripe_checkout_session_id === sessionId) {
+          await client.query("COMMIT");
+          return res.json({ ok: true, entitlement: normalize(current) });
+        }
         await client.query("ROLLBACK");
         return res.status(409).json({ ok: false, error: "checkout_already_pending" });
       }
@@ -153,10 +159,11 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
     if (!sessionId.startsWith("cs_")) return res.status(400).json({ ok: false, error: "invalid_checkout" });
     try {
       const result = await pool.query(
-        `UPDATE event_entitlements e SET stripe_checkout_session_id=NULL,stripe_checkout_url=NULL,
+        `UPDATE event_entitlements SET stripe_checkout_session_id=NULL,stripe_checkout_url=NULL,
            pending_product_code=NULL,pending_amount_cents=NULL,updated_at=now()
-         FROM events v WHERE e.event_id=v.id AND e.event_id=$1 AND v.owner_uid=$2 AND e.stripe_checkout_session_id=$3
-         RETURNING e.event_id`,
+         WHERE event_id=$1 AND event_id IN (SELECT id FROM events WHERE owner_uid=$2)
+           AND stripe_checkout_session_id=$3 AND pending_product_code IS NOT NULL
+         RETURNING event_id`,
         [id, req.uid, sessionId],
       );
       return result.rowCount ? res.json({ ok: true }) : res.status(404).json({ ok: false, error: "checkout_not_found" });
@@ -230,6 +237,11 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
       const target = paidPlan(codeResult.rows[0].product_code);
       const currentResult = await client.query("SELECT * FROM event_entitlements WHERE event_id=$1 FOR UPDATE", [id]);
       const current = currentResult.rows[0];
+      // A promotion must never sever the link to a checkout that can still settle.
+      if (current.pending_product_code || current.stripe_checkout_url) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ ok: false, error: "Finish or cancel the pending checkout before applying a promotion." });
+      }
       if (!target || current.status === "legacy" || target.rank <= planFor(current.product_code).rank) {
         await client.query("ROLLBACK");
         return res.status(409).json({ ok: false, error: "promotion_would_not_upgrade_event" });
@@ -352,16 +364,21 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
     const signature = typeof req.body?.signature === "string" ? req.body.signature : "";
     const secret = String(process.env.STRIPE_WEBHOOK_SECRET || "").trim();
     if (!secret) return res.status(503).json({ ok: false, error: "stripe_webhook_not_configured" });
-    if (!payload || payload.length > 2_000_000 || !validStripeSignature(payload, signature, secret)) return res.status(400).json({ ok: false, error: "invalid_stripe_signature" });
+    if (!payload || Buffer.byteLength(payload, "utf8") > 2_000_000 || !validStripeSignature(payload, signature, secret)) return res.status(400).json({ ok: false, error: "invalid_stripe_signature" });
     let stripeEvent;
     try { stripeEvent = JSON.parse(payload); } catch { return res.status(400).json({ ok: false, error: "invalid_stripe_payload" }); }
-    if (stripeEvent?.type !== "checkout.session.completed") return res.json({ ok: true, ignored: true });
+    if (stripeEvent?.livemode !== true) return res.status(400).json({ ok: false, error: "live_stripe_event_required" });
+    const supported = ["checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"];
+    if (!supported.includes(stripeEvent?.type)) return res.json({ ok: true, ignored: true });
 
     const session = stripeEvent?.data?.object || {};
     const eventId = String(session?.metadata?.event_id || "").trim().slice(0, 40);
     const target = paidPlan(String(session?.metadata?.product_code || "").trim());
     const sessionId = String(session?.id || "").trim().slice(0, 255);
-    if (!(eventId && target && sessionId.startsWith("cs_") && session?.mode === "payment" && session?.payment_status === "paid" && String(session?.currency || "").toLowerCase() === "usd")) return res.status(400).json({ ok: false, error: "invalid_purchase_confirmation" });
+    const failed = stripeEvent.type === "checkout.session.async_payment_failed";
+    const paid = session.payment_status === "paid";
+    if (!(eventId && target && sessionId.startsWith("cs_live_") && session.livemode === true && session.mode === "payment" && session.status === "complete" && String(session.client_reference_id) === eventId && session.currency === "usd" && Number.isSafeInteger(session.amount_total) && session.amount_total > 0)) return res.status(400).json({ ok: false, error: "invalid_purchase_confirmation" });
+    if ((failed && paid) || (stripeEvent.type === "checkout.session.async_payment_succeeded" && !paid) || !["paid", "unpaid"].includes(session.payment_status)) return res.status(400).json({ ok: false, error: "invalid_payment_status" });
 
     let client;
     try {
@@ -370,6 +387,8 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
       const currentResult = await client.query("SELECT * FROM event_entitlements WHERE event_id=$1 AND stripe_checkout_session_id=$2 FOR UPDATE", [eventId, sessionId]);
       if (!currentResult.rowCount) {
         await client.query("ROLLBACK");
+        // Retried failures/unpaid completions may refer to an already replaced attempt.
+        if (!paid) return res.json({ ok: true, ignored: true });
         return res.status(409).json({ ok: false, error: "checkout_not_registered" });
       }
       const current = currentResult.rows[0];
@@ -377,9 +396,29 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
         await client.query("COMMIT");
         return res.json({ ok: true, event_id: eventId, duplicate: true });
       }
-      if (current.pending_product_code !== target.code || Number(current.pending_amount_cents) !== Number(session.amount_total)) {
+      if (failed && !current.pending_product_code) {
+        await client.query("COMMIT");
+        return res.json({ ok: true, ignored: true });
+      }
+      if (current.pending_product_code !== target.code || Number(current.pending_amount_cents) !== session.amount_total) {
         await client.query("ROLLBACK");
         return res.status(400).json({ ok: false, error: "invalid_purchase_amount" });
+      }
+      if (failed) {
+        // Keep the current purchased plan, benefits and historical payment untouched.
+        // Retain the failed session ID for audit; a new checkout can replace it.
+        await client.query(
+          `UPDATE event_entitlements SET stripe_checkout_url=NULL,pending_product_code=NULL,
+             pending_amount_cents=NULL,updated_at=now()
+           WHERE event_id=$1 AND stripe_checkout_session_id=$2`, [eventId, sessionId],
+        );
+        await client.query("COMMIT");
+        return res.json({ ok: true, payment_failed: true });
+      }
+      if (!paid) {
+        // Delayed methods complete Checkout before their payment settles.
+        await client.query("COMMIT");
+        return res.json({ ok: true, payment_processing: true });
       }
       await client.query(
         `UPDATE event_entitlements SET status='paid',product_code=$3,amount_cents=$4,distribution_method='both',email_limit=$5,
@@ -388,12 +427,12 @@ module.exports = function makeEventEntitlementsRouter(pool, requireFirebaseUser)
          WHERE event_id=$1 AND stripe_checkout_session_id=$2`,
         [eventId, sessionId, target.code, target.priceCents, target.emailLimit, session.payment_intent || null, session.customer || null],
       );
-      await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'purchase_completed',$2::jsonb)", [eventId, JSON.stringify({ product_code: target.code, amount_cents: Number(session.amount_total) })]);
+      await client.query("INSERT INTO commerce_events(event_id,event_name,detail) VALUES($1,'purchase_completed',$2::jsonb)", [eventId, JSON.stringify({ product_code: target.code, amount_cents: session.amount_total })]);
       await client.query("COMMIT");
       return res.json({ ok: true, event_id: eventId });
-    } catch (error) {
+    } catch {
       if (client) await client.query("ROLLBACK").catch(() => {});
-      console.error("stripe_entitlement_confirmation_failed", error);
+      console.error("stripe_entitlement_confirmation_failed");
       return res.status(500).json({ ok: false, error: "entitlement_confirmation_failed" });
     } finally {
       client?.release();

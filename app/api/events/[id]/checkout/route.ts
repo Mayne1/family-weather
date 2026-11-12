@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { backendUrl, publicOrigin } from "../../../../lib/serverConfig";
 import { commercePlan, COMMERCE_PLANS } from "../../../../lib/commercePlans";
 import { enforceRateLimit } from "../../../../lib/requestSecurity";
+import { isLiveStripeSecret, stripeHeaders } from "../../../../lib/stripeConfig";
 
 const PAID_CODES = new Set<string>(COMMERCE_PLANS.filter((plan) => plan.priceCents > 0).map((plan) => plan.code));
 
@@ -10,8 +11,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   if (limited) return limited;
   const authorization = request.headers.get("authorization") || "";
   if (!authorization.startsWith("Bearer ")) return NextResponse.json({ ok: false, error: "Sign in before purchasing this event." }, { status: 401 });
+  if (process.env.STRIPE_CHECKOUT_PAUSED === "1") return NextResponse.json({ ok: false, error: "Event purchasing is temporarily unavailable. Please try again later." }, { status: 503 });
   const secret = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!secret) return NextResponse.json({ ok: false, error: "Event purchasing is not configured yet." }, { status: 503 });
+  if (!isLiveStripeSecret(secret)) return NextResponse.json({ ok: false, error: "Event purchasing is not configured yet." }, { status: 503 });
 
   try {
     const { id } = await context.params;
@@ -25,6 +27,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (!entitlementResponse.ok || !entitlementData.ok) return NextResponse.json({ ok: false, error: "Only the event owner can upgrade this event." }, { status: entitlementResponse.status });
     const current = entitlementData.entitlement;
     if (!current || current.status === "legacy" || target.rank <= Number(current.plan_rank)) return NextResponse.json({ ok: false, error: "This event already has that level of access." }, { status: 409 });
+    if (current.pending_product_code && current.checkout_url && !String(current.checkout_session_id || "").startsWith("cs_live_")) {
+      return NextResponse.json({ ok: false, error: "This event has an older test checkout. Contact support before starting a live payment." }, { status: 409 });
+    }
     if (current.pending_product_code === target.code && current.checkout_url) return NextResponse.json({ ok: true, checkout_url: current.checkout_url });
     if (current.pending_product_code && current.checkout_url) return NextResponse.json({ ok: false, error: "Finish or cancel the pending checkout before choosing a different upgrade." }, { status: 409 });
 
@@ -51,9 +56,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/x-www-form-urlencoded" },
+      headers: { ...stripeHeaders(secret), "Content-Type": "application/x-www-form-urlencoded" },
       body: form,
       cache: "no-store",
+      redirect: "error",
       signal: AbortSignal.timeout(12_000),
     });
     const stripeData = await stripeResponse.json();
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const checkoutUrl = String(stripeData?.url || "");
     let parsed: URL;
     try { parsed = new URL(checkoutUrl); } catch { return NextResponse.json({ ok: false, error: "Secure checkout could not be started." }, { status: 502 }); }
-    if (!stripeResponse.ok || !sessionId.startsWith("cs_") || parsed.protocol !== "https:" || parsed.hostname !== "checkout.stripe.com") return NextResponse.json({ ok: false, error: "Secure checkout could not be started." }, { status: 502 });
+    if (!stripeResponse.ok || !sessionId.startsWith("cs_live_") || stripeData.livemode !== true || stripeData.mode !== "payment" || stripeData.currency !== "usd" || stripeData.amount_total !== amountDue || parsed.protocol !== "https:" || parsed.hostname !== "checkout.stripe.com") return NextResponse.json({ ok: false, error: "Secure checkout could not be started." }, { status: 502 });
 
     const saveResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement/checkout`), {
       method: "POST",
@@ -81,20 +87,20 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   const authorization = request.headers.get("authorization") || "";
   if (!authorization.startsWith("Bearer ")) return NextResponse.json({ ok: false, error: "Sign in before changing checkout." }, { status: 401 });
   const secret = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!secret) return NextResponse.json({ ok: false, error: "Event purchasing is not configured yet." }, { status: 503 });
+  if (!isLiveStripeSecret(secret)) return NextResponse.json({ ok: false, error: "Event purchasing is not configured yet." }, { status: 503 });
   try {
     const { id } = await context.params;
     const entitlementResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement`), { headers: { Authorization: authorization }, cache: "no-store" });
     const data = await entitlementResponse.json();
     const sessionId = String(data?.entitlement?.checkout_session_id || "");
-    if (!entitlementResponse.ok || !sessionId.startsWith("cs_")) return NextResponse.json({ ok: false, error: "No pending checkout was found." }, { status: 404 });
-    const stripeHeaders = { Authorization: `Bearer ${secret}` };
-    const statusResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers: stripeHeaders, cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    if (!entitlementResponse.ok || !sessionId.startsWith("cs_live_")) return NextResponse.json({ ok: false, error: "No pending checkout was found." }, { status: 404 });
+    const headers = stripeHeaders(secret);
+    const statusResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(10_000) });
     const session = await statusResponse.json();
-    if (!statusResponse.ok) return NextResponse.json({ ok: false, error: "Checkout status could not be verified." }, { status: 502 });
-    if (session.payment_status === "paid" || session.status === "complete") return NextResponse.json({ ok: false, error: "Payment was already completed. Refresh this event to see the upgrade." }, { status: 409 });
+    if (!statusResponse.ok || session.livemode !== true || session.id !== sessionId) return NextResponse.json({ ok: false, error: "Checkout status could not be verified." }, { status: 502 });
+    if (session.payment_status === "paid" || session.status === "complete") return NextResponse.json({ ok: false, error: "Payment is processing or completed. Refresh this event to check the upgrade." }, { status: 409 });
     if (session.status === "open") {
-      const expireResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, { method: "POST", headers: stripeHeaders, cache: "no-store", signal: AbortSignal.timeout(10_000) });
+      const expireResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, { method: "POST", headers, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(10_000) });
       if (!expireResponse.ok) return NextResponse.json({ ok: false, error: "Checkout could not be cancelled safely." }, { status: 409 });
     }
     const clearResponse = await fetch(backendUrl(`/events/${encodeURIComponent(id)}/entitlement/checkout`), { method: "DELETE", headers: { Authorization: authorization, "Content-Type": "application/json" }, body: JSON.stringify({ stripe_checkout_session_id: sessionId }), cache: "no-store" });

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test backend/*.test.js && npm run test:decision",
-    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts app/lib/plannerForecast.test.ts app/lib/weatherCache.test.ts app/lib/plannerWindow.test.ts app/lib/firebaseAuth.test.ts app/lib/location.test.ts app/lib/weatherReview.test.ts app/lib/affiliatePromotions.test.ts app/lib/locationCurrent.test.ts app/lib/googleAds.test.ts app/lib/googleAdsEventConversion.test.ts app/lib/googleAdsPurchaseConversion.test.ts app/lib/purchaseReceipt.test.ts",
+    "test:decision": "node --experimental-strip-types --test app/lib/decisionSpine.test.ts app/lib/beachForecast.test.ts app/lib/plannerForecast.test.ts app/lib/weatherCache.test.ts app/lib/plannerWindow.test.ts app/lib/firebaseAuth.test.ts app/lib/location.test.ts app/lib/weatherReview.test.ts app/lib/affiliatePromotions.test.ts app/lib/locationCurrent.test.ts app/lib/googleAds.test.ts app/lib/googleAdsEventConversion.test.ts app/lib/googleAdsPurchaseConversion.test.ts app/lib/purchaseReceipt.test.ts app/lib/stripeConfig.test.ts",
     "mobile:sync": "cap sync",
     "mobile:build": "vite build --config mobile/vite.config.mts && cap sync",
     "mobile:dev": "vite --config mobile/vite.config.mts",
