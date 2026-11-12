@@ -1,11 +1,12 @@
 export const GOOGLE_ADS_ID = "AW-951353708";
 export const GOOGLE_ADS_SCRIPT_ID = "family-weather-google-ads";
-export const GOOGLE_ADS_CONSENT_KEY = "family-weather-google-ads-consent-v1";
+// Purchase measurement expands the earlier base-tag disclosure. Require a new choice.
+export const GOOGLE_ADS_CONSENT_KEY = "family-weather-google-ads-consent-v2";
 export const GOOGLE_ADS_CONSENT_EVENT = "family-weather-google-ads-consent";
 export type GoogleAdsConsent = "granted" | "denied";
 
 const publicPaths = new Set([
-  "/", "/today", "/plan", "/weather-history", "/how-it-works", "/about",
+  "/", "/today", "/how-it-works", "/about",
   "/pricing", "/faq", "/live", "/weather-planning", "/event-weather-planning", "/weather-stories",
 ]);
 const clickParameters = new Set(["gclid", "gbraid", "wbraid", "gad_source", "gad_campaignid"]);
@@ -52,11 +53,12 @@ export function hasGlobalPrivacyControl(): boolean {
   return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
 }
 
-export function loadGoogleAdsMeasurement(): boolean {
+export function loadGoogleAdsMeasurement(verifiedConversion = false): boolean {
   const url = new URL(window.location.href);
   if (window.familyWeatherGoogleAdsLoaded) return true;
   if (url.protocol !== "https:" || !["thefamilyweather.com", "www.thefamilyweather.com"].includes(url.hostname)) return false;
-  if (!supportsGoogleAdsPage(url) || hasGlobalPrivacyControl()) return false;
+  const cleanSuccessPage = verifiedConversion && ["/event-saved", "/purchase-complete"].includes(url.pathname) && !url.search && !url.hash;
+  if ((!supportsGoogleAdsPage(url) && !cleanSuccessPage) || hasGlobalPrivacyControl()) return false;
   try { if (readGoogleAdsConsent(window.localStorage) !== "granted") return false; } catch { return false; }
   // Do not expose a private source URL when returning to a public page.
   if (document.referrer) {
@@ -70,10 +72,11 @@ export function loadGoogleAdsMeasurement(): boolean {
   // Preserve the arguments object used by the Google-provided bootstrap.
   // eslint-disable-next-line prefer-rest-params
   window.gtag = window.gtag || function () { window.dataLayer!.push(arguments); };
-  // Basic consent mode: no Google Ads request before opt-in. Personalization stays off.
+  // Basic consent mode: no Google Ads request before opt-in. Personalization and
+  // user-provided data remain denied, including remote automatic enhanced conversions.
   window.gtag("consent", "default", { ad_storage: "denied", analytics_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
   window.gtag("set", { allow_ad_personalization_signals: false, allow_google_signals: false, ads_data_redaction: true, url_passthrough: false, page_location: `${url.origin}${url.pathname}`, page_referrer: "", page_title: "Family Weather" });
-  window.gtag("consent", "update", { ad_storage: "granted", ad_user_data: "granted", analytics_storage: "denied", ad_personalization: "denied" });
+  window.gtag("consent", "update", { ad_storage: "granted", ad_user_data: "denied", analytics_storage: "denied", ad_personalization: "denied" });
   window.gtag("js", new Date());
   // This is the current Google-provided Google-only tag, not the older gtag/js format.
   // Do not add a config command or a second tag. No conversion is fired here.

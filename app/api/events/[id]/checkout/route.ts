@@ -39,10 +39,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     form.set("line_items[0][price_data][product_data][name]", `Family Weather ${target.name}`);
     form.set("line_items[0][quantity]", "1");
     form.set("client_reference_id", String(id));
-    form.set("success_url", `${origin}/events/${encodeURIComponent(id)}?payment=processing`);
+    form.set("success_url", `${origin}/events/${encodeURIComponent(id)}?payment=processing&session_id={CHECKOUT_SESSION_ID}`);
     form.set("cancel_url", `${origin}/events/${encodeURIComponent(id)}?payment=cancelled`);
     form.set("metadata[event_id]", String(id));
     form.set("metadata[product_code]", target.code);
+    // Preserve the exact charge after the webhook replaces pending_amount_cents
+    // with the cumulative plan value. This also handles later paid upgrades.
+    form.set("metadata[purchase_amount_cents]", String(amountDue));
     form.set("payment_intent_data[metadata][event_id]", String(id));
     form.set("payment_intent_data[metadata][product_code]", target.code);
 

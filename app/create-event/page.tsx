@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PublicChrome from "../components/PublicChrome";
 import CreateEventFlow from "./CreateEventFlow";
 
-export const metadata: Metadata = { title: "Create an Event | Family Weather", description: "Create a weather-aware event, then design the invitation and manage guest responses in separate, clear steps.", robots: { index: false, follow: true } };
+export const metadata: Metadata = { title: "Create an Event | Family Weather", referrer: "no-referrer", description: "Create a weather-aware event, then design the invitation and manage guest responses in separate, clear steps.", robots: { index: false, follow: true } };
 
 export default async function CreateEventPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;

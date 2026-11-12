@@ -10,8 +10,8 @@ const base = "https://thefamilyweather.com";
 const url = (path: string) => new URL(path, base);
 
 test("only public URLs without visitor details qualify for Google Ads", () => {
-  for (const path of ["/", "/today", "/plan", "/about", "/pricing", "/weather-stories", "/weather-stories/rainy-day", "/?gclid=Abc_123-xyz", "/?gbraid=123&wbraid=456&gad_source=1"]) assert.equal(supportsGoogleAdsPage(url(path)), true, path);
-  for (const path of ["/events", "/events/123", "/create-event", "/invitation/secret", "/rsvp.html?token=secret", "/a/private", "/announcements", "/family", "/privacy", "/terms", "/plan?location=Home", "/?email=person@example.com", "/?gclid=person@example.com", "/?account=signin", "/#secret", "/weather-stories-private", "/weather-stories/one/two", "/?unknown=x"]) assert.equal(supportsGoogleAdsPage(url(path)), false, path);
+  for (const path of ["/", "/today", "/about", "/pricing", "/weather-stories", "/weather-stories/rainy-day", "/?gclid=Abc_123-xyz", "/?gbraid=123&wbraid=456&gad_source=1"]) assert.equal(supportsGoogleAdsPage(url(path)), true, path);
+  for (const path of ["/plan", "/weather-history", "/events", "/events/123", "/create-event", "/invitation/secret", "/rsvp.html?token=secret", "/a/private", "/announcements", "/family", "/privacy", "/terms", "/plan?location=Home", "/?email=person@example.com", "/?gclid=person@example.com", "/?account=signin", "/#secret", "/weather-stories-private", "/weather-stories/one/two", "/?unknown=x"]) assert.equal(supportsGoogleAdsPage(url(path)), false, path);
 });
 
 test("consent is explicit, expires after 180 days and fails closed", () => {
@@ -88,7 +88,7 @@ test("runtime loads the supplied tag once after consent and never fabricates con
     assert.deepEqual(calls.map(call => call[0]), ["consent", "set", "consent", "js"]);
     assert.equal((calls[0][2] as Record<string, string>).ad_storage, "denied");
     assert.equal((calls[2][2] as Record<string, string>).ad_personalization, "denied");
-    assert.equal((calls[2][2] as Record<string, string>).ad_user_data, "granted");
+    assert.equal((calls[2][2] as Record<string, string>).ad_user_data, "denied");
     assert.equal((calls[1][1] as Record<string, string>).page_location, base + "/");
     assert.equal((calls[1][1] as Record<string, string>).page_referrer, "");
     assert.equal(JSON.stringify(calls).includes("conversion"), false);
