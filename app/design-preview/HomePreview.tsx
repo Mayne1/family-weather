@@ -3,7 +3,6 @@
 import { fetchHomeWeather } from "../lib/homeWeatherClient";
 import { localWeatherDate } from "../lib/forecastDates";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import RightNowStrip from "../components/RightNowStrip";
@@ -61,7 +60,6 @@ function forecastIcon(code:number){
 }
 
 export default function HomePreview(){
- const router=useRouter();
  const requestVersion=useRef(0);
  const refinementTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const[activity,setActivity]=useState("");
@@ -116,7 +114,9 @@ export default function HomePreview(){
   },()=>setStatus("Location was not changed. You can still use the default weather desk."),{enableHighAccuracy:false,timeout:10000,maximumAge:900000});
  };
 
- function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();router.push(`/plan?${new URLSearchParams({activity,location,date})}`)}
+ // A fresh document keeps advertising code away from visitor-entered planner details.
+ // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+ function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();window.location.assign(`/plan?${new URLSearchParams({activity,location,date})}`)}
  const read=(v?:number|null)=>typeof v==="number"&&Number.isFinite(v)?Math.round(v):"—";
  const current=weather?.current;
  const day=weather?.days?.find(day=>day.date===localWeatherDate(weather?.timezone));

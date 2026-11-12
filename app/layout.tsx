@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AdSenseLoader from "./components/AdSenseLoader";
+import GoogleAdsMeasurement from "./components/GoogleAdsMeasurement";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://thefamilyweather.com").replace(/\/+$/, "");
 const title = "Free Invitations, RSVPs & Weather Event Planning | Family Weather";
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
         <AdSenseLoader />
+        <GoogleAdsMeasurement />
         {children}
       </body>
     </html>
