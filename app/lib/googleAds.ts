@@ -1,6 +1,7 @@
 export const GOOGLE_ADS_ID = "AW-951353708";
 export const GOOGLE_ADS_SCRIPT_ID = "family-weather-google-ads";
-export const GOOGLE_ADS_CONSENT_KEY = "family-weather-google-ads-consent-v1";
+// Purchase measurement expands the earlier base-tag disclosure. Require a new choice.
+export const GOOGLE_ADS_CONSENT_KEY = "family-weather-google-ads-consent-v2";
 export const GOOGLE_ADS_CONSENT_EVENT = "family-weather-google-ads-consent";
 export type GoogleAdsConsent = "granted" | "denied";
 
